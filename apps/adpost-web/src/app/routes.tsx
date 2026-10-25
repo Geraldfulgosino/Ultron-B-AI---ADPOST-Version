@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { lazy } from 'react';
 import type { RouteObject } from 'react-router';
 import { Navigate } from 'react-router';
 import type { Capability } from '@/data/access';
@@ -7,22 +7,33 @@ import { ForgotPasswordPage, LoginPage, RegisterPage } from '@/pages/auth/AuthPa
 import { BrandLayout, RequireAuth, RequireCapability } from '@/layouts/BrandLayout';
 import { BrandPickerPage } from '@/pages/BrandPickerPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
-import { MembersPage } from '@/pages/members/MembersPage';
-import { BrandSettingsPage } from '@/pages/brand/BrandSettingsPage';
-import { DashboardPage } from '@/pages/dashboard/DashboardPage';
-import { ClientsPage } from '@/pages/management/ClientsPage';
-import { WebsitesPage } from '@/pages/management/WebsitesPage';
-import { IntegrationsPage } from '@/pages/management/IntegrationsPage';
-import { SeoOverviewPage } from '@/pages/seo/SeoOverviewPage';
-import { InsightDetailPage, InsightsListPage } from '@/pages/seo/InsightsPages';
-import { ReportsPage } from '@/pages/seo/ReportsPage';
-import { IntelligencePage } from '@/pages/seo/IntelligencePage';
-import { AutomationPage } from '@/pages/automation/AutomationPage';
-import { AgentDetailPage, AgentsPage, ExecutionsPage } from '@/pages/agents/AgentsPages';
-import { AgentChatPage, TeamChatPage } from '@/pages/chat/ChatPages';
-import { ApprovalsPage, ProjectsPage } from '@/pages/work/WorkPages';
-import { StudioDetailPage, StudioPage } from '@/pages/studio/StudioPages';
-import { KnowledgePage } from '@/pages/knowledge/KnowledgePage';
+
+/** Brand pages load on demand (one chunk per area) to keep the first download small. */
+const page = <M extends Record<string, unknown>>(load: () => Promise<M>, name: keyof M) =>
+    lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType })));
+
+const MembersPage = page(() => import('@/pages/members/MembersPage'), 'MembersPage');
+const BrandSettingsPage = page(() => import('@/pages/brand/BrandSettingsPage'), 'BrandSettingsPage');
+const DashboardPage = page(() => import('@/pages/dashboard/DashboardPage'), 'DashboardPage');
+const ClientsPage = page(() => import('@/pages/management/ClientsPage'), 'ClientsPage');
+const WebsitesPage = page(() => import('@/pages/management/WebsitesPage'), 'WebsitesPage');
+const IntegrationsPage = page(() => import('@/pages/management/IntegrationsPage'), 'IntegrationsPage');
+const SeoOverviewPage = page(() => import('@/pages/seo/SeoOverviewPage'), 'SeoOverviewPage');
+const InsightsListPage = page(() => import('@/pages/seo/InsightsPages'), 'InsightsListPage');
+const InsightDetailPage = page(() => import('@/pages/seo/InsightsPages'), 'InsightDetailPage');
+const ReportsPage = page(() => import('@/pages/seo/ReportsPage'), 'ReportsPage');
+const IntelligencePage = page(() => import('@/pages/seo/IntelligencePage'), 'IntelligencePage');
+const AutomationPage = page(() => import('@/pages/automation/AutomationPage'), 'AutomationPage');
+const AgentsPage = page(() => import('@/pages/agents/AgentsPages'), 'AgentsPage');
+const AgentDetailPage = page(() => import('@/pages/agents/AgentsPages'), 'AgentDetailPage');
+const ExecutionsPage = page(() => import('@/pages/agents/AgentsPages'), 'ExecutionsPage');
+const AgentChatPage = page(() => import('@/pages/chat/ChatPages'), 'AgentChatPage');
+const TeamChatPage = page(() => import('@/pages/chat/ChatPages'), 'TeamChatPage');
+const ProjectsPage = page(() => import('@/pages/work/WorkPages'), 'ProjectsPage');
+const ApprovalsPage = page(() => import('@/pages/work/WorkPages'), 'ApprovalsPage');
+const StudioPage = page(() => import('@/pages/studio/StudioPages'), 'StudioPage');
+const StudioDetailPage = page(() => import('@/pages/studio/StudioPages'), 'StudioDetailPage');
+const KnowledgePage = page(() => import('@/pages/knowledge/KnowledgePage'), 'KnowledgePage');
 
 const guard = (cap: Capability, el: React.ReactNode) => <RequireCapability cap={cap}>{el}</RequireCapability>;
 

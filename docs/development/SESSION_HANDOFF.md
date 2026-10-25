@@ -3,7 +3,7 @@
 **Updated:** 2026-10-25
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai`
-**Last completed milestone:** Phase 14 — Local QA, security, and regression testing
+**Last completed milestone:** Phase 15 — Free-tier deployment preparation
 **Last synced commit:** see GITHUB_SYNC_LOG.md (source of truth: `git log origin/feature/adpost-react-supabase-ai -1`)
 
 ## Test status
@@ -18,4 +18,4 @@ B-001 no PHP/Docker · B-002 Supabase unauthorized · B-003 Netlify unauthorized
 - The Supabase SQL is parse-checked only, never executed (B-002).
 
 ## Next exact task
-Phase 15 free-tier deployment prep: Netlify config (SPA redirects, security headers), env example, Supabase free-tier notes, deploy runbook (no deploy)
+Phase 16 future subscription architecture: plans/entitlements model + enforcement points, usage metering from executions, billing provider boundary (no provider connected)

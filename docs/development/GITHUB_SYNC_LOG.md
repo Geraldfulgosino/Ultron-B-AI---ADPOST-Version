@@ -22,3 +22,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-25 | Phase 11 SEO intelligence | 46ceade | ok | 46ceade |
 | 2026-10-25 | Phase 12 web studio | aa0cb08 | ok | aa0cb08 |
 | 2026-10-25 | Phase 13 knowledge | d101430 | ok | d101430 |
+| 2026-10-25 | Phase 14 QA + security | 9a1287d | ok | 9a1287d |

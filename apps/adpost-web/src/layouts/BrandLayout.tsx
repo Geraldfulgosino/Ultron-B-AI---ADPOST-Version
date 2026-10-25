@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { Suspense } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { BrandProvider, useBackend, useBrand, useQuery } from '@/app/backend';
 import type { Capability } from '@/data/access';
@@ -54,7 +54,9 @@ export function BrandLayout() {
                 }}
                 onSwitchBrand={(slug) => navigate(`/b/${slug}/dashboard`)}
             >
-                <Outlet />
+                <Suspense fallback={<LoadingState />}>
+                    <Outlet />
+                </Suspense>
             </AppShell>
         </BrandProvider>
     );
