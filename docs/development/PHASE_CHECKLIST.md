@@ -20,7 +20,7 @@ The roadmap below comes from the ADPOST master development prompt (v3.0). It was
 | 11 | SEO intelligence and analytics | done | rolling z-score anomalies, CTR-curve opportunity scoring (labelled estimate), website comparison with deltas, insight → SEO Manager chat |
 | 12 | Web Design and Web Development workflows | done | Web Studio: brief → design (Web Design Agent) → development (Web Dev Agent) → review checklist → deploy approval → recorded release; no deploys |
 | 13 | Knowledge and brand memory | done | knowledge docs CRUD, text uploads, paragraph chunking, BM25 retrieval, retrieval tester, chat attachment → knowledge, seeded brand guides, tool-gated agent context |
-| 14 | Local QA, security, and regression testing | todo | |
+| 14 | Local QA, security, and regression testing | done | security review (SECURITY_REVIEW.md), credential persistence fix, schema-versioned storage + reset, focus trap, skip link, route error page, audits + secret scan |
 | 15 | Free-tier deployment preparation | todo | |
 | 16 | Future subscription architecture | todo | |
 | 17 | Real Supabase integration | blocked | Requires owner authorization + live project |

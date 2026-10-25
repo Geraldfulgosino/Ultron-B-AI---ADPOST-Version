@@ -2,7 +2,7 @@ import type React from 'react';
 import type { RouteObject } from 'react-router';
 import { Navigate } from 'react-router';
 import type { Capability } from '@/data/access';
-import { NotFoundPage } from '@/pages/StatusPages';
+import { NotFoundPage, RouteErrorPage } from '@/pages/StatusPages';
 import { ForgotPasswordPage, LoginPage, RegisterPage } from '@/pages/auth/AuthPages';
 import { BrandLayout, RequireAuth, RequireCapability } from '@/layouts/BrandLayout';
 import { BrandPickerPage } from '@/pages/BrandPickerPage';
@@ -33,6 +33,7 @@ export const routes: RouteObject[] = [
     { path: '/forgot-password', element: <ForgotPasswordPage /> },
     {
         element: <RequireAuth />,
+        errorElement: <RouteErrorPage />,
         children: [
             { path: '/brands', element: <BrandPickerPage /> },
             { path: '/invitations/:token', element: <AcceptInvitationPage /> },

@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, isRouteErrorResponse, useRouteError } from 'react-router';
 
 function Centered({ code, title, body, to = '/', cta = 'Go home' }: { code: string; title: string; body: string; to?: string; cta?: string }) {
     return (
@@ -17,6 +17,14 @@ function Centered({ code, title, body, to = '/', cta = 'Go home' }: { code: stri
 
 export function NotFoundPage() {
     return <Centered code="404" title="Page not found" body="The page you are looking for does not exist." />;
+}
+
+/** Shown when a route throws. Never renders raw error details beyond the message. */
+export function RouteErrorPage() {
+    const error = useRouteError();
+    if (isRouteErrorResponse(error) && error.status === 404) return <NotFoundPage />;
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+    return <Centered code="Error" title="Something went wrong" body={message} to="/brands" cta="Back to brands" />;
 }
 
 export function ForbiddenPage() {

@@ -41,6 +41,19 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
 }
 
 const SESSION_KEY = 'adpost.session.v1';
+export const LOCAL_PERSIST_KEY = 'adpost.db';
+
+/** Salted SHA-256 for locally registered passwords. Local simulation only; Supabase Auth replaces it. */
+export async function hashPassword(email: string, password: string): Promise<string> {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`adpost-local:${email}:${password}`));
+    return 'sha256:' + [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPassword(stored: string | undefined, email: string, password: string): Promise<boolean> {
+    if (!stored) return false;
+    if (stored.startsWith('plain:')) return stored === `plain:${password}`;
+    return stored === (await hashPassword(email, password));
+}
 
 export class LocalBackend implements Backend {
     private session: Session | null = null;
@@ -53,7 +66,7 @@ export class LocalBackend implements Backend {
                 const normalized = email.trim().toLowerCase();
                 const user = db.all('users').find((u) => u.email.toLowerCase() === normalized);
                 // Same message for unknown email and wrong password (no account enumeration).
-                if (!user || db.credentials[normalized] !== password) throw new AuthError('These credentials do not match our records.');
+                if (!user || !(await verifyPassword(db.credentials[normalized], normalized, password))) throw new AuthError('These credentials do not match our records.');
                 this.session = { user: structuredClone(user) };
                 this.store();
                 return structuredClone(this.session);
@@ -69,7 +82,7 @@ export class LocalBackend implements Backend {
                 });
                 const user = { id: newId('usr'), name: name.trim(), email: normalized };
                 db.insert('users', user);
-                db.credentials[normalized] = password;
+                db.setCredential(normalized, await hashPassword(normalized, password));
                 this.session = { user: structuredClone(user) };
                 this.store();
                 return structuredClone(this.session);

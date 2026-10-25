@@ -20,3 +20,5 @@
 | 2026-10-25 | 11 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 145/145 tests, build ok |
 | 2026-10-25 | 12 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 150/150 tests, build ok |
 | 2026-10-25 | 13 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 160/160 tests, build ok |
+| 2026-10-25 | 14 | Full regression | adpost-web tsc+vitest+build; legacy typecheck+build; npm audit x2; secret scan | pass — 165/165, 0 vulns, no secrets |
+| 2026-10-25 | 14 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 165/165 tests, build ok |

@@ -111,6 +111,9 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
 
     return (
         <div className="min-h-screen bg-gray-50 lg:flex">
+            <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:shadow">
+                Skip to content
+            </a>
             <aside className="hidden lg:block lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:h-screen">{sidebar}</aside>
 
             {mobileOpen && (
@@ -144,7 +147,7 @@ export function Page({ title, description, actions, children }: { title: string;
                 </div>
                 {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
             </header>
-            <main className="flex-1 p-4 sm:p-8 space-y-6">{children}</main>
+            <main id="main" tabIndex={-1} className="flex-1 p-4 sm:p-8 space-y-6 focus:outline-none">{children}</main>
         </>
     );
 }

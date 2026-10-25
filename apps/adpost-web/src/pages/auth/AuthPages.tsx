@@ -4,6 +4,8 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import { Alert, Button, Field, Input } from '@/components/ui';
 import { fieldErrors, useBackend } from '@/app/backend';
 import { DEV_PASSWORD } from '@/data/local/fixtures';
+import { LocalDatabase } from '@/data/local/db';
+import { LOCAL_PERSIST_KEY } from '@/data/local/backend';
 
 /** Only allow same-app relative redirects (no open redirect via ?next=). */
 export function safeNext(next: string | null): string {
@@ -81,6 +83,18 @@ function DevAccountsHint({ onPick }: { onPick: (email: string) => void }) {
             <p className="mt-2">
                 Password for all: <code className="font-mono">{DEV_PASSWORD}</code>
             </p>
+            <button
+                type="button"
+                className="mt-2 text-red-700 hover:underline"
+                onClick={() => {
+                    if (!confirm('Reset all local demo data to the synthetic fixtures?')) return;
+                    LocalDatabase.reset(LOCAL_PERSIST_KEY);
+                    try { sessionStorage.clear(); } catch { /* ignore */ }
+                    window.location.reload();
+                }}
+            >
+                Reset local demo data
+            </button>
             <ul className="mt-2 space-y-1">
                 {DEV_ACCOUNTS.map(([email, label]) => (
                     <li key={email}>

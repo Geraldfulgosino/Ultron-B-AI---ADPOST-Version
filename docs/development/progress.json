@@ -2,7 +2,7 @@
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
   "updated": "2026-10-25",
-  "currentPhase": "14",
+  "currentPhase": "15",
   "phases": [
     {
       "phase": "00",
@@ -62,7 +62,7 @@
     },
     {
       "phase": "14",
-      "status": "todo"
+      "status": "done"
     },
     {
       "phase": "15",
@@ -95,5 +95,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 14 local QA/security: security review of adapters, dependency audit, a11y pass, storage key versioning, regression run, docs"
+  "nextTask": "Phase 15 free-tier deployment prep: Netlify config (SPA redirects, security headers), env example, Supabase free-tier notes, deploy runbook (no deploy)"
 }

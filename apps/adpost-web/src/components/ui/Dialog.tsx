@@ -21,6 +21,19 @@ export function Dialog({ open, title, onClose, children, footer }: DialogProps) 
         (focusable ?? panelRef.current)?.focus();
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
+            if (e.key !== 'Tab' || !panelRef.current) return;
+            // Keep keyboard focus inside the modal.
+            const items = [...panelRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+            if (!items.length) return;
+            const first = items[0]!;
+            const last = items[items.length - 1]!;
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
         };
         document.addEventListener('keydown', onKey);
         return () => {

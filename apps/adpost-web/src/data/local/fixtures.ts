@@ -135,7 +135,7 @@ export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credential
     }
 
     const credentials: Credentials = {};
-    for (const u of USERS) credentials[u.email.toLowerCase()] = DEV_PASSWORD;
+    for (const u of USERS) credentials[u.email.toLowerCase()] = `plain:${DEV_PASSWORD}`;
     return { snapshot: s, credentials };
 }
 

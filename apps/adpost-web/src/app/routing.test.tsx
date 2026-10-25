@@ -67,3 +67,12 @@ describe('auth + routing', () => {
         expect(await screen.findByText('newhire@example.test')).toBeInTheDocument();
     });
 });
+
+describe('accessibility landmarks', () => {
+    it('brand pages have a skip link targeting the main region', async () => {
+        await renderApp('/b/pod/dashboard', 'priya');
+        const skip = await screen.findByRole('link', { name: 'Skip to content' });
+        expect(skip).toHaveAttribute('href', '#main');
+        expect(document.getElementById('main')?.tagName).toBe('MAIN');
+    });
+});
