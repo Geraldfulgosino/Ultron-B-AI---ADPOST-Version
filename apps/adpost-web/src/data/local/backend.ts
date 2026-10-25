@@ -9,6 +9,7 @@ import { localClients, localWebsites } from './management';
 import { localInvitations, localMembers } from './members';
 import { localAnalytics, localInsights, localIntegrations, localReports } from './seo';
 import { localAutomation } from './automation';
+import { localAgents } from './agents';
 import { buildFixtures } from './fixtures';
 
 /** Assemble the full API for one user. Exported for tests (no auth round-trip needed). */
@@ -25,6 +26,7 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
         insights: localInsights(scope),
         reports: localReports(scope),
         automation: localAutomation(scope),
+        agents: localAgents(scope),
     };
 }
 

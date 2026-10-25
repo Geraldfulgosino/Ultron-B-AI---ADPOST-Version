@@ -5,6 +5,8 @@
 import type * as T from '@/domain/types';
 import { EMPTY_SNAPSHOT, type Credentials, type DbSnapshot } from './db';
 import { generateInsightCandidates } from '@/domain/analytics';
+import { hashString, mulberry32 } from '@/lib/random';
+import { seedAgents } from './agents';
 
 /** Local dev password for every fixture user. Not a secret; the local adapter only. */
 export const DEV_PASSWORD = 'adpost-dev';
@@ -12,26 +14,6 @@ export const DEV_PASSWORD = 'adpost-dev';
 /** Last day of synthetic analytics. Reports default to the 28 days ending here. */
 export const FIXTURE_END_DATE = '2026-10-24';
 export const FIXTURE_DAYS = 90;
-
-export function mulberry32(seed: number): () => number {
-    let a = seed >>> 0;
-    return () => {
-        a = (a + 0x6d2b79f5) >>> 0;
-        let t = a;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-
-export function hashString(s: string): number {
-    let h = 2166136261;
-    for (let i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-    }
-    return h >>> 0;
-}
 
 const CREATED = '2026-07-01T09:00:00.000Z';
 
@@ -131,6 +113,8 @@ export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credential
 
     // Client portal user: sees only POD Store.
     member('bm_casey_pod', B.pod, U.casey, 'client', null, 'cli_pod_1');
+
+    for (const b of BRANDS) seedAgents(s, b.id, b.name, U.alex, CREATED);
 
     // Seed insights by running the real rule set over the synthetic data.
     const generatedAt = `${FIXTURE_END_DATE}T08:00:00.000Z`;

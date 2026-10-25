@@ -2,28 +2,85 @@
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
   "updated": "2026-10-25",
-  "currentPhase": "10",
-  "phases": {
-    "10": "todo",
-    "11": "todo",
-    "12": "todo",
-    "13": "todo",
-    "14": "todo",
-    "15": "todo",
-    "16": "todo",
-    "17": "blocked",
-    "18": "blocked",
-    "00": "done",
-    "01": "done",
-    "02": "done",
-    "03": "done",
-    "04": "done",
-    "05": "done",
-    "06": "done",
-    "07": "todo",
-    "08": "todo",
-    "09": "todo"
-  },
+  "currentPhase": "08",
+  "phases": [
+    {
+      "phase": "00",
+      "status": "done"
+    },
+    {
+      "phase": "01",
+      "status": "done"
+    },
+    {
+      "phase": "02",
+      "status": "done"
+    },
+    {
+      "phase": "03",
+      "status": "done"
+    },
+    {
+      "phase": "04",
+      "status": "done"
+    },
+    {
+      "phase": "05",
+      "status": "done"
+    },
+    {
+      "phase": "06",
+      "status": "done"
+    },
+    {
+      "phase": "07",
+      "status": "done"
+    },
+    {
+      "phase": "08",
+      "status": "todo"
+    },
+    {
+      "phase": "09",
+      "status": "todo"
+    },
+    {
+      "phase": "10",
+      "status": "todo"
+    },
+    {
+      "phase": "11",
+      "status": "todo"
+    },
+    {
+      "phase": "12",
+      "status": "todo"
+    },
+    {
+      "phase": "13",
+      "status": "todo"
+    },
+    {
+      "phase": "14",
+      "status": "todo"
+    },
+    {
+      "phase": "15",
+      "status": "todo"
+    },
+    {
+      "phase": "16",
+      "status": "todo"
+    },
+    {
+      "phase": "17",
+      "status": "blocked"
+    },
+    {
+      "phase": "18",
+      "status": "blocked"
+    }
+  ],
   "blockers": [
     {
       "id": "B-001",
@@ -38,5 +95,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 07 AI agent registry: 6 templates, brand agent instances, instruction versions, tool permissions, limits, simulated provider, executions + cost"
+  "nextTask": "Phase 08 individual agent chat: conversations, history, composer, attachments, search, retry, execution status, action cards"
 }

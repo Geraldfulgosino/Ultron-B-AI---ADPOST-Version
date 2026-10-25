@@ -4,6 +4,8 @@ import { assignableRoles, can, clientRestriction, effectiveRole, ROLE_LABELS, ty
 import { AccessDeniedError, assertValid } from '../errors';
 import { newId, slugify } from '@/lib/utils';
 import type { Scope } from './scope';
+import { AGENT_TEMPLATES } from '@/domain/agents';
+import { buildAgentInstance } from './agents';
 
 export function toBrandAccess(f: AccessFacts): BrandAccess {
     const role = effectiveRole(f)!;
@@ -84,6 +86,12 @@ export function localWorkspace(scope: Scope): WorkspaceApi {
                 createdAt: db.nowIso(),
             };
             db.insert('brands', brand);
+            // Every brand gets its own independent set of the six specialist agents.
+            for (const t of AGENT_TEMPLATES) {
+                const { agent, version } = buildAgentInstance(brand.id, brand.name, t.key, scope.userId, brand.createdAt);
+                db.insert('instructionVersions', version);
+                db.insert('agentInstances', agent);
+            }
             scope.audit(brand.id, 'brand.created', 'brand', brand.id);
             return structuredClone(brand);
         },

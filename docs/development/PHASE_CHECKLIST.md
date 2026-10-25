@@ -13,7 +13,7 @@ The roadmap below comes from the ADPOST master development prompt (v3.0). It was
 | 04 | Authentication and authorization interfaces | done | local auth (sign-in/register), session provider, RequireAuth/RequireCapability guards, members + invitations |
 | 05 | ADPOST multi-brand workspaces | done | brand picker, agency brand creation, brand settings, brand switcher, isolation tests |
 | 06 | Existing feature migration and parity | done | all legacy features ported against local adapter; see FEATURE_PARITY.md |
-| 07 | AI agent registry | todo | |
+| 07 | AI agent registry | done | 6 templates, brand instances (auto-provisioned per brand), instruction versions + rollback, tool permissions, limits, simulated provider, execution engine, usage/cost, executions page |
 | 08 | Individual AI agent chat | todo | |
 | 09 | AI team collaboration and orchestration | todo | |
 | 10 | Projects, tasks, and human approvals | todo | |

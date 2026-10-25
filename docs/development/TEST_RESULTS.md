@@ -14,3 +14,4 @@
 | 2026-10-25 | 06 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 81/81 tests, build ok |
 | 2026-10-25 | 06 | Visual check | browser render of charts/pages | **not done** — no browser session used; verified via jsdom tests only |
 | 2026-10-25 | 06 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 96/96 tests, build ok |
+| 2026-10-25 | 07 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 117/117 tests, build ok |

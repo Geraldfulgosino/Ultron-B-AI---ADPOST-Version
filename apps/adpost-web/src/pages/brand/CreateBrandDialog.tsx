@@ -45,7 +45,7 @@ export function CreateBrandDialog({ onClose }: { onClose: () => void }) {
                     <Input id="new-brand-color" type="color" className="h-10 p-1" value={color} onChange={(e) => setColor(e.target.value)} />
                 </Field>
                 <p className="text-xs text-gray-500">
-                    The brand starts empty, with no websites, members, AI agents or knowledge of its own. Agency staff can access it straight away.
+                    The brand starts with no websites, members or knowledge, plus its own independent set of the six specialist AI agents. Agency staff can access it straight away.
                 </p>
             </div>
         </Dialog>

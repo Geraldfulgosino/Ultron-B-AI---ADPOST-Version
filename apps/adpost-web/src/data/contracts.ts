@@ -9,6 +9,7 @@
 import type * as T from '@/domain/types';
 import type { Capability } from './access';
 import type { ReportData, ReportFilters, SeriesPoint } from '@/domain/analytics';
+import type { AgentTemplate } from '@/domain/agents';
 
 export interface Session {
     user: T.User;
@@ -206,6 +207,51 @@ export interface AutomationApi {
     disconnect(brandId: T.ID): Promise<void>;
 }
 
+// ── AI workforce ──────────────────────────────────────────────────────────
+
+export interface AgentUsage {
+    agentInstanceId: T.ID;
+    runsToday: number;
+    runsMonth: number;
+    tokensMonth: number;
+    /** Sum of runs with a known rate. */
+    costMonthUsd: number;
+    /** Runs whose model has no configured rate (cost unknown, not zero). */
+    unpricedRunsMonth: number;
+    budgetRemainingUsd: number;
+}
+
+export interface AgentUpdate {
+    displayName?: string;
+    active?: boolean;
+    model?: T.ModelRef;
+    tools?: T.ToolKey[];
+    limits?: Partial<T.AgentLimits>;
+}
+
+export interface ExecutionFilters {
+    agentInstanceId?: T.ID;
+    status?: T.ExecutionStatus;
+    mode?: T.ExecutionMode;
+    conversationId?: T.ID;
+}
+
+export interface AgentsApi {
+    templates(): AgentTemplate[];
+    list(brandId: T.ID): Promise<T.AgentInstance[]>;
+    get(brandId: T.ID, id: T.ID): Promise<T.AgentInstance>;
+    /** Admin: create this brand's instance of a template (one per template). */
+    provision(brandId: T.ID, templateKey: T.AgentTemplateKey): Promise<T.AgentInstance>;
+    update(brandId: T.ID, id: T.ID, patch: AgentUpdate): Promise<T.AgentInstance>;
+    instructionVersions(brandId: T.ID, id: T.ID): Promise<T.InstructionVersion[]>;
+    /** Admin: save new instructions as the next version and make it active. */
+    publishInstructions(brandId: T.ID, id: T.ID, input: { instructions: string; note: string }): Promise<T.InstructionVersion>;
+    /** Admin: roll back/forward to an existing version. */
+    activateVersion(brandId: T.ID, id: T.ID, versionId: T.ID): Promise<T.AgentInstance>;
+    usage(brandId: T.ID): Promise<AgentUsage[]>;
+    executions(brandId: T.ID, filters?: ExecutionFilters): Promise<T.AgentExecution[]>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -218,6 +264,7 @@ export interface BrandApi {
     insights: InsightsApi;
     reports: ReportsApi;
     automation: AutomationApi;
+    agents: AgentsApi;
 }
 
 export interface Backend {
