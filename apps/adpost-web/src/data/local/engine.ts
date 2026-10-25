@@ -12,6 +12,7 @@ import { AccessDeniedError } from '../errors';
 import { newId } from '@/lib/utils';
 import type { LocalDatabase } from './db';
 import type { Scope } from './scope';
+import { planForBrand, runQuotaExceeded } from './entitlements';
 
 export interface RunInput {
     agentInstanceId: ID;
@@ -105,6 +106,9 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
 
     if (!agent.active) return finish({ status: 'limited', error: `${agent.displayName} is inactive.` });
     const spend = agentSpend(db, agent.id);
+    const quota = runQuotaExceeded(db, brandId);
+    if (quota) return finish({ status: 'limited', error: quota });
+    if (agent.model.provider !== 'simulated' && !planForBrand(db, brandId).features.includes('live_models')) return finish({ status: 'limited', error: 'Live AI models are not included in this plan.' });
     if (spend.runsToday >= agent.limits.maxRunsPerDay) return finish({ status: 'limited', error: `Daily run limit reached (${agent.limits.maxRunsPerDay}).` });
     if (spend.costMonthUsd >= agent.limits.monthlyBudgetUsd) return finish({ status: 'limited', error: `Monthly budget reached ($${agent.limits.monthlyBudgetUsd}).` });
     if (agent.model.provider !== 'simulated' && provider.mode === 'simulated') {

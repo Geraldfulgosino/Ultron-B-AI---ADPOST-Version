@@ -3,11 +3,11 @@
 **Updated:** 2026-10-25
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai`
-**Last completed milestone:** Phase 15 — Free-tier deployment preparation
+**Last completed milestone:** Phase 16 — Future subscription architecture
 **Last synced commit:** see GITHUB_SYNC_LOG.md (source of truth: `git log origin/feature/adpost-react-supabase-ai -1`)
 
 ## Test status
-adpost-web: pass — tsc 0 errors, 165/165 tests, build ok. Legacy frontend typecheck + build pass. Laravel PHPUnit not runnable on host (B-001).
+adpost-web: pass — tsc 0 errors, 171/171 tests, build ok. Legacy frontend typecheck + build pass. Laravel PHPUnit not runnable on host (B-001).
 
 ## Blockers
 B-001 no PHP/Docker · B-002 Supabase unauthorized · B-003 Netlify unauthorized.
@@ -18,4 +18,4 @@ B-001 no PHP/Docker · B-002 Supabase unauthorized · B-003 Netlify unauthorized
 - The Supabase SQL is parse-checked only, never executed (B-002).
 
 ## Next exact task
-Phase 16 future subscription architecture: plans/entitlements model + enforcement points, usage metering from executions, billing provider boundary (no provider connected)
+Phase 17 blocked (Supabase authorization). Remaining safe work: final handoff, README/docs consolidation

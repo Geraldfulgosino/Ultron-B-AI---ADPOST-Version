@@ -5,6 +5,7 @@ import { INSIGHT_TYPE_LABELS_PLAIN } from '@/domain/insightText';
 import { assertValid, ValidationError } from '../errors';
 import { byClientId, type Scope } from './scope';
 import { localChat } from './chat';
+import { assertFeature } from './entitlements';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -18,6 +19,7 @@ export function localIntelligence(scope: Scope): IntelligenceApi {
 
     return {
         async overview(brandId, f) {
+            assertFeature(db, brandId, 'intelligence');
             assertValid({ from: !DATE.test(f.from) && 'Start date must be YYYY-MM-DD.', to: (!DATE.test(f.to) && 'End date must be YYYY-MM-DD.') || (f.from > f.to && 'Start date must be before end date.') });
             const r = rows(brandId);
             if (f.websiteId && !r.websites.some((w) => w.id === f.websiteId)) throw new ValidationError({ websiteId: 'Choose a website from this brand.' });

@@ -11,6 +11,7 @@ create table public.agencies (
     id uuid primary key default gen_random_uuid(),
     name text not null,
     slug text not null unique,
+    plan_key text not null default 'internal' check (plan_key in ('internal', 'starter', 'growth', 'agency')),
     created_at timestamptz not null default now()
 );
 
@@ -394,6 +395,20 @@ create table public.approval_requests (
     created_at timestamptz not null default now()
 );
 create index approval_requests_brand_status_idx on public.approval_requests (brand_id, status);
+
+-- ── Subscriptions (Phase 16, future SaaS; no billing provider connected) ──
+
+-- Mirror of the billing provider's subscription, written only by a verified webhook Edge Function.
+create table public.subscriptions (
+    agency_id uuid primary key references public.agencies (id) on delete cascade,
+    provider text not null,
+    provider_customer_id text not null,
+    provider_subscription_id text not null unique,
+    plan_key text not null check (plan_key in ('starter', 'growth', 'agency')),
+    status text not null check (status in ('trialing', 'active', 'past_due', 'canceled')),
+    current_period_end timestamptz not null,
+    updated_at timestamptz not null default now()
+);
 
 -- ── Web Studio ─────────────────────────────────────────────────────────────
 

@@ -61,7 +61,7 @@ export interface LocalDatabaseOptions {
  * Bump when the snapshot shape changes. Stored data from another version is
  * discarded and fixtures are reloaded (local dev data is disposable).
  */
-export const DB_SCHEMA_VERSION = 3;
+export const DB_SCHEMA_VERSION = 4;
 
 export class LocalDatabase {
     private data: DbSnapshot;

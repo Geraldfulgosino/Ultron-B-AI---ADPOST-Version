@@ -6,6 +6,7 @@ import { newId, slugify } from '@/lib/utils';
 import type { Scope } from './scope';
 import { AGENT_TEMPLATES } from '@/domain/agents';
 import { buildAgentInstance } from './agents';
+import { agencyUsage, assertCanAddBrand } from './entitlements';
 
 export function toBrandAccess(f: AccessFacts): BrandAccess {
     const role = effectiveRole(f)!;
@@ -60,12 +61,19 @@ export function localWorkspace(scope: Scope): WorkspaceApi {
             return found;
         },
 
+        async agencyUsage() {
+            const m = db.all('agencyMemberships').find((a) => a.userId === scope.userId);
+            if (!m) throw new AccessDeniedError('Only agency staff can view plan usage.');
+            return agencyUsage(db, m.agencyId);
+        },
+
         async canCreateBrands() {
             return db.all('agencyMemberships').some((a) => a.userId === scope.userId);
         },
 
         async createBrand(input: BrandInput) {
             const agencyId = agencyFor();
+            assertCanAddBrand(db, agencyId);
             const name = input.name?.trim() ?? '';
             const slug = slugify(name);
             assertValid({

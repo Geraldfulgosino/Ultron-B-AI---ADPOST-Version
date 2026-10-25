@@ -6,6 +6,7 @@ import { newId } from '@/lib/utils';
 import type { Scope } from './scope';
 import { runAgent, type RunResult } from './engine';
 import { orchestrateGroup, summarizeConversation, teamAgents } from './orchestrator';
+import { assertFeature } from './entitlements';
 
 export const MAX_BODY = 8000;
 export const MAX_ATTACHMENTS = 5;
@@ -121,6 +122,7 @@ export function localChat(scope: Scope): ChatApi {
 
         async createGroup(brandId, { team, title }) {
             scope.require(brandId, 'write');
+            assertFeature(db, brandId, 'team_chat');
             if (!(team in TEAM_TITLES)) throw new ValidationError({ team: 'Unknown team.' });
             const members = teamAgents(db, brandId, team);
             if (!members.length) throw new ValidationError({ team: 'This team has no agents in this brand.' });

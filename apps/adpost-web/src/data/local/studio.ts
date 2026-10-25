@@ -4,6 +4,7 @@ import { AccessDeniedError, assertValid, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import type { Scope } from './scope';
 import { runAgent } from './engine';
+import { assertFeature } from './entitlements';
 
 export const RELEASE_CHECKLIST: Array<Omit<ChecklistItem, 'done'>> = [
     { key: 'design_reviewed', label: 'Design reviewed by a person' },
@@ -59,6 +60,7 @@ export function localStudio(scope: Scope): StudioApi {
 
         async create(brandId, input) {
             scope.require(brandId, 'write');
+            assertFeature(db, brandId, 'web_studio');
             assertValid({
                 websiteId: !db.all('websites').some((w) => w.id === input.websiteId && w.brandId === brandId) && 'Choose a website from this brand.',
                 title: !input.title?.trim() && 'Title is required.',

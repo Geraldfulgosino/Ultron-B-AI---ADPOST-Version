@@ -4,6 +4,7 @@ import { assertValid, NotFoundError } from '../errors';
 import { newId } from '@/lib/utils';
 import type { LocalDatabase } from './db';
 import type { Scope } from './scope';
+import { assertFeature } from './entitlements';
 
 
 
@@ -58,6 +59,7 @@ export function localAutomation(scope: Scope): AutomationApi {
 
         async save(brandId, input) {
             scope.require(brandId, 'admin');
+            assertFeature(db, brandId, 'automation');
             const urlError = validateWebhookUrl(input.webhookUrl);
             assertValid({
                 name: !input.name.trim() && 'Name is required.',

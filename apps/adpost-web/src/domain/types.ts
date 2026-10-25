@@ -16,6 +16,8 @@ export interface Agency {
     id: ID;
     name: string;
     slug: string;
+    /** Subscription plan (Phase 16). ADPOST = 'internal' (unlimited). */
+    planKey: import('./plans').PlanKey;
 }
 
 export interface Brand {

@@ -3,12 +3,13 @@ import { Page } from '@/layouts/AppShell';
 import { Alert, Button, Card, CardContent, CardHeader, CardTitle, ErrorState, Field, Input, Select, Textarea } from '@/components/ui';
 import { fieldErrors, useAction, useBrand } from '@/app/backend';
 import type { Brand } from '@/domain/types';
+import { PlanUsageCard } from './PlanUsageCard';
 
 export const TIMEZONES = ['UTC', 'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Europe/London', 'Europe/Berlin', 'Asia/Manila', 'Asia/Singapore', 'Australia/Sydney'];
 export const CURRENCIES = ['USD', 'EUR', 'GBP', 'PHP', 'SGD', 'AUD'];
 
 export function BrandSettingsPage() {
-    const { brand, can } = useBrand();
+    const { brand, can, role } = useBrand();
     const [form, setForm] = useState(() => pick(brand));
     const [saved, setSaved] = useState(false);
     const save = useAction((api, input: ReturnType<typeof pick>) => api.workspace.updateBrand(brand.id, input));
@@ -75,6 +76,7 @@ export function BrandSettingsPage() {
                     </Button>
                 )}
             </form>
+            {role === 'agency' && <div className="max-w-2xl"><PlanUsageCard /></div>}
         </Page>
     );
 }

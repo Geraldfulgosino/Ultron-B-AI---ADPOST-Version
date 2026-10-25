@@ -24,3 +24,4 @@
 | 2026-10-25 | 14 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 165/165 tests, build ok |
 | 2026-10-25 | 15 | Prod preview smoke | vite build + vite preview + curl /, /login, /b/pod/dashboard | pass — 200 + SPA fallback; main chunk 421 kB (133 kB gzip) after route code-splitting |
 | 2026-10-25 | 15 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 165/165 tests, build ok |
+| 2026-10-25 | 16 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 171/171 tests, build ok |

@@ -75,6 +75,9 @@ begin
     end loop;
 end $$;
 
+create policy subscriptions_select on public.subscriptions for select to authenticated using (app.is_agency_staff_for_agency(agency_id));
+-- No insert/update policies: only the billing webhook (service role) writes subscriptions.
+
 -- Secrets tables intentionally have NO policies: only the service role (Edge Functions) can touch them.
 --   public.integration_secrets, public.n8n_connection_secrets
 

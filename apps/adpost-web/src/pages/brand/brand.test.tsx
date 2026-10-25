@@ -62,3 +62,15 @@ describe('brand workspaces (UI)', () => {
         await waitFor(() => expect(router.state.location.pathname).toBe('/b/pod/dashboard'));
     });
 });
+
+describe('plan & usage card', () => {
+    it('agency staff see plan usage on brand settings; brand owners do not', async () => {
+        const a = await renderApp('/b/pod/settings', 'alex');
+        expect(await screen.findByText('Agency plan & usage')).toBeInTheDocument();
+        expect(screen.getByText('Internal (unlimited)')).toBeInTheDocument();
+        a.unmount();
+        await renderApp('/b/pod/settings', 'priya');
+        await screen.findByLabelText(/^Name/);
+        expect(screen.queryByText('Agency plan & usage')).toBeNull();
+    });
+});

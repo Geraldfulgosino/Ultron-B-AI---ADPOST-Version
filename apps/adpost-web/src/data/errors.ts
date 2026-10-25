@@ -19,6 +19,14 @@ export class ValidationError extends Error {
     }
 }
 
+/** A plan/entitlement limit was hit (maps to HTTP 402/403 in Edge Functions). */
+export class PlanLimitError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'PlanLimitError';
+    }
+}
+
 export class AuthError extends Error {
     constructor(message = 'Invalid credentials.') {
         super(message);

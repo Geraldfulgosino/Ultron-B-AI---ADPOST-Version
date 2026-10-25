@@ -3,6 +3,7 @@ import type { InvitationsApi, MemberView, MembersApi } from '../contracts';
 import { assignableRoles } from '../access';
 import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
+import { assertCanAddMember } from './entitlements';
 import type { Scope } from './scope';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -98,6 +99,7 @@ export function localInvitations(scope: Scope): InvitationsApi {
                     !db.all('clients').some((c) => c.id === input.clientId && c.brandId === brandId) &&
                     'Client invitations must be linked to a client of this brand.',
             });
+            assertCanAddMember(db, brandId);
             const expires = new Date(db.now());
             expires.setUTCDate(expires.getUTCDate() + INVITE_TTL_DAYS);
             const inv: Invitation = {
@@ -145,6 +147,7 @@ export function localInvitations(scope: Scope): InvitationsApi {
                 throw new AccessDeniedError('This invitation was sent to a different email address.');
             }
             if (!db.all('brandMemberships').some((m) => m.brandId === inv.brandId && m.userId === me.id)) {
+                assertCanAddMember(db, inv.brandId);
                 db.insert('brandMemberships', {
                     id: newId('bm'),
                     brandId: inv.brandId,

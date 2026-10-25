@@ -12,6 +12,7 @@ import type { ReportData, ReportFilters, SeriesPoint } from '@/domain/analytics'
 import type { AgentTemplate } from '@/domain/agents';
 import type { Anomaly, Opportunity, WebsiteComparisonRow } from '@/domain/intelligence';
 import type { RetrievalHit } from '@/domain/knowledge';
+import type { AgencyUsage } from '@/domain/plans';
 
 export interface Session {
     user: T.User;
@@ -49,6 +50,8 @@ export interface WorkspaceApi {
     listBrands(): Promise<BrandAccess[]>;
     /** Throws AccessDeniedError for unknown or inaccessible slugs. */
     brandBySlug(slug: string): Promise<BrandAccess>;
+    /** Agency staff only: plan + metered usage for the agency. */
+    agencyUsage(): Promise<AgencyUsage>;
     /** True for agency staff (may create brands). */
     canCreateBrands(): Promise<boolean>;
     /** Agency staff only. */

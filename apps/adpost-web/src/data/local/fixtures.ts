@@ -85,7 +85,7 @@ function isoDay(base: string, offsetDays: number): string {
 export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credentials } {
     const s = EMPTY_SNAPSHOT();
 
-    s.agencies.push({ id: FIXTURE_IDS.agency, name: 'ADPOST', slug: 'adpost' });
+    s.agencies.push({ id: FIXTURE_IDS.agency, name: 'ADPOST', slug: 'adpost', planKey: 'internal' });
     for (const b of BRANDS) s.brands.push({ ...b, agencyId: FIXTURE_IDS.agency, status: 'active', timezone: 'UTC', currency: 'USD', createdAt: CREATED });
     s.users.push(...USERS);
 

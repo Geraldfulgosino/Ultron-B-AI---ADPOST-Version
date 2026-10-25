@@ -5,6 +5,7 @@ import { assertValid, NotFoundError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import type { DbSnapshot, LocalDatabase } from './db';
 import type { Scope } from './scope';
+import { assertKnowledgeRoom } from './entitlements';
 
 export const KNOWLEDGE_KINDS: KnowledgeKind[] = ['brand_guide', 'product', 'seo_policy', 'faq', 'note', 'upload'];
 export const MAX_DOC_CHARS = 200_000;
@@ -32,6 +33,7 @@ export function localKnowledge(scope: Scope): KnowledgeApi {
 
     const create = (brandId: ID, input: { title: string; kind: KnowledgeKind; content: string; tags?: string[] }): KnowledgeDocument => {
         validate(input);
+        assertKnowledgeRoom(db, brandId, new TextEncoder().encode(input.content).length);
         const doc: KnowledgeDocument = {
             id: newId('kdoc'), brandId, title: input.title.trim(), kind: input.kind, content: input.content.trim(), tags: cleanTags(input.tags),
             sizeBytes: new TextEncoder().encode(input.content).length, createdBy: scope.userId, createdAt: db.nowIso(), updatedAt: db.nowIso(),

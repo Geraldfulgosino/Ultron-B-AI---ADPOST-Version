@@ -22,6 +22,6 @@ The roadmap below comes from the ADPOST master development prompt (v3.0). It was
 | 13 | Knowledge and brand memory | done | knowledge docs CRUD, text uploads, paragraph chunking, BM25 retrieval, retrieval tester, chat attachment → knowledge, seeded brand guides, tool-gated agent context |
 | 14 | Local QA, security, and regression testing | done | security review (SECURITY_REVIEW.md), credential persistence fix, schema-versioned storage + reset, focus trap, skip link, route error page, audits + secret scan |
 | 15 | Free-tier deployment preparation | done | netlify.toml (SPA fallback, CSP/HSTS/etc, asset caching), .env.example, DEPLOYMENT_PLAN.md runbook, route code-splitting; no deploy performed |
-| 16 | Future subscription architecture | todo | |
+| 16 | Future subscription architecture | done | plans + entitlements on agency (ADPOST=internal unlimited), enforcement at brand/member/run/storage/feature choke points, metering, BillingProvider boundary, subscriptions table + RLS; no billing connected |
 | 17 | Real Supabase integration | blocked | Requires owner authorization + live project |
 | 18 | Netlify deployment and pilot | blocked | Requires owner authorization |

@@ -70,7 +70,7 @@
     },
     {
       "phase": "16",
-      "status": "todo"
+      "status": "done"
     },
     {
       "phase": "17",
@@ -95,5 +95,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 16 future subscription architecture: plans/entitlements model + enforcement points, usage metering from executions, billing provider boundary (no provider connected)"
+  "nextTask": "Phase 17 blocked (Supabase authorization). Remaining safe work: final handoff, README/docs consolidation"
 }
