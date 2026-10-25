@@ -185,6 +185,7 @@ export interface SeoInsight {
 }
 
 export type N8nEvent = 'report.generated' | 'insight.approved' | 'approval.decided' | 'task.completed';
+export const N8N_EVENTS: N8nEvent[] = ['report.generated', 'insight.approved', 'approval.decided', 'task.completed'];
 
 export interface N8nConnection {
     id: ID;

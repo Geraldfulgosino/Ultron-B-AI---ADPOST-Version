@@ -19,7 +19,7 @@
     "03": "done",
     "04": "done",
     "05": "done",
-    "06": "in-progress",
+    "06": "done",
     "07": "todo",
     "08": "todo",
     "09": "todo"
@@ -38,5 +38,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 06b parity UI: dashboard, clients, websites, integrations, SEO overview, insights list/detail, reports + exports, automation"
+  "nextTask": "Phase 07 AI agent registry: 6 templates, brand agent instances, instruction versions, tool permissions, limits, simulated provider, executions + cost"
 }

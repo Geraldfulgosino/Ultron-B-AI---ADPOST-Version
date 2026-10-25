@@ -1,11 +1,11 @@
-import type { ID, N8nConnection, N8nDelivery, N8nEvent } from '@/domain/types';
+import { N8N_EVENTS, type ID, type N8nConnection, type N8nDelivery, type N8nEvent } from '@/domain/types';
 import type { AutomationApi } from '../contracts';
 import { assertValid, NotFoundError } from '../errors';
 import { newId } from '@/lib/utils';
 import type { LocalDatabase } from './db';
 import type { Scope } from './scope';
 
-export const N8N_EVENTS: N8nEvent[] = ['report.generated', 'insight.approved', 'approval.decided', 'task.completed'];
+
 
 /**
  * Full webhook URLs are kept out of the table (and out of every API response),

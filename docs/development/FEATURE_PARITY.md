@@ -1,11 +1,4 @@
-# Feature Parity Matrix — Laravel/Inertia → Standalone React (ADPOST)
-
-Legacy = existing Laravel/Inertia implementation (kept running, untouched).
-New = `apps/adpost-web` standalone React app (local adapters until Phase 17).
-
-Status: `—` not started · `local` implemented against local adapter · `live` verified against real backend
-
-| Feature | Legacy source | New status | Notes |
+local | enforced in data layer (Scope) + tests; RLS prepared || host-only storage, no network; dispatch = Edge Function || dependency-free text PDF; server render optional later || legacy layout + formula-injection guard || source GA4/GSC/all, website, date range, executive summary || 5 rule types, dedupe by subject, review/approve/dismiss/reopen, bulk || date/website filters; queries/pages in weekly buckets || 28-day KPIs vs previous, trends, insights, integration health || connect → pending; OAuth + real sync = Edge Functions (Phase 17) || domain normalised; client must belong to brand || admin-only delete cascades websites || Feature | Legacy source | New status | Notes |
 |---------|---------------|------------|-------|
 | Login / register / reset / verify | `pages/auth/*` | local (login, register); reset+verify → Supabase Auth (Phase 17) | open-redirect safe `?next` |
 | Organization create / settings | `pages/organizations/*` | local | Brand workspaces: agency creates brands; owners/admins edit settings; slug stable |

@@ -48,3 +48,4 @@
 | 2026-10-25 | 04 | Auth + authorization interfaces | see GITHUB_SYNC_LOG.md | see log |
 | 2026-10-25 | 05 | ADPOST multi-brand workspaces | see GITHUB_SYNC_LOG.md | see log |
 | 2026-10-25 | 06 | Phase 06a parity data layer | see GITHUB_SYNC_LOG.md | see log |
+| 2026-10-25 | 06 | Existing feature migration and parity (UI) | see GITHUB_SYNC_LOG.md | see log |

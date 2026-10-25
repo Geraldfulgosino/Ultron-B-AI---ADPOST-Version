@@ -10,6 +10,14 @@ import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { MembersPage } from '@/pages/members/MembersPage';
 import { SectionPending } from '@/pages/SectionPending';
 import { BrandSettingsPage } from '@/pages/brand/BrandSettingsPage';
+import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { ClientsPage } from '@/pages/management/ClientsPage';
+import { WebsitesPage } from '@/pages/management/WebsitesPage';
+import { IntegrationsPage } from '@/pages/management/IntegrationsPage';
+import { SeoOverviewPage } from '@/pages/seo/SeoOverviewPage';
+import { InsightDetailPage, InsightsListPage } from '@/pages/seo/InsightsPages';
+import { ReportsPage } from '@/pages/seo/ReportsPage';
+import { AutomationPage } from '@/pages/automation/AutomationPage';
 
 const pending = (path: string, title: string, phase: string): RouteObject => ({ path, element: <SectionPending title={title} phase={phase} /> });
 const guard = (cap: Capability, el: React.ReactNode) => <RequireCapability cap={cap}>{el}</RequireCapability>;
@@ -30,13 +38,14 @@ export const routes: RouteObject[] = [
                 children: [
                     { index: true, element: <Navigate to="dashboard" replace /> },
                     { path: 'members', element: guard('staff', <MembersPage />) },
-                    pending('dashboard', 'Dashboard', '06'),
-                    pending('clients', 'Clients', '06'),
-                    pending('websites', 'Websites', '06'),
-                    pending('integrations', 'Integrations', '06'),
-                    pending('seo', 'SEO Overview', '06'),
-                    pending('seo/insights', 'SEO Insights', '06'),
-                    pending('reports', 'Reports', '06'),
+                    { path: 'dashboard', element: <DashboardPage /> },
+                    { path: 'clients', element: <ClientsPage /> },
+                    { path: 'websites', element: <WebsitesPage /> },
+                    { path: 'integrations', element: <IntegrationsPage /> },
+                    { path: 'seo', element: <SeoOverviewPage /> },
+                    { path: 'seo/insights', element: <InsightsListPage /> },
+                    { path: 'seo/insights/:insightId', element: <InsightDetailPage /> },
+                    { path: 'reports', element: <ReportsPage /> },
                     pending('agents', 'Agents', '07'),
                     pending('chat', 'Agent Chat', '08'),
                     pending('team', 'Team Chat', '09'),
@@ -45,7 +54,7 @@ export const routes: RouteObject[] = [
                     pending('approvals', 'Approvals', '10'),
                     pending('studio', 'Web Studio', '12'),
                     pending('knowledge', 'Knowledge', '13'),
-                    pending('automation', 'Automation', '06'),
+                    { path: 'automation', element: guard('admin', <AutomationPage />) },
                     { path: 'settings', element: guard('staff', <BrandSettingsPage />) },
                     { path: '*', element: <NotFoundPage /> },
                 ],
