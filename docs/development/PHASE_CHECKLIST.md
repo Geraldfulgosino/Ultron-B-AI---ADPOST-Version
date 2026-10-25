@@ -8,7 +8,7 @@ The roadmap below comes from the ADPOST master development prompt (v3.0). It was
 |-------|-------|--------|-------|
 | 00 | Repository audit and recovery baseline | done | See MASTER_PROGRESS.md §Baseline |
 | 01 | Architecture and migration design | done | ADR-001..008, SUPABASE_INTEGRATION_PLAN.md |
-| 02 | Standalone React foundation | todo | |
+| 02 | Standalone React foundation | done | apps/adpost-web scaffold, UI kit, responsive shell, router |
 | 03 | Local backend abstractions and Supabase schema preparation | todo | |
 | 04 | Authentication and authorization interfaces | todo | |
 | 05 | ADPOST multi-brand workspaces | todo | |

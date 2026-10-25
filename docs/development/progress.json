@@ -2,17 +2,41 @@
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
   "updated": "2026-10-25",
-  "currentPhase": "02",
+  "currentPhase": "10",
   "phases": {
-    "00": "done", "01": "done", "02": "todo", "03": "todo", "04": "todo",
-    "05": "todo", "06": "todo", "07": "todo", "08": "todo", "09": "todo",
-    "10": "todo", "11": "todo", "12": "todo", "13": "todo", "14": "todo",
-    "15": "todo", "16": "todo", "17": "blocked", "18": "blocked"
+    "10": "todo",
+    "11": "todo",
+    "12": "todo",
+    "13": "todo",
+    "14": "todo",
+    "15": "todo",
+    "16": "todo",
+    "17": "blocked",
+    "18": "blocked",
+    "00": "done",
+    "01": "done",
+    "02": "done",
+    "03": "todo",
+    "04": "todo",
+    "05": "todo",
+    "06": "todo",
+    "07": "todo",
+    "08": "todo",
+    "09": "todo"
   },
   "blockers": [
-    { "id": "B-001", "text": "No PHP/Docker on host; Laravel PHPUnit cannot run" },
-    { "id": "B-002", "text": "Live Supabase integration not authorized" },
-    { "id": "B-003", "text": "Netlify deployment not authorized" }
+    {
+      "id": "B-001",
+      "text": "No PHP/Docker on host; Laravel PHPUnit cannot run"
+    },
+    {
+      "id": "B-002",
+      "text": "Live Supabase integration not authorized"
+    },
+    {
+      "id": "B-003",
+      "text": "Netlify deployment not authorized"
+    }
   ],
-  "nextTask": "Phase 02 scaffold apps/adpost-web (Vite+React+TS+Tailwind+router+Vitest)"
+  "nextTask": "Phase 03 domain types, synthetic fixtures, repository contracts, local adapters with access rules, Supabase SQL migrations"
 }
