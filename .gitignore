@@ -57,3 +57,40 @@ storage/framework/views/*
 # Ignore Laravel app storage placeholder files
 /storage/app/private/.gitignore
 /storage/app/public/.gitignore
+
+# Environment files: ignore all real env files, keep safe templates only
+.env.*
+!.env.example
+
+# Build output
+/dist/
+/build/
+dist/
+build/
+
+# Test, coverage and runtime artifacts
+/coverage/
+/.phpunit.cache/
+/storage/logs/*
+!/storage/logs/.gitignore
+npm-debug.log*
+yarn-error.log*
+*.pid
+playwright-report/
+test-results/
+
+# Local databases and exports
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+*.dump
+
+# Credentials and keys
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+client_secret*.json
