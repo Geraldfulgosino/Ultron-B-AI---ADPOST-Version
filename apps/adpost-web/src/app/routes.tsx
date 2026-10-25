@@ -17,6 +17,7 @@ import { IntegrationsPage } from '@/pages/management/IntegrationsPage';
 import { SeoOverviewPage } from '@/pages/seo/SeoOverviewPage';
 import { InsightDetailPage, InsightsListPage } from '@/pages/seo/InsightsPages';
 import { ReportsPage } from '@/pages/seo/ReportsPage';
+import { IntelligencePage } from '@/pages/seo/IntelligencePage';
 import { AutomationPage } from '@/pages/automation/AutomationPage';
 import { AgentDetailPage, AgentsPage, ExecutionsPage } from '@/pages/agents/AgentsPages';
 import { AgentChatPage, TeamChatPage } from '@/pages/chat/ChatPages';
@@ -48,6 +49,7 @@ export const routes: RouteObject[] = [
                     { path: 'seo', element: <SeoOverviewPage /> },
                     { path: 'seo/insights', element: <InsightsListPage /> },
                     { path: 'seo/insights/:insightId', element: <InsightDetailPage /> },
+                    { path: 'seo/intelligence', element: <IntelligencePage /> },
                     { path: 'reports', element: <ReportsPage /> },
                     { path: 'agents', element: guard('staff', <AgentsPage />) },
                     { path: 'agents/:agentId', element: guard('staff', <AgentDetailPage />) },

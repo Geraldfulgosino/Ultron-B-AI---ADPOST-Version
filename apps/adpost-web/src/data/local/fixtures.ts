@@ -147,7 +147,9 @@ function addAnalytics(s: DbSnapshot, brandId: string, clientId: string, websiteI
         const weekday = new Date(isoDay(startDate, d) + 'T00:00:00Z').getUTCDay();
         const weekly = weekday === 0 || weekday === 6 ? 0.72 : 1.08;
         const growth = 1 + trend * (d / FIXTURE_DAYS) * 0.25;
-        const sessions = Math.round(baseSessions * weekly * growth * (0.85 + rand() * 0.3));
+        // Two deliberate anomalies so SEO Intelligence has real signal to find.
+        const anomaly = d === FIXTURE_DAYS - 9 ? (websiteId === 'web_pod_1' ? 2.4 : websiteId === 'web_dmd_2' ? 0.3 : 1) : 1;
+        const sessions = Math.round(baseSessions * weekly * growth * anomaly * (0.85 + rand() * 0.3));
         const impressions = Math.round(sessions * (9 + rand() * 6));
         const clicks = Math.round(impressions * (0.025 + rand() * 0.035));
         s.dailyMetrics.push({

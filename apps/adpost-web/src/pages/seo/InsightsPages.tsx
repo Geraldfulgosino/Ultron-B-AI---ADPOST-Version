@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { Sparkles } from 'lucide-react';
 import { Page } from '@/layouts/AppShell';
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, Label, LoadingState, Select, Textarea } from '@/components/ui';
@@ -118,6 +118,8 @@ export function InsightDetailPage() {
     const q = useQuery((api) => api.insights.get(brand.id, insightId), [brand.id, insightId]);
     const [notes, setNotes] = useState('');
     const update = useAction((api, status: SeoInsightStatus) => api.insights.setStatus(brand.id, insightId, status, notes || undefined));
+    const discuss = useAction((api) => api.intelligence.discussInsight(brand.id, insightId));
+    const navigate = useNavigate();
 
     if (q.loading) return <Page title="Insight"><LoadingState /></Page>;
     if (q.error || !q.data) return <Page title="Insight"><ErrorState error={q.error} /></Page>;
@@ -169,6 +171,12 @@ export function InsightDetailPage() {
                                     <Textarea id="review-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
                                 </div>
                                 {update.error ? <ErrorState error={update.error} /> : null}
+                                {can.staff && (
+                                    <Button size="sm" variant="secondary" className="w-full" loading={discuss.pending} onClick={async () => { const r = await discuss.run(); if (r) navigate(`/b/${brand.slug}/chat/${r.conversationId}`); }}>
+                                        Discuss with SEO Manager
+                                    </Button>
+                                )}
+                                {discuss.error ? <ErrorState error={discuss.error} /> : null}
                                 <div className="flex flex-wrap gap-2">
                                     {actions.map((a) => (
                                         <Button key={a.to} size="sm" variant={a.variant} loading={update.pending} onClick={async () => { if (await update.run(a.to)) setNotes(''); }}>

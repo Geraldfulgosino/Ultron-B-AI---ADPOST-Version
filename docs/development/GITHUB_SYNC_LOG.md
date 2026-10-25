@@ -18,3 +18,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-25 | Phase 06 parity UI | 393e66c | ok | 393e66c |
 | 2026-10-25 | Phase 07 agent registry | 79383ca | ok | 79383ca |
 | 2026-10-25 | Phase 08+09 chat + orchestration | 7aa58a8 | ok | 7aa58a8 |
+| 2026-10-25 | Phase 10 tasks + approvals UI | 423f391 | ok | 423f391 |

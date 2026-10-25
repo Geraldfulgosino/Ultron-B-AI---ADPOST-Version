@@ -10,6 +10,7 @@ import type * as T from '@/domain/types';
 import type { Capability } from './access';
 import type { ReportData, ReportFilters, SeriesPoint } from '@/domain/analytics';
 import type { AgentTemplate } from '@/domain/agents';
+import type { Anomaly, Opportunity, WebsiteComparisonRow } from '@/domain/intelligence';
 
 export interface Session {
     user: T.User;
@@ -345,6 +346,20 @@ export interface WorkApi {
     applyProposal(brandId: T.ID, messageId: T.ID, proposalId: T.ID): Promise<{ kind: 'task' | 'approval'; id: T.ID }>;
 }
 
+// ── SEO intelligence ─────────────────────────────────────────────────────
+
+export interface IntelligenceOverview {
+    anomalies: Anomaly[];
+    opportunities: Opportunity[];
+    comparison: WebsiteComparisonRow[];
+}
+
+export interface IntelligenceApi {
+    overview(brandId: T.ID, filters: { from: string; to: string; websiteId?: T.ID | null }): Promise<IntelligenceOverview>;
+    /** Opens a chat with the SEO Manager seeded with the insight. Requires write access. */
+    discussInsight(brandId: T.ID, insightId: T.ID): Promise<{ conversationId: T.ID }>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -360,6 +375,7 @@ export interface BrandApi {
     agents: AgentsApi;
     chat: ChatApi;
     work: WorkApi;
+    intelligence: IntelligenceApi;
 }
 
 export interface Backend {

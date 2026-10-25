@@ -18,6 +18,7 @@ import {
     Workflow,
     Settings,
     Palette,
+    Radar,
 } from 'lucide-react';
 
 /** Minimum capability needed to see a nav item. Mirrors access.ts capabilities. */
@@ -55,6 +56,7 @@ export const NAV_GROUPS: NavGroup[] = [
         items: [
             { label: 'SEO Overview', path: 'seo', icon: LineChart },
             { label: 'SEO Insights', path: 'seo/insights', icon: Lightbulb },
+            { label: 'SEO Intelligence', path: 'seo/intelligence', icon: Radar },
             { label: 'Reports', path: 'reports', icon: FileBarChart },
         ],
     },
