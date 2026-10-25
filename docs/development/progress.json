@@ -16,7 +16,7 @@
     "00": "done",
     "01": "done",
     "02": "done",
-    "03": "todo",
+    "03": "done",
     "04": "todo",
     "05": "todo",
     "06": "todo",
@@ -38,5 +38,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 03 domain types, synthetic fixtures, repository contracts, local adapters with access rules, Supabase SQL migrations"
+  "nextTask": "Phase 04 auth UI + session provider + route guards + members/invitations repos"
 }

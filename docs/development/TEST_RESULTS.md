@@ -7,3 +7,5 @@
 | 2026-10-25 | 00 | npm audit | `npm audit` | 9 → 0 vulns after `npm audit fix` |
 | 2026-10-25 | 00 | Laravel PHPUnit | `php artisan test` | **not run** — no PHP/Docker on host (B-001) |
 | 2026-10-25 | 02 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 6/6 tests, build ok |
+| 2026-10-25 | 03 | Supabase SQL | libpg-query parse (PG 18 parser) | pass — schema 58 stmts, rls 72 stmts; not executed against a DB |
+| 2026-10-25 | 03 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 32/32 tests, build ok |
