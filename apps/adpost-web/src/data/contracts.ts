@@ -8,6 +8,7 @@
  */
 import type * as T from '@/domain/types';
 import type { Capability } from './access';
+import type { ReportData, ReportFilters, SeriesPoint } from '@/domain/analytics';
 
 export interface Session {
     user: T.User;
@@ -122,6 +123,89 @@ export interface InvitationsApi {
     accept(token: string): Promise<{ brandSlug: string }>;
 }
 
+// ── Analytics, SEO, reports, automation (legacy parity) ─────────────────
+
+export interface Kpi {
+    current: number;
+    previous: number;
+    delta: number | null;
+}
+
+export interface DashboardSummary {
+    counts: { clients: number; websites: number; integrationsConnected: number; integrationsError: number; insightsPending: number };
+    /** Window used for KPIs: the 28 days ending on the latest synced date. */
+    window: { from: string; to: string } | null;
+    kpis: { sessions: Kpi; conversions: Kpi; clicks: Kpi; impressions: Kpi };
+    sessionsTrend: SeriesPoint[];
+    clicksTrend: SeriesPoint[];
+    recentInsights: T.SeoInsight[];
+    integrations: Array<T.Integration & { websiteName: string }>;
+}
+
+export interface SeoOverview {
+    filters: { from: string; to: string; websiteId: string | null };
+    totals: { sessions: number; conversions: number; clicks: number; impressions: number; ctr: number; avgPosition: number };
+    previous: { sessions: number; clicks: number; impressions: number; conversions: number };
+    clicksTrend: SeriesPoint[];
+    sessionsTrend: SeriesPoint[];
+    topQueries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
+    topPages: Array<{ path: string; sessions: number; conversions: number; conversionRate: number }>;
+}
+
+export interface AnalyticsApi {
+    dashboard(brandId: T.ID): Promise<DashboardSummary>;
+    /** Earliest/latest metric date visible to the user, or null if there is no data. */
+    dataRange(brandId: T.ID): Promise<{ from: string; to: string } | null>;
+    seoOverview(brandId: T.ID, filters: { from: string; to: string; websiteId?: string | null }): Promise<SeoOverview>;
+}
+
+export interface IntegrationsApi {
+    list(brandId: T.ID): Promise<Array<T.Integration & { websiteName: string }>>;
+    /** Local: creates a `pending` record. Real OAuth runs server-side (Phase 17). */
+    connect(brandId: T.ID, websiteId: T.ID, provider: T.IntegrationProvider): Promise<T.Integration>;
+    /** Local: simulated sync (no network). */
+    sync(brandId: T.ID, id: T.ID): Promise<T.Integration>;
+    disconnect(brandId: T.ID, id: T.ID): Promise<T.Integration>;
+    /** Remove a disconnected/pending record. */
+    remove(brandId: T.ID, id: T.ID): Promise<void>;
+}
+
+export interface InsightFilters {
+    status?: T.SeoInsightStatus | 'open';
+    websiteId?: T.ID;
+    type?: T.SeoInsightType;
+    severity?: T.Severity;
+}
+
+export interface InsightsApi {
+    list(brandId: T.ID, filters?: InsightFilters): Promise<T.SeoInsight[]>;
+    get(brandId: T.ID, id: T.ID): Promise<T.SeoInsight & { websiteName: string; domain: string }>;
+    /** Runs the rule set over brand data; returns how many new insights were created. */
+    generate(brandId: T.ID): Promise<{ created: number }>;
+    setStatus(brandId: T.ID, id: T.ID, status: T.SeoInsightStatus, notes?: string | null): Promise<T.SeoInsight>;
+    bulkSetStatus(brandId: T.ID, ids: T.ID[], status: 'reviewed' | 'dismissed'): Promise<{ updated: number }>;
+}
+
+export interface ReportsApi {
+    preview(brandId: T.ID, filters: ReportFilters): Promise<ReportData>;
+    /** Records the export (audit + automation event). File building happens client-side today. */
+    recordExport(brandId: T.ID, format: 'csv' | 'pdf'): Promise<void>;
+}
+
+export interface AutomationState {
+    connection: T.N8nConnection | null;
+    deliveries: T.N8nDelivery[];
+}
+
+export interface AutomationApi {
+    get(brandId: T.ID): Promise<AutomationState>;
+    save(brandId: T.ID, input: { name: string; webhookUrl: string; events: T.N8nEvent[]; active?: boolean }): Promise<T.N8nConnection>;
+    /** Local adapter never calls the network: records a `simulated` delivery. */
+    test(brandId: T.ID): Promise<T.N8nDelivery>;
+    clearDeliveries(brandId: T.ID): Promise<void>;
+    disconnect(brandId: T.ID): Promise<void>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -129,6 +213,11 @@ export interface BrandApi {
     websites: WebsitesApi;
     members: MembersApi;
     invitations: InvitationsApi;
+    analytics: AnalyticsApi;
+    integrations: IntegrationsApi;
+    insights: InsightsApi;
+    reports: ReportsApi;
+    automation: AutomationApi;
 }
 
 export interface Backend {

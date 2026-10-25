@@ -11,3 +11,4 @@
 | 2026-10-25 | 03 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 32/32 tests, build ok |
 | 2026-10-25 | 04 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 48/48 tests, build ok |
 | 2026-10-25 | 05 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 55/55 tests, build ok |
+| 2026-10-25 | 06 | adpost-web | typecheck + vitest + build | pass — tsc 0 errors, 81/81 tests, build ok |

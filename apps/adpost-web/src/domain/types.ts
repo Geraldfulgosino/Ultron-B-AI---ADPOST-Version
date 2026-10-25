@@ -138,6 +138,8 @@ export interface SearchQuery {
     brandId: ID;
     clientId: ID;
     websiteId: ID;
+    /** Start of the weekly bucket (YYYY-MM-DD). Legacy stores daily rows; weekly keeps local storage small. */
+    date: string;
     query: string;
     clicks: number;
     impressions: number;
@@ -149,6 +151,8 @@ export interface LandingPage {
     brandId: ID;
     clientId: ID;
     websiteId: ID;
+    /** Start of the weekly bucket (YYYY-MM-DD). */
+    date: string;
     path: string;
     sessions: number;
     conversions: number;
@@ -167,6 +171,8 @@ export interface SeoInsight {
     type: SeoInsightType;
     severity: Severity;
     status: SeoInsightStatus;
+    /** Dedupe key from the rule that raised it (e.g. ctr:<site>:<query>). */
+    subject: string;
     title: string;
     summary: string;
     recommendation: string;

@@ -4,6 +4,7 @@
  */
 import type * as T from '@/domain/types';
 import { EMPTY_SNAPSHOT, type Credentials, type DbSnapshot } from './db';
+import { generateInsightCandidates } from '@/domain/analytics';
 
 /** Local dev password for every fixture user. Not a secret; the local adapter only. */
 export const DEV_PASSWORD = 'adpost-dev';
@@ -131,6 +132,22 @@ export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credential
     // Client portal user: sees only POD Store.
     member('bm_casey_pod', B.pod, U.casey, 'client', null, 'cli_pod_1');
 
+    // Seed insights by running the real rule set over the synthetic data.
+    const generatedAt = `${FIXTURE_END_DATE}T08:00:00.000Z`;
+    for (const brand of BRANDS) {
+        const own = <R extends { brandId: string }>(rows: R[]) => rows.filter((r) => r.brandId === brand.id);
+        generateInsightCandidates({
+            websites: own(s.websites), metrics: own(s.dailyMetrics), queries: own(s.searchQueries), pages: own(s.landingPages),
+            integrations: own(s.integrations), now: new Date(generatedAt),
+        }).forEach((c, i) =>
+            s.seoInsights.push({
+                id: `ins_${brand.id.slice(4)}_${i + 1}`, brandId: brand.id, clientId: c.clientId, websiteId: c.websiteId, type: c.type, severity: c.severity,
+                status: 'pending', subject: c.subject, title: c.title, summary: c.summary, recommendation: c.recommendation, evidence: c.evidence,
+                source: 'rules', reviewedBy: null, reviewedAt: null, reviewNotes: null, createdAt: generatedAt,
+            }),
+        );
+    }
+
     const credentials: Credentials = {};
     for (const u of USERS) credentials[u.email.toLowerCase()] = DEV_PASSWORD;
     return { snapshot: s, credentials };
@@ -163,30 +180,37 @@ function addAnalytics(s: DbSnapshot, brandId: string, clientId: string, websiteI
     }
 
     const name = domain.split('.')[0]!.replace(/-/g, ' ');
-    QUERY_STEMS.forEach((stem, i) => {
-        const impressions = Math.round(800 + rand() * 9000);
-        const ctr = i === 2 ? 0.006 + rand() * 0.006 : 0.02 + rand() * 0.08; // "pricing" is a low-CTR opportunity
-        s.searchQueries.push({
-            id: `sq_${websiteId}_${i}`,
-            brandId, clientId, websiteId,
-            query: `${name} ${stem}`,
-            impressions,
-            clicks: Math.round(impressions * ctr),
-            position: Math.round((2 + rand() * 18) * 10) / 10,
-        });
-    });
+    const queryBase = QUERY_STEMS.map((_, i) => ({ impressions: 60 + rand() * 700, ctr: i === 2 ? 0.006 + rand() * 0.006 : 0.02 + rand() * 0.08, position: 2 + rand() * 18 }));
+    const pageBase = PAGE_PATHS.map((_, i) => ({ share: (8 - i) * (0.6 + rand() * 0.8), conv: i === 2 ? 0.002 : 0.01 + rand() * 0.03, bounce: 0.3 + rand() * 0.45 }));
 
-    PAGE_PATHS.forEach((path, i) => {
-        const sessions = Math.round(baseSessions * (8 - i) * (0.6 + rand() * 0.8));
-        s.landingPages.push({
-            id: `lp_${websiteId}_${i}`,
-            brandId, clientId, websiteId,
-            path,
-            sessions,
-            conversions: Math.round(sessions * (i === 2 ? 0.002 : 0.01 + rand() * 0.03)),
-            bounceRate: Math.round((0.3 + rand() * 0.45) * 1000) / 1000,
+    for (let w = 0; w * 7 < FIXTURE_DAYS; w++) {
+        const date = isoDay(startDate, w * 7);
+        const growth = 1 + trend * (w / 13) * 0.25;
+        QUERY_STEMS.forEach((stem, i) => {
+            const q = queryBase[i]!; // "pricing" (i=2) is a low-CTR opportunity
+            const impressions = Math.round(q.impressions * growth * (0.85 + rand() * 0.3));
+            s.searchQueries.push({
+                id: `sq_${websiteId}_${w}_${i}`,
+                brandId, clientId, websiteId, date,
+                query: `${name} ${stem}`,
+                impressions,
+                clicks: Math.round(impressions * q.ctr),
+                position: Math.round((q.position + (rand() - 0.5)) * 10) / 10,
+            });
         });
-    });
+        PAGE_PATHS.forEach((path, i) => {
+            const p = pageBase[i]!;
+            const sessions = Math.round((baseSessions / 6) * p.share * growth * (0.85 + rand() * 0.3));
+            s.landingPages.push({
+                id: `lp_${websiteId}_${w}_${i}`,
+                brandId, clientId, websiteId, date,
+                path,
+                sessions,
+                conversions: Math.round(sessions * p.conv),
+                bounceRate: Math.round(p.bounce * 1000) / 1000,
+            });
+        });
+    }
 
     s.integrations.push(
         {

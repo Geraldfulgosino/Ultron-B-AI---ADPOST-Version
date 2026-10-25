@@ -19,7 +19,7 @@
     "03": "done",
     "04": "done",
     "05": "done",
-    "06": "todo",
+    "06": "in-progress",
     "07": "todo",
     "08": "todo",
     "09": "todo"
@@ -38,5 +38,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 06 parity: dashboard, clients, websites, integrations, SEO overview, insights review, reports (CSV/PDF), n8n automation"
+  "nextTask": "Phase 06b parity UI: dashboard, clients, websites, integrations, SEO overview, insights list/detail, reports + exports, automation"
 }

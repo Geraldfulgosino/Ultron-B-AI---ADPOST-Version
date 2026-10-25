@@ -153,24 +153,26 @@ create table public.analytics_search_queries (
     brand_id uuid not null references public.brands (id) on delete cascade,
     client_id uuid not null references public.clients (id) on delete cascade,
     website_id uuid not null references public.websites (id) on delete cascade,
+    metric_date date not null,
     query text not null,
     clicks integer not null default 0,
     impressions integer not null default 0,
     position numeric(6, 2) not null default 0
 );
-create index analytics_queries_brand_site_idx on public.analytics_search_queries (brand_id, website_id);
+create index analytics_queries_brand_site_idx on public.analytics_search_queries (brand_id, website_id, metric_date);
 
 create table public.analytics_landing_pages (
     id uuid primary key default gen_random_uuid(),
     brand_id uuid not null references public.brands (id) on delete cascade,
     client_id uuid not null references public.clients (id) on delete cascade,
     website_id uuid not null references public.websites (id) on delete cascade,
+    metric_date date not null,
     path text not null,
     sessions integer not null default 0,
     conversions integer not null default 0,
     bounce_rate numeric(5, 4) not null default 0
 );
-create index analytics_pages_brand_site_idx on public.analytics_landing_pages (brand_id, website_id);
+create index analytics_pages_brand_site_idx on public.analytics_landing_pages (brand_id, website_id, metric_date);
 
 create table public.seo_insights (
     id uuid primary key default gen_random_uuid(),
@@ -180,6 +182,7 @@ create table public.seo_insights (
     type text not null check (type in ('traffic_drop', 'ctr_opportunity', 'ranking_opportunity', 'conversion_gap', 'technical_issue', 'content_gap')),
     severity text not null check (severity in ('low', 'medium', 'high')),
     status text not null default 'pending' check (status in ('pending', 'reviewed', 'approved', 'dismissed')),
+    subject text not null,
     title text not null,
     summary text not null,
     recommendation text not null,
