@@ -335,6 +335,8 @@ create table public.messages (
     status text not null default 'sent' check (status in ('sent', 'failed')),
     execution_id uuid references public.agent_executions (id) on delete set null,
     mode text check (mode in ('simulated', 'live')),
+    proposals jsonb not null default '[]'::jsonb,
+    reply_to_id uuid references public.messages (id) on delete set null,
     created_at timestamptz not null default now(),
     check ((author_type = 'user') = (author_user_id is not null))
 );

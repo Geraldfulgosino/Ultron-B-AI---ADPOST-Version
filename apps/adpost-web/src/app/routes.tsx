@@ -19,6 +19,7 @@ import { InsightDetailPage, InsightsListPage } from '@/pages/seo/InsightsPages';
 import { ReportsPage } from '@/pages/seo/ReportsPage';
 import { AutomationPage } from '@/pages/automation/AutomationPage';
 import { AgentDetailPage, AgentsPage, ExecutionsPage } from '@/pages/agents/AgentsPages';
+import { AgentChatPage, TeamChatPage } from '@/pages/chat/ChatPages';
 
 const pending = (path: string, title: string, phase: string): RouteObject => ({ path, element: <SectionPending title={title} phase={phase} /> });
 const guard = (cap: Capability, el: React.ReactNode) => <RequireCapability cap={cap}>{el}</RequireCapability>;
@@ -49,8 +50,10 @@ export const routes: RouteObject[] = [
                     { path: 'reports', element: <ReportsPage /> },
                     { path: 'agents', element: guard('staff', <AgentsPage />) },
                     { path: 'agents/:agentId', element: guard('staff', <AgentDetailPage />) },
-                    pending('chat', 'Agent Chat', '08'),
-                    pending('team', 'Team Chat', '09'),
+                    { path: 'chat', element: guard('staff', <AgentChatPage />) },
+                    { path: 'chat/:conversationId', element: guard('staff', <AgentChatPage />) },
+                    { path: 'team', element: guard('staff', <TeamChatPage />) },
+                    { path: 'team/:conversationId', element: guard('staff', <TeamChatPage />) },
                     { path: 'executions', element: guard('staff', <ExecutionsPage />) },
                     pending('projects', 'Projects & Tasks', '10'),
                     pending('approvals', 'Approvals', '10'),

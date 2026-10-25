@@ -14,9 +14,9 @@ The roadmap below comes from the ADPOST master development prompt (v3.0). It was
 | 05 | ADPOST multi-brand workspaces | done | brand picker, agency brand creation, brand settings, brand switcher, isolation tests |
 | 06 | Existing feature migration and parity | done | all legacy features ported against local adapter; see FEATURE_PARITY.md |
 | 07 | AI agent registry | done | 6 templates, brand instances (auto-provisioned per brand), instruction versions + rollback, tool permissions, limits, simulated provider, execution engine, usage/cost, executions page |
-| 08 | Individual AI agent chat | todo | |
-| 09 | AI team collaboration and orchestration | todo | |
-| 10 | Projects, tasks, and human approvals | todo | |
+| 08 | Individual AI agent chat | done | direct chat: conversations, history, composer, text attachments, search, rename/archive, retry, execution status, proposal cards |
+| 09 | AI team collaboration and orchestration | done | SEO/Web/All teams, @mentions, lead-agent routing, bounded auto-handoffs (6 turns, depth 3, token budget, once per agent), inactive/outsider skip notes, deterministic summaries |
+| 10 | Projects, tasks, and human approvals | in-progress | data layer done (projects, tasks, approvals, apply proposals); UI next |
 | 11 | SEO intelligence and analytics | todo | |
 | 12 | Web Design and Web Development workflows | todo | |
 | 13 | Knowledge and brand memory | todo | |

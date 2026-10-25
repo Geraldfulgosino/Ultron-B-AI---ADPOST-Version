@@ -2,7 +2,7 @@
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
   "updated": "2026-10-25",
-  "currentPhase": "08",
+  "currentPhase": "10",
   "phases": [
     {
       "phase": "00",
@@ -38,15 +38,15 @@
     },
     {
       "phase": "08",
-      "status": "todo"
+      "status": "done"
     },
     {
       "phase": "09",
-      "status": "todo"
+      "status": "done"
     },
     {
       "phase": "10",
-      "status": "todo"
+      "status": "in-progress"
     },
     {
       "phase": "11",
@@ -95,5 +95,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 08 individual agent chat: conversations, history, composer, attachments, search, retry, execution status, action cards"
+  "nextTask": "Phase 10 UI: projects & tasks board, approvals queue"
 }

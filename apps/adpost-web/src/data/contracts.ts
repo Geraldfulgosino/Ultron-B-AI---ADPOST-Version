@@ -252,6 +252,99 @@ export interface AgentsApi {
     executions(brandId: T.ID, filters?: ExecutionFilters): Promise<T.AgentExecution[]>;
 }
 
+// ── Chat ──────────────────────────────────────────────────────────────────
+
+export interface AttachmentInput {
+    name: string;
+    sizeBytes: number;
+    mimeType: string;
+    /** Extracted text for text files; null for binary files. */
+    text: string | null;
+}
+
+export interface ConversationSummary extends T.Conversation {
+    lastMessage: T.Message | null;
+    messageCount: number;
+}
+
+export interface SendResult {
+    message: T.Message;
+    /** Agent replies and system notices produced by this send, in order. */
+    replies: T.Message[];
+}
+
+export interface ChatSearchHit {
+    conversationId: T.ID;
+    conversationTitle: string;
+    message: T.Message;
+}
+
+export interface ChatApi {
+    list(brandId: T.ID, filter?: { kind?: T.ConversationKind; includeArchived?: boolean }): Promise<ConversationSummary[]>;
+    get(brandId: T.ID, id: T.ID): Promise<T.Conversation>;
+    createDirect(brandId: T.ID, agentInstanceId: T.ID, title?: string): Promise<T.Conversation>;
+    createGroup(brandId: T.ID, input: { team: T.TeamKey; title?: string }): Promise<T.Conversation>;
+    messages(brandId: T.ID, conversationId: T.ID): Promise<T.Message[]>;
+    send(brandId: T.ID, conversationId: T.ID, input: { body: string; attachments?: AttachmentInput[] }): Promise<SendResult>;
+    /** Re-run the agent(s) for the user message a failed reply answered. */
+    retry(brandId: T.ID, conversationId: T.ID, failedMessageId: T.ID): Promise<SendResult>;
+    rename(brandId: T.ID, id: T.ID, title: string): Promise<T.Conversation>;
+    archive(brandId: T.ID, id: T.ID, archived: boolean): Promise<T.Conversation>;
+    search(brandId: T.ID, query: string): Promise<ChatSearchHit[]>;
+    dismissProposal(brandId: T.ID, messageId: T.ID, proposalId: T.ID): Promise<T.Message>;
+    /** Deterministic summary stored on the conversation. */
+    summarize(brandId: T.ID, id: T.ID): Promise<T.Conversation>;
+}
+
+// ── Projects, tasks, approvals ────────────────────────────────────────────
+
+export interface ProjectInput {
+    name: string;
+    description?: string;
+    status?: T.Project['status'];
+    websiteId?: T.ID | null;
+}
+
+export interface ProjectSummary extends T.Project {
+    taskCounts: Record<T.TaskStatus, number>;
+}
+
+export interface TaskInput {
+    projectId: T.ID;
+    title: string;
+    description?: string;
+    status?: T.TaskStatus;
+    priority?: T.TaskPriority;
+    assignee?: T.Assignee;
+    dueDate?: string | null;
+}
+
+export interface TaskFilters {
+    projectId?: T.ID;
+    status?: T.TaskStatus;
+    agentInstanceId?: T.ID;
+    userId?: T.ID;
+}
+
+export interface WorkApi {
+    projects(brandId: T.ID): Promise<ProjectSummary[]>;
+    createProject(brandId: T.ID, input: ProjectInput): Promise<T.Project>;
+    updateProject(brandId: T.ID, id: T.ID, input: Partial<ProjectInput>): Promise<T.Project>;
+    /** Admin only; deletes the project's tasks. */
+    removeProject(brandId: T.ID, id: T.ID): Promise<void>;
+    tasks(brandId: T.ID, filters?: TaskFilters): Promise<T.Task[]>;
+    createTask(brandId: T.ID, input: TaskInput): Promise<T.Task>;
+    updateTask(brandId: T.ID, id: T.ID, input: Partial<Omit<TaskInput, 'projectId'>> & { projectId?: T.ID }): Promise<T.Task>;
+    removeTask(brandId: T.ID, id: T.ID): Promise<void>;
+    approvals(brandId: T.ID, filters?: { status?: T.ApprovalStatus }): Promise<T.ApprovalRequest[]>;
+    requestApproval(brandId: T.ID, input: { kind: T.ApprovalKind; title: string; summary: string; payload?: Record<string, string>; taskId?: T.ID | null }): Promise<T.ApprovalRequest>;
+    /** Admins decide; nobody can approve a request they raised themselves. */
+    decideApproval(brandId: T.ID, id: T.ID, decision: 'approved' | 'rejected', note: string): Promise<T.ApprovalRequest>;
+    cancelApproval(brandId: T.ID, id: T.ID): Promise<T.ApprovalRequest>;
+    /** Turn an agent proposal into a task or approval request (human action). */
+    applyProposal(brandId: T.ID, messageId: T.ID, proposalId: T.ID): Promise<{ kind: 'task' | 'approval'; id: T.ID }>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -265,6 +358,8 @@ export interface BrandApi {
     reports: ReportsApi;
     automation: AutomationApi;
     agents: AgentsApi;
+    chat: ChatApi;
+    work: WorkApi;
 }
 
 export interface Backend {

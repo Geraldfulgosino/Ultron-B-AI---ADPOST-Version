@@ -16,3 +16,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-25 | Phase 05 brand workspaces | 0f0ac85 | ok | 0f0ac85 |
 | 2026-10-25 | Phase 06a parity data | 467cc37 | ok | 467cc37 |
 | 2026-10-25 | Phase 06 parity UI | 393e66c | ok | 393e66c |
+| 2026-10-25 | Phase 07 agent registry | 79383ca | ok | 79383ca |

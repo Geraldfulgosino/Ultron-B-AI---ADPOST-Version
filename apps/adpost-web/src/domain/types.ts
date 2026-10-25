@@ -281,7 +281,23 @@ export interface Attachment {
     name: string;
     sizeBytes: number;
     mimeType: string;
+    /** Text content passed to the agent (text files only, truncated). Binary files are metadata-only locally. */
+    textExcerpt: string | null;
     knowledgeDocumentId: ID | null;
+}
+
+export type ProposalStatus = 'proposed' | 'applied' | 'dismissed';
+
+/** An action an agent proposed in a message. Humans apply or dismiss it; nothing runs automatically. */
+export interface Proposal {
+    id: ID;
+    action:
+        | { type: 'create_task'; title: string; description: string; priority: TaskPriority }
+        | { type: 'request_approval'; kind: ApprovalKind; title: string; summary: string }
+        | { type: 'delegate'; handle: string; brief: string };
+    status: ProposalStatus;
+    /** Task, approval or message id produced when applied. */
+    resultId: ID | null;
 }
 
 export type ConversationKind = 'direct' | 'group';
@@ -314,6 +330,9 @@ export interface Message {
     status: 'sent' | 'failed';
     executionId: ID | null;
     mode: ExecutionMode | null;
+    proposals: Proposal[];
+    /** For agent replies and failures: the user message being answered (used by retry). */
+    replyToId: ID | null;
     createdAt: ISODate;
 }
 
