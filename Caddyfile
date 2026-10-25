@@ -1,0 +1,21 @@
+{
+    admin off
+}
+
+:80 {
+    root * /var/www/html/public
+
+    encode gzip
+
+    php_fastcgi ultron-app:9000 {
+        index index.php
+    }
+
+    file_server
+
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

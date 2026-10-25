@@ -1,0 +1,155 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "${APP_PORT:-80}:80"
+      - "${APP_SSL_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - .:/var/www/html:ro
+    depends_on:
+      - ultron-app
+    networks:
+      - ultron
+
+  ultron-app:
+    build:
+      context: .
+      target: development
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      PHP_IDE_CONFIG: "serverName=ultron"
+    depends_on:
+      ultron-mysql:
+        condition: service_healthy
+      ultron-redis:
+        condition: service_healthy
+    networks:
+      - ultron
+
+  ultron-queue:
+    build:
+      context: .
+      target: development
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    depends_on:
+      ultron-mysql:
+        condition: service_healthy
+      ultron-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ultron
+
+  ultron-scheduler:
+    build:
+      context: .
+      target: development
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    depends_on:
+      ultron-mysql:
+        condition: service_healthy
+      ultron-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ultron
+
+  ultron-mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+      MYSQL_DATABASE: ${DB_DATABASE:-ultron}
+      MYSQL_USER: ${DB_USERNAME:-ultron}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "${DB_EXTERNAL_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ultron
+
+  ultron-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ultron
+
+  n8n-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${N8N_DB_DATABASE:-n8n}
+      POSTGRES_USER: ${N8N_DB_USER:-n8n}
+      POSTGRES_PASSWORD: ${N8N_DB_PASSWORD:-n8npassword}
+    volumes:
+      - n8n_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-n8n}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ultron
+
+  n8n-main:
+    image: docker.n8n.io/n8nio/n8n:latest
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-postgres
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_DATABASE:-n8n}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:-n8npassword}
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme-32-char-minimum-key-here}
+      EXECUTIONS_PROCESS: main
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      n8n-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ultron
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mysql_data:
+  redis_data:
+  n8n_postgres_data:
+  n8n_data:
+  vendor:
+
+networks:
+  ultron:
+    driver: bridge

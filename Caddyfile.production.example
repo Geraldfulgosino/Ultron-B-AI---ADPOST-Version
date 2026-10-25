@@ -1,0 +1,36 @@
+# Production Caddyfile
+# Copy to Caddyfile.production and replace app.yourdomain.com with your domain.
+# Caddy automatically obtains and renews a Let's Encrypt TLS certificate.
+
+{
+    admin off
+    # Global email for Let's Encrypt notifications
+    email admin@yourdomain.com
+}
+
+app.yourdomain.com {
+    root * /var/www/html/public
+
+    encode gzip
+
+    php_fastcgi ultron-app:9000 {
+        index index.php
+    }
+
+    file_server
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    log {
+        output stdout
+        format json
+        level WARN
+    }
+}

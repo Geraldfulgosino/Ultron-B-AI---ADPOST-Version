@@ -1,0 +1,44 @@
+services:
+  ultron-app:
+    build:
+      context: .
+      target: production
+    env_file: .env
+    volumes: !reset []
+
+  ultron-queue:
+    build:
+      context: .
+      target: production
+    env_file: .env
+    volumes: !reset []
+
+  ultron-scheduler:
+    build:
+      context: .
+      target: production
+    env_file: .env
+    volumes: !reset []
+
+  caddy:
+    volumes: !override
+      - ./Caddyfile.production:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./public:/var/www/html/public:ro
+
+  n8n-main:
+    # Keep n8n on the Docker network in production. Use an SSH tunnel for admin access.
+    ports: !reset []
+
+  ultron-mysql:
+    ports: !reset []
+
+  ultron-redis:
+    # Require auth in production. REDIS_PASSWORD must be set in .env (not null or empty).
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports: !reset []
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$${REDIS_PASSWORD}\" redis-cli ping | grep PONG"]
