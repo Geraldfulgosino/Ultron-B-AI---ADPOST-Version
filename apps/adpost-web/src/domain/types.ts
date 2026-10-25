@@ -411,6 +411,36 @@ export interface ApprovalRequest {
     createdAt: ISODate;
 }
 
+// ── Web Studio ───────────────────────────────────────────────────────────
+
+export type WebChangeStage = 'brief' | 'design' | 'development' | 'review' | 'awaiting_approval' | 'released' | 'cancelled';
+
+export interface ChecklistItem {
+    key: string;
+    label: string;
+    done: boolean;
+}
+
+/** A website change moving brief → design → development → review → approval → release. */
+export interface WebChange {
+    id: ID;
+    brandId: ID;
+    websiteId: ID;
+    title: string;
+    brief: string;
+    stage: WebChangeStage;
+    designProposal: string | null;
+    designExecutionId: ID | null;
+    devProposal: string | null;
+    devExecutionId: ID | null;
+    checklist: ChecklistItem[];
+    approvalId: ID | null;
+    createdBy: ID;
+    releasedAt: ISODate | null;
+    createdAt: ISODate;
+    updatedAt: ISODate;
+}
+
 // ── Knowledge ─────────────────────────────────────────────────────────────
 
 export type KnowledgeKind = 'brand_guide' | 'product' | 'seo_policy' | 'faq' | 'note' | 'upload';

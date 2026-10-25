@@ -13,6 +13,7 @@ import { localAgents } from './agents';
 import { localChat } from './chat';
 import { localWork } from './work';
 import { localIntelligence } from './intelligence';
+import { localStudio } from './studio';
 import { buildFixtures } from './fixtures';
 
 /** Assemble the full API for one user. Exported for tests (no auth round-trip needed). */
@@ -33,6 +34,7 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
         chat: localChat(scope),
         work: localWork(scope),
         intelligence: localIntelligence(scope),
+        studio: localStudio(scope),
     };
 }
 

@@ -195,6 +195,13 @@ create policy approvals_decide on public.approval_requests for update to authent
     using (app.can_admin_brand(brand_id))
     with check (app.can_admin_brand(brand_id) and (decided_by is null or decided_by = auth.uid()));
 
+create policy web_changes_select on public.web_changes for select to authenticated using (app.is_brand_staff(brand_id));
+create policy web_changes_write on public.web_changes for all to authenticated
+    using (app.can_write_brand(brand_id))
+    with check (app.can_write_brand(brand_id)
+        and exists (select 1 from public.websites w where w.id = website_id and w.brand_id = web_changes.brand_id));
+-- Moving to stage released is enforced in the release Edge Function (requires an approved approval_id).
+
 create policy knowledge_documents_select on public.knowledge_documents for select to authenticated using (app.is_brand_staff(brand_id));
 create policy knowledge_documents_write on public.knowledge_documents for all to authenticated
     using (app.can_write_brand(brand_id)) with check (app.can_write_brand(brand_id));

@@ -28,6 +28,7 @@ export interface Tables {
     approvals: T.ApprovalRequest;
     knowledgeDocuments: T.KnowledgeDocument;
     knowledgeChunks: T.KnowledgeChunk;
+    webChanges: T.WebChange;
 }
 
 export type TableName = keyof Tables;
@@ -41,7 +42,7 @@ export const EMPTY_SNAPSHOT = (): DbSnapshot => ({
     clients: [], websites: [], integrations: [], dailyMetrics: [], searchQueries: [], landingPages: [],
     seoInsights: [], n8nConnections: [], n8nDeliveries: [], auditLogs: [], agentInstances: [],
     instructionVersions: [], conversations: [], messages: [], executions: [], projects: [], tasks: [],
-    approvals: [], knowledgeDocuments: [], knowledgeChunks: [],
+    approvals: [], knowledgeDocuments: [], knowledgeChunks: [], webChanges: [],
 });
 
 type Listener = (table: TableName) => void;

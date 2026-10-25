@@ -395,6 +395,28 @@ create table public.approval_requests (
 );
 create index approval_requests_brand_status_idx on public.approval_requests (brand_id, status);
 
+-- ── Web Studio ─────────────────────────────────────────────────────────────
+
+create table public.web_changes (
+    id uuid primary key default gen_random_uuid(),
+    brand_id uuid not null references public.brands (id) on delete cascade,
+    website_id uuid not null references public.websites (id) on delete cascade,
+    title text not null,
+    brief text not null,
+    stage text not null default 'brief' check (stage in ('brief', 'design', 'development', 'review', 'awaiting_approval', 'released', 'cancelled')),
+    design_proposal text,
+    design_execution_id uuid references public.agent_executions (id) on delete set null,
+    dev_proposal text,
+    dev_execution_id uuid references public.agent_executions (id) on delete set null,
+    checklist jsonb not null default '[]'::jsonb,
+    approval_id uuid references public.approval_requests (id) on delete set null,
+    created_by uuid references public.profiles (id),
+    released_at timestamptz,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+create index web_changes_brand_stage_idx on public.web_changes (brand_id, stage);
+
 -- ── Knowledge ──────────────────────────────────────────────────────────────
 
 create table public.knowledge_documents (
@@ -436,7 +458,7 @@ end $$;
 do $$
 declare t text;
 begin
-    foreach t in array array['brands', 'clients', 'websites', 'agent_instances', 'conversations', 'tasks', 'knowledge_documents'] loop
+    foreach t in array array['brands', 'clients', 'websites', 'agent_instances', 'conversations', 'tasks', 'knowledge_documents', 'web_changes'] loop
         execute format('create trigger %I_touch before update on public.%I for each row execute function app.touch_updated_at()', t, t);
     end loop;
 end $$;

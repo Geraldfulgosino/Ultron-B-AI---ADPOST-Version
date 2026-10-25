@@ -360,6 +360,24 @@ export interface IntelligenceApi {
     discussInsight(brandId: T.ID, insightId: T.ID): Promise<{ conversationId: T.ID }>;
 }
 
+// ── Web Studio ───────────────────────────────────────────────────────────
+
+export interface StudioApi {
+    list(brandId: T.ID, filter?: { stage?: T.WebChangeStage; websiteId?: T.ID }): Promise<T.WebChange[]>;
+    get(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
+    create(brandId: T.ID, input: { websiteId: T.ID; title: string; brief: string }): Promise<T.WebChange>;
+    /** Web Design Agent drafts the design proposal (simulated locally). */
+    runDesign(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
+    /** Web Development Agent drafts the implementation proposal from the design. */
+    runDevelopment(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
+    toggleChecklist(brandId: T.ID, id: T.ID, key: string): Promise<T.WebChange>;
+    /** Creates a deploy_change approval request; checklist must be complete. */
+    requestRelease(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
+    /** Admin: record the release once the approval is approved. Local mode deploys nothing. */
+    markReleased(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
+    cancel(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -376,6 +394,7 @@ export interface BrandApi {
     chat: ChatApi;
     work: WorkApi;
     intelligence: IntelligenceApi;
+    studio: StudioApi;
 }
 
 export interface Backend {
