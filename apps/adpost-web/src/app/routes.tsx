@@ -9,6 +9,7 @@ import { BrandPickerPage } from '@/pages/BrandPickerPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { MembersPage } from '@/pages/members/MembersPage';
 import { SectionPending } from '@/pages/SectionPending';
+import { BrandSettingsPage } from '@/pages/brand/BrandSettingsPage';
 
 const pending = (path: string, title: string, phase: string): RouteObject => ({ path, element: <SectionPending title={title} phase={phase} /> });
 const guard = (cap: Capability, el: React.ReactNode) => <RequireCapability cap={cap}>{el}</RequireCapability>;
@@ -45,7 +46,7 @@ export const routes: RouteObject[] = [
                     pending('studio', 'Web Studio', '12'),
                     pending('knowledge', 'Knowledge', '13'),
                     pending('automation', 'Automation', '06'),
-                    pending('settings', 'Settings', '05'),
+                    { path: 'settings', element: guard('staff', <BrandSettingsPage />) },
                     { path: '*', element: <NotFoundPage /> },
                 ],
             },

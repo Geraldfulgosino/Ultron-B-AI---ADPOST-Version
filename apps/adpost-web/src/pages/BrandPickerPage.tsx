@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
-import { ChevronRight, LogOut } from 'lucide-react';
+import { ChevronRight, LogOut, Plus } from 'lucide-react';
 import { useBackend, useQuery } from '@/app/backend';
-import { Badge, EmptyState, ErrorState, LoadingState } from '@/components/ui';
+import { Badge, Button, EmptyState, ErrorState, LoadingState } from '@/components/ui';
+import { CreateBrandDialog } from './brand/CreateBrandDialog';
 
 export function BrandPickerPage() {
     const { session, signOut } = useBackend();
     const navigate = useNavigate();
     const brands = useQuery((api) => api.workspace.listBrands(), []);
+    const canCreate = useQuery((api) => api.workspace.canCreateBrands(), []);
+    const [creating, setCreating] = useState(false);
 
     // One brand: skip the picker (legacy behaviour: straight to dashboard).
-    if (brands.data?.length === 1) return <Navigate to={`/b/${brands.data[0]!.brand.slug}/dashboard`} replace />;
+    if (brands.data?.length === 1 && canCreate.data === false) return <Navigate to={`/b/${brands.data[0]!.brand.slug}/dashboard`} replace />;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -32,7 +36,15 @@ export function BrandPickerPage() {
                 </div>
             </header>
             <main className="mx-auto max-w-4xl px-4 py-8 space-y-4">
-                <h1 className="text-lg font-semibold text-gray-900">Choose a brand</h1>
+                <div className="flex items-center justify-between gap-3">
+                    <h1 className="text-lg font-semibold text-gray-900">Choose a brand</h1>
+                    {canCreate.data && (
+                        <Button onClick={() => setCreating(true)}>
+                            <Plus className="h-4 w-4" aria-hidden="true" /> New brand
+                        </Button>
+                    )}
+                </div>
+                {creating && <CreateBrandDialog onClose={() => setCreating(false)} />}
                 {brands.loading && <LoadingState />}
                 {brands.error ? <ErrorState error={brands.error} onRetry={brands.reload} /> : null}
                 {brands.data?.length === 0 && (

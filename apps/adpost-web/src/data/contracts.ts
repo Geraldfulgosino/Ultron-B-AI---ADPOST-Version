@@ -45,6 +45,8 @@ export interface WorkspaceApi {
     listBrands(): Promise<BrandAccess[]>;
     /** Throws AccessDeniedError for unknown or inaccessible slugs. */
     brandBySlug(slug: string): Promise<BrandAccess>;
+    /** True for agency staff (may create brands). */
+    canCreateBrands(): Promise<boolean>;
     /** Agency staff only. */
     createBrand(input: BrandInput): Promise<T.Brand>;
     updateBrand(brandId: T.ID, input: Partial<BrandInput> & { status?: T.Brand['status'] }): Promise<T.Brand>;

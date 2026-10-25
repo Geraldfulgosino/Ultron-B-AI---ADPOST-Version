@@ -12,3 +12,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-25 | Phase 01 architecture | b59516c | ok | b59516c |
 | 2026-10-25 | Phase 02 react foundation | 7ac07cf | ok | 7ac07cf |
 | 2026-10-25 | Phase 03 data layer + schema | c7d59ea | ok | c7d59ea |
+| 2026-10-25 | Phase 04 auth + authz | 055cb21 | ok | 055cb21 |

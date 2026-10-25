@@ -58,6 +58,10 @@ export function localWorkspace(scope: Scope): WorkspaceApi {
             return found;
         },
 
+        async canCreateBrands() {
+            return db.all('agencyMemberships').some((a) => a.userId === scope.userId);
+        },
+
         async createBrand(input: BrandInput) {
             const agencyId = agencyFor();
             const name = input.name?.trim() ?? '';

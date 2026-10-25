@@ -18,7 +18,7 @@
     "02": "done",
     "03": "done",
     "04": "done",
-    "05": "todo",
+    "05": "done",
     "06": "todo",
     "07": "todo",
     "08": "todo",
@@ -38,5 +38,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 05 brand workspaces: brand settings page, agency create-brand, brand switch persistence"
+  "nextTask": "Phase 06 parity: dashboard, clients, websites, integrations, SEO overview, insights review, reports (CSV/PDF), n8n automation"
 }

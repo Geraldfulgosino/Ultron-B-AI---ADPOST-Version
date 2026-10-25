@@ -8,7 +8,7 @@ Status: `—` not started · `local` implemented against local adapter · `live`
 | Feature | Legacy source | New status | Notes |
 |---------|---------------|------------|-------|
 | Login / register / reset / verify | `pages/auth/*` | local (login, register); reset+verify → Supabase Auth (Phase 17) | open-redirect safe `?next` |
-| Organization create / settings | `pages/organizations/*` | — | maps to Brand workspaces |
+| Organization create / settings | `pages/organizations/*` | local | Brand workspaces: agency creates brands; owners/admins edit settings; slug stable |
 | Members + roles | `organizations/Members.tsx` | local | last-owner guard, admins cannot mint owners |
 | Invitations (send/accept/cancel) | `InvitationController` | local | 7-day expiry, email match on accept; email delivery → Edge Function |
 | Clients CRUD | `pages/clients/Index.tsx` | — | |
