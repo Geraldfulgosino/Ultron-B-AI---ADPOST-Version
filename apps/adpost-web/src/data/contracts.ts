@@ -15,6 +15,8 @@ export interface Session {
 
 export interface AuthApi {
     signIn(email: string, password: string): Promise<Session>;
+    /** Creates an account with no memberships; access comes from invitations. */
+    register(input: { name: string; email: string; password: string }): Promise<Session>;
     signOut(): Promise<void>;
     currentSession(): Session | null;
 }
@@ -26,6 +28,8 @@ export interface BrandAccess {
     can: Record<Capability, boolean>;
     /** For client users: the only client they may see. */
     clientId: T.ID | null;
+    /** Roles this user may grant in the brand (empty = cannot manage members). */
+    assignableRoles: T.BrandRole[];
 }
 
 export interface BrandInput {
@@ -81,11 +85,48 @@ export interface WebsitesApi {
     remove(brandId: T.ID, id: T.ID): Promise<void>;
 }
 
+export interface MemberView extends T.BrandMembership {
+    name: string;
+    email: string;
+    clientName: string | null;
+}
+
+export interface MembersApi {
+    list(brandId: T.ID): Promise<MemberView[]>;
+    updateRole(brandId: T.ID, membershipId: T.ID, role: T.BrandRole, clientId?: T.ID | null): Promise<MemberView>;
+    remove(brandId: T.ID, membershipId: T.ID): Promise<void>;
+}
+
+/** The invite token is never returned to listing callers. */
+export type InvitationView = Omit<T.Invitation, 'token'>;
+
+export interface InvitationPreview {
+    brandName: string;
+    brandSlug: string;
+    role: T.BrandRole;
+    email: string;
+    status: T.InvitationStatus;
+    expiresAt: T.ISODate;
+}
+
+export interface InvitationsApi {
+    list(brandId: T.ID): Promise<InvitationView[]>;
+    send(
+        brandId: T.ID,
+        input: { email: string; role: T.BrandRole; clientId?: T.ID | null },
+    ): Promise<{ invitation: InvitationView; devAcceptPath?: string }>;
+    cancel(brandId: T.ID, id: T.ID): Promise<void>;
+    preview(token: string): Promise<InvitationPreview>;
+    accept(token: string): Promise<{ brandSlug: string }>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
     clients: ClientsApi;
     websites: WebsitesApi;
+    members: MembersApi;
+    invitations: InvitationsApi;
 }
 
 export interface Backend {

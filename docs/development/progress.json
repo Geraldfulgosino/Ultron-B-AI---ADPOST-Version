@@ -17,7 +17,7 @@
     "01": "done",
     "02": "done",
     "03": "done",
-    "04": "todo",
+    "04": "done",
     "05": "todo",
     "06": "todo",
     "07": "todo",
@@ -38,5 +38,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 04 auth UI + session provider + route guards + members/invitations repos"
+  "nextTask": "Phase 05 brand workspaces: brand settings page, agency create-brand, brand switch persistence"
 }

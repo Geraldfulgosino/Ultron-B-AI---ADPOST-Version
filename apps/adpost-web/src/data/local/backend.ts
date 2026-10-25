@@ -1,10 +1,12 @@
 import type { ID } from '@/domain/types';
 import type { AuthApi, Backend, BrandApi, Session } from '../contracts';
-import { AuthError } from '../errors';
+import { assertValid, AuthError } from '../errors';
+import { newId } from '@/lib/utils';
 import { LocalDatabase, type LocalDatabaseOptions } from './db';
 import { Scope } from './scope';
 import { localWorkspace } from './workspace';
 import { localClients, localWebsites } from './management';
+import { localInvitations, localMembers } from './members';
 import { buildFixtures } from './fixtures';
 
 /** Assemble the full API for one user. Exported for tests (no auth round-trip needed). */
@@ -14,6 +16,8 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
         workspace: localWorkspace(scope),
         clients: localClients(scope),
         websites: localWebsites(scope),
+        members: localMembers(scope),
+        invitations: localInvitations(scope),
     };
 }
 
@@ -31,6 +35,22 @@ export class LocalBackend implements Backend {
                 const user = db.all('users').find((u) => u.email.toLowerCase() === normalized);
                 // Same message for unknown email and wrong password (no account enumeration).
                 if (!user || db.credentials[normalized] !== password) throw new AuthError('These credentials do not match our records.');
+                this.session = { user: structuredClone(user) };
+                this.store();
+                return structuredClone(this.session);
+            },
+            register: async ({ name, email, password }) => {
+                const normalized = email.trim().toLowerCase();
+                assertValid({
+                    name: !name.trim() && 'Name is required.',
+                    email: !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
+                        ? 'Enter a valid email address.'
+                        : db.all('users').some((u) => u.email.toLowerCase() === normalized) && 'An account with this email already exists.',
+                    password: password.length < 8 && 'Password must be at least 8 characters.',
+                });
+                const user = { id: newId('usr'), name: name.trim(), email: normalized };
+                db.insert('users', user);
+                db.credentials[normalized] = password;
                 this.session = { user: structuredClone(user) };
                 this.store();
                 return structuredClone(this.session);

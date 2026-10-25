@@ -1,6 +1,6 @@
 import type { Brand, ID } from '@/domain/types';
 import type { BrandAccess, BrandInput, WorkspaceApi } from '../contracts';
-import { can, clientRestriction, effectiveRole, ROLE_LABELS, type AccessFacts } from '../access';
+import { assignableRoles, can, clientRestriction, effectiveRole, ROLE_LABELS, type AccessFacts } from '../access';
 import { AccessDeniedError, assertValid } from '../errors';
 import { newId, slugify } from '@/lib/utils';
 import type { Scope } from './scope';
@@ -14,6 +14,7 @@ export function toBrandAccess(f: AccessFacts): BrandAccess {
         roleLabel: ROLE_LABELS[role],
         can: { read: can(f, 'read'), write: can(f, 'write'), admin: can(f, 'admin'), staff: can(f, 'staff') },
         clientId: restriction === null || restriction === 'none' ? null : restriction,
+        assignableRoles: assignableRoles(f),
     };
 }
 

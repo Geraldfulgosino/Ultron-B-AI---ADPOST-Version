@@ -45,3 +45,4 @@
 | 2026-10-25 | 01 | ADRs + Supabase integration plan | see GITHUB_SYNC_LOG.md | see log |
 | 2026-10-25 | 02 | Standalone React foundation | see GITHUB_SYNC_LOG.md | see log |
 | 2026-10-25 | 03 | Local backend abstractions + Supabase schema | see GITHUB_SYNC_LOG.md | see log |
+| 2026-10-25 | 04 | Auth + authorization interfaces | see GITHUB_SYNC_LOG.md | see log |
