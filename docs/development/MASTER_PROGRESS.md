@@ -60,3 +60,6 @@
 | 2026-10-25 | 14 | Local QA, security, and regression testing | see GITHUB_SYNC_LOG.md | see log |
 | 2026-10-25 | 15 | Free-tier deployment preparation | see GITHUB_SYNC_LOG.md | see log |
 | 2026-10-25 | 16 | Future subscription architecture | see GITHUB_SYNC_LOG.md | see log |
+
+## Session summary (2026-10-25)
+Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai`. Phases 17–18 are blocked pending authorization. The standalone app is in `apps/adpost-web` (see its README); the Supabase schema, RLS and seed are in `supabase/migrations`; the backend contract suite is in `apps/adpost-web/src/test/contract`. The legacy Laravel app is unchanged.

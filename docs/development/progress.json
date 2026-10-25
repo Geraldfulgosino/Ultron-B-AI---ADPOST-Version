@@ -2,7 +2,7 @@
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
   "updated": "2026-10-25",
-  "currentPhase": "16",
+  "currentPhase": "17",
   "phases": [
     {
       "phase": "00",
@@ -95,5 +95,11 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 17 blocked (Supabase authorization). Remaining safe work: final handoff, README/docs consolidation"
+  "nextTask": "Owner: authorize Phase 17 (staging Supabase). Then apply migrations, build Supabase adapter, run contract suite + RLS test plan.",
+  "tests": {
+    "adpostWeb": "179/179 pass",
+    "legacyBuild": "pass",
+    "laravelPhpunit": "not run (B-001)",
+    "sql": "parse-checked only"
+  }
 }

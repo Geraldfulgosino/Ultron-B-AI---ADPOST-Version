@@ -24,3 +24,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-25 | Phase 13 knowledge | d101430 | ok | d101430 |
 | 2026-10-25 | Phase 14 QA + security | 9a1287d | ok | 9a1287d |
 | 2026-10-25 | Phase 15 deploy prep | 8174e79 | ok | 8174e79 |
+| 2026-10-25 | Phase 16 subscription architecture | ae622d2 | ok | ae622d2 |

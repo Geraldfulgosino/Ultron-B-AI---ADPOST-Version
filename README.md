@@ -1,3 +1,16 @@
+# ULTRON-B AI: ADPOST Edition
+
+This repository contains two apps side by side:
+
+| App | Path | Status |
+|-----|------|--------|
+| Legacy Laravel 13 + Inertia/React (Sprint 16) | repo root (`app/`, `resources/`, …) | Unchanged system of record |
+| ADPOST standalone React app (multi-brand + AI workforce) | [`apps/adpost-web`](apps/adpost-web/README.md) | Local-first; Supabase-ready (not connected) |
+
+Development progress, architecture decisions and the Supabase/deployment plans live in [`docs/development/`](docs/development/MASTER_PROGRESS.md).
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

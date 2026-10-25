@@ -44,7 +44,7 @@ Email/password plus magic link at first. `profiles` row created by trigger on `a
 ## 7. Phase 17 cut-over checklist (requires authorization)
 1. Create the project and apply migrations to a **staging** project only.
 2. Run the RLS test plan (§8) with real JWTs for 2 brands × each role.
-3. Implement Supabase adapters against the existing contracts. Run the same contract test suite against them.
+3. Implement Supabase adapters against the existing contracts. Run `src/test/contract/backendContract.ts` against them (add `supabase.contract.test.ts` pointed at a seeded staging project).
 4. Data migration script MySQL → Postgres (organizations → brands) on a copy, never production.
 5. Owner sign-off before any production data move.
 
