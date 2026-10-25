@@ -64,7 +64,7 @@ function ProposalCard({ message, proposal, handlers, canWrite }: { message: Mess
     );
 }
 
-function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWrite }: {
+function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWrite, onSaveAttachment }: {
     m: Message;
     agents: AgentInstance[];
     userNames: Map<string, string>;
@@ -72,6 +72,7 @@ function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWri
     retrying: boolean;
     handlers: ProposalHandlers;
     canWrite: boolean;
+    onSaveAttachment: (m: Message, attachmentId: string) => void;
 }) {
     if (m.author.type === 'system') {
         return (
@@ -104,6 +105,9 @@ function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWri
                             <li key={a.id} className={cn('rounded px-2 py-0.5 text-xs', isUser ? 'bg-indigo-500' : 'bg-gray-100')}>
                                 <Paperclip className="mr-1 inline h-3 w-3" aria-hidden="true" />
                                 {a.name} {a.textExcerpt === null && '(not read)'}
+                                {canWrite && a.textExcerpt !== null && (a.knowledgeDocumentId ? <span className="ml-1 opacity-75">· in knowledge</span> : (
+                                    <button type="button" className="ml-1 underline" onClick={() => onSaveAttachment(m, a.id)}>Save to knowledge</button>
+                                ))}
                             </li>
                         ))}
                     </ul>
@@ -132,6 +136,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
     const send = useAction((api, input: { body: string; attachments: AttachmentInput[] }) => api.chat.send(brand.id, conversation.id, input));
     const retry = useAction((api, id: string) => api.chat.retry(brand.id, conversation.id, id));
     const dismiss = useAction((api, m: Message, p: Proposal) => api.chat.dismissProposal(brand.id, m.id, p.id));
+    const saveAttachment = useAction((api, m: Message, attachmentId: string) => api.knowledge.saveAttachment(brand.id, m.id, attachmentId));
     const endRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const errors = fieldErrors(send.error);
@@ -170,6 +175,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                                 canWrite={can.write}
                                 retrying={retry.pending}
                                 onRetry={(x) => void retry.run(x.id)}
+                                onSaveAttachment={(mm, id) => void saveAttachment.run(mm, id)}
                                 handlers={{ apply: applyProposal, dismiss: (mm, p) => dismiss.run(mm, p) }}
                             />
                         ))}
@@ -178,8 +184,8 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                 )}
                 <div ref={endRef} />
             </div>
-            {send.error || retry.error || dismiss.error ? (
-                <div className="px-4 pb-2">{Object.keys(errors).length ? <p className="text-xs text-red-600">{Object.values(errors)[0]}</p> : <ErrorState error={send.error ?? retry.error ?? dismiss.error} />}</div>
+            {send.error || retry.error || dismiss.error || saveAttachment.error ? (
+                <div className="px-4 pb-2">{Object.keys(errors).length ? <p className="text-xs text-red-600">{Object.values(errors)[0]}</p> : <ErrorState error={send.error ?? retry.error ?? dismiss.error ?? saveAttachment.error} />}</div>
             ) : null}
             {can.write && !conversation.archived ? (
                 <form

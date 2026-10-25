@@ -3,11 +3,11 @@
 **Updated:** 2026-10-25
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai`
-**Last completed milestone:** Phase 12 — Web Design and Web Development workflows
+**Last completed milestone:** Phase 13 — Knowledge and brand memory
 **Last synced commit:** see GITHUB_SYNC_LOG.md (source of truth: `git log origin/feature/adpost-react-supabase-ai -1`)
 
 ## Test status
-adpost-web: pass — tsc 0 errors, 150/150 tests, build ok. Legacy frontend typecheck + build pass. Laravel PHPUnit not runnable on host (B-001).
+adpost-web: pass — tsc 0 errors, 160/160 tests, build ok. Legacy frontend typecheck + build pass. Laravel PHPUnit not runnable on host (B-001).
 
 ## Blockers
 B-001 no PHP/Docker · B-002 Supabase unauthorized · B-003 Netlify unauthorized.
@@ -18,4 +18,4 @@ B-001 no PHP/Docker · B-002 Supabase unauthorized · B-003 Netlify unauthorized
 - The Supabase SQL is parse-checked only, never executed (B-002).
 
 ## Next exact task
-Phase 13 knowledge + brand memory: documents CRUD, uploads (text), chunking, keyword retrieval, agent grounding, attach-to-knowledge from chat
+Phase 14 local QA/security: security review of adapters, dependency audit, a11y pass, storage key versioning, regression run, docs

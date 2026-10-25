@@ -7,6 +7,7 @@ import { EMPTY_SNAPSHOT, type Credentials, type DbSnapshot } from './db';
 import { generateInsightCandidates } from '@/domain/analytics';
 import { hashString, mulberry32 } from '@/lib/random';
 import { seedAgents } from './agents';
+import { seedKnowledge } from './knowledge';
 
 /** Local dev password for every fixture user. Not a secret; the local adapter only. */
 export const DEV_PASSWORD = 'adpost-dev';
@@ -115,6 +116,7 @@ export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credential
     member('bm_casey_pod', B.pod, U.casey, 'client', null, 'cli_pod_1');
 
     for (const b of BRANDS) seedAgents(s, b.id, b.name, U.alex, CREATED);
+    seedKnowledge(s, BRANDS, U.alex, CREATED);
 
     // Seed insights by running the real rule set over the synthetic data.
     const generatedAt = `${FIXTURE_END_DATE}T08:00:00.000Z`;

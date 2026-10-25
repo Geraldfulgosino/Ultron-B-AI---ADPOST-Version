@@ -2,7 +2,7 @@
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
   "updated": "2026-10-25",
-  "currentPhase": "13",
+  "currentPhase": "14",
   "phases": [
     {
       "phase": "00",
@@ -58,7 +58,7 @@
     },
     {
       "phase": "13",
-      "status": "todo"
+      "status": "done"
     },
     {
       "phase": "14",
@@ -95,5 +95,5 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Phase 13 knowledge + brand memory: documents CRUD, uploads (text), chunking, keyword retrieval, agent grounding, attach-to-knowledge from chat"
+  "nextTask": "Phase 14 local QA/security: security review of adapters, dependency audit, a11y pass, storage key versioning, regression run, docs"
 }

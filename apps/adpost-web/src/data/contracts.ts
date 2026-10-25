@@ -11,6 +11,7 @@ import type { Capability } from './access';
 import type { ReportData, ReportFilters, SeriesPoint } from '@/domain/analytics';
 import type { AgentTemplate } from '@/domain/agents';
 import type { Anomaly, Opportunity, WebsiteComparisonRow } from '@/domain/intelligence';
+import type { RetrievalHit } from '@/domain/knowledge';
 
 export interface Session {
     user: T.User;
@@ -378,6 +379,29 @@ export interface StudioApi {
     cancel(brandId: T.ID, id: T.ID): Promise<T.WebChange>;
 }
 
+// ── Knowledge ─────────────────────────────────────────────────────────────
+
+export interface KnowledgeInput {
+    title: string;
+    kind: T.KnowledgeKind;
+    content: string;
+    tags?: string[];
+}
+
+export interface KnowledgeApi {
+    list(brandId: T.ID, filter?: { kind?: T.KnowledgeKind; query?: string }): Promise<T.KnowledgeDocument[]>;
+    get(brandId: T.ID, id: T.ID): Promise<T.KnowledgeDocument>;
+    create(brandId: T.ID, input: KnowledgeInput): Promise<T.KnowledgeDocument>;
+    update(brandId: T.ID, id: T.ID, input: Partial<KnowledgeInput>): Promise<T.KnowledgeDocument>;
+    remove(brandId: T.ID, id: T.ID): Promise<void>;
+    /** Text files only in local mode; binary goes to Supabase Storage in Phase 17. */
+    upload(brandId: T.ID, file: AttachmentInput): Promise<T.KnowledgeDocument>;
+    /** Ranked passages (same retrieval agents use). */
+    search(brandId: T.ID, query: string): Promise<RetrievalHit[]>;
+    /** Save a chat attachment as a knowledge document. */
+    saveAttachment(brandId: T.ID, messageId: T.ID, attachmentId: T.ID): Promise<T.KnowledgeDocument>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -395,6 +419,7 @@ export interface BrandApi {
     work: WorkApi;
     intelligence: IntelligenceApi;
     studio: StudioApi;
+    knowledge: KnowledgeApi;
 }
 
 export interface Backend {

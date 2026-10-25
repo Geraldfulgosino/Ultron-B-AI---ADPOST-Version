@@ -3,9 +3,10 @@
  * Function. Every agent run, from any chat or orchestration, passes through
  * here, so limits, tool permissions and cost accounting live in one place.
  */
-import type { AgentExecution, AgentInstance, ID } from '@/domain/types';
+import type { AgentExecution, AgentInstance, ID, ToolKey } from '@/domain/types';
 import { addDays, latestDate, totals } from '@/domain/analytics';
-import { estimateCost, modelOption } from '@/domain/agents';
+import { ALL_TOOLS, estimateCost, modelOption } from '@/domain/agents';
+import { retrieve } from '@/domain/knowledge';
 import { ProviderError, SimulatedProvider, type BrandContext, type ChatTurn, type CompletionResponse, type LlmProvider } from '@/ai/provider';
 import { AccessDeniedError } from '../errors';
 import { newId } from '@/lib/utils';
@@ -43,7 +44,7 @@ export function agentSpend(db: LocalDatabase, agentId: ID) {
 }
 
 /** Brand facts the agent may ground its answer in. Read-only and brand-scoped. */
-export function brandContext(scope: Scope, brandId: ID, query: string): BrandContext {
+export function brandContext(scope: Scope, brandId: ID, query: string, tools: readonly ToolKey[] = ALL_TOOLS): BrandContext {
     const { db } = scope;
     const metrics = db.all('dailyMetrics').filter((m) => m.brandId === brandId);
     const end = latestDate(metrics);
@@ -57,26 +58,27 @@ export function brandContext(scope: Scope, brandId: ID, query: string): BrandCon
         a.impressions += q.impressions;
         qAgg.set(q.query, a);
     }
-    const words = new Set(query.toLowerCase().split(/\W+/).filter((w) => w.length > 3));
-    const knowledge = db
-        .all('knowledgeDocuments')
-        .filter((d) => d.brandId === brandId)
-        .map((d) => ({ d, score: [...words].filter((w) => (d.title + ' ' + d.content + ' ' + d.tags.join(' ')).toLowerCase().includes(w)).length + (d.kind === 'brand_guide' ? 0.5 : 0) }))
-        .filter((x) => x.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
-        .map(({ d }) => ({ title: d.title, excerpt: d.content.slice(0, 280) }));
+    const docs = db.all('knowledgeDocuments').filter((d) => d.brandId === brandId);
+    // Retrieval, with the brand voice guide as standing memory when nothing matches.
+    const hits = retrieve(docs, db.all('knowledgeChunks').filter((c) => c.brandId === brandId), query, 3);
+    const guide = docs.find((d) => d.kind === 'brand_guide');
+    const knowledge = (hits.length ? hits.map((h) => ({ title: h.title, excerpt: h.text.slice(0, 400) })) : guide ? [{ title: guide.title, excerpt: guide.content.slice(0, 400) }] : []);
+    const canAnalytics = tools.includes('read_analytics');
+    const canGsc = tools.includes('read_search_console');
     const sev = { high: 0, medium: 1, low: 2 } as const;
     return {
-        kpis: { sessions: t.sessions, clicks: t.clicks, impressions: t.impressions, conversions: t.conversions, window: end ? `the 28 days ending ${end}` : null },
-        insights: db
+        // Context is limited to what the agent's tools allow it to read.
+        kpis: canAnalytics || canGsc
+            ? { sessions: canAnalytics ? t.sessions : 0, clicks: canGsc ? t.clicks : 0, impressions: canGsc ? t.impressions : 0, conversions: canAnalytics ? t.conversions : 0, window: end ? `the 28 days ending ${end}` : null }
+            : { sessions: 0, clicks: 0, impressions: 0, conversions: 0, window: null },
+        insights: !(canAnalytics || canGsc) ? [] : db
             .all('seoInsights')
             .filter((i) => i.brandId === brandId && (i.status === 'pending' || i.status === 'reviewed'))
             .sort((a, b) => sev[a.severity] - sev[b.severity])
             .slice(0, 6)
             .map((i) => ({ title: i.title, type: i.type, severity: i.severity })),
-        topQueries: [...qAgg.entries()].map(([query, a]) => ({ query, ...a })).sort((a, b) => b.clicks - a.clicks).slice(0, 8),
-        knowledge,
+        topQueries: !canGsc ? [] : [...qAgg.entries()].map(([query, a]) => ({ query, ...a })).sort((a, b) => b.clicks - a.clicks).slice(0, 8),
+        knowledge: tools.includes('read_knowledge') ? knowledge : [],
         teammates: db.all('agentInstances').filter((a) => a.brandId === brandId).map((a) => ({ handle: a.handle, name: a.displayName, active: a.active })),
     };
 }
@@ -115,7 +117,7 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
             agent: { templateKey: agent.templateKey, displayName: agent.displayName, handle: agent.handle },
             brandName: brand.name,
             instructions: version?.instructions ?? '',
-            context: brandContext(scope, brandId, last),
+            context: brandContext(scope, brandId, last, agent.tools),
             messages: input.messages,
             maxOutputTokens: agent.limits.maxOutputTokens,
             allowedTools: agent.tools,
