@@ -26,3 +26,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-25 | Phase 15 deploy prep | 8174e79 | ok | 8174e79 |
 | 2026-10-25 | Phase 16 subscription architecture | ae622d2 | ok | ae622d2 |
 | 2026-10-25 | Contract suite + docs + handoff | d4004e5 | ok | d4004e5 |
+| 2026-10-26 | UI: global dark mode | 29d0014 | ok | 29d0014 |
