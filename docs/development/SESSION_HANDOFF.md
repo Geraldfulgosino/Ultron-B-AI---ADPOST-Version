@@ -7,6 +7,7 @@
 **Last synced commit:** see GITHUB_SYNC_LOG.md (source of truth: `git log origin/feature/adpost-react-supabase-ai -1`)
 
 ## Test status
+- 2026-10-26: global dark mode (ADR-009) added; **197/197** tests; build ok.
 - adpost-web: `tsc` 0 errors · **179/179** Vitest tests · build ok (main chunk 421 kB / 133 kB gzip).
 - Legacy frontend: typecheck + build pass. `npm audit`: 0 vulnerabilities (root + app).
 - Supabase SQL: 3 migrations parse cleanly with the Postgres 18 parser. **Never executed.**
@@ -18,7 +19,7 @@
 - B-003: Netlify not authorized (Phase 18).
 
 ## Open items
-- **No real-browser check yet.** Run `cd apps/adpost-web && npm run dev` and check layout, charts and the mobile nav at phone width. Only jsdom tests have run.
+- Real-browser check done in headless Edge (Chromium) on 2026-10-26 for the main pages in light and dark at desktop and phone width; see TEST_RESULTS.md. Firefox/Safari and real devices not checked.
 - Run an axe/Lighthouse accessibility pass in a browser.
 - RLS policies need the §8 test plan on a staging Supabase project.
 - Live model pricing is intentionally unset (`MODEL_CATALOG` rates are null), so live costs show as "unknown".

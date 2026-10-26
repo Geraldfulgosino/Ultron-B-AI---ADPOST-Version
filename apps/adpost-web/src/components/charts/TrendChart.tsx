@@ -2,9 +2,11 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { SeriesPoint } from '@/domain/analytics';
 import { formatDate, formatNumber } from '@/lib/utils';
 
-/** Validated series color (dataviz validator: PASS on light surface). */
-const SERIES = '#4f46e5';
-const GRID = '#e5e7eb';
+/** Theme tokens (src/index.css). The series color is dataviz-validated on --surface in both modes. */
+const SERIES = 'var(--chart-series)';
+const GRID = 'var(--line)';
+const SURFACE = 'var(--surface)';
+const CROSSHAIR = 'var(--fg-subtle)';
 const H = 180;
 const PAD = { top: 12, right: 16, bottom: 24, left: 44 };
 
@@ -59,9 +61,9 @@ export function TrendChart({ title, data, unit = '' }: { title: string; data: Se
 
     if (!data.length) {
         return (
-            <figure className="rounded-xl border border-gray-200 bg-white p-4">
-                <figcaption className="text-sm font-semibold text-gray-900">{title}</figcaption>
-                <p className="py-10 text-center text-sm text-gray-500">No data for this range.</p>
+            <figure className="rounded-xl border border-line bg-surface p-4">
+                <figcaption className="text-sm font-semibold text-fg">{title}</figcaption>
+                <p className="py-10 text-center text-sm text-fg-muted">No data for this range.</p>
             </figure>
         );
     }
@@ -77,12 +79,12 @@ export function TrendChart({ title, data, unit = '' }: { title: string; data: Se
     const labelEvery = Math.ceil(data.length / Math.max(2, Math.floor(width / 110)));
 
     return (
-        <figure className="rounded-xl border border-gray-200 bg-white p-4" aria-labelledby={titleId}>
+        <figure className="rounded-xl border border-line bg-surface p-4" aria-labelledby={titleId}>
             <div className="flex items-baseline justify-between gap-2">
-                <figcaption id={titleId} className="text-sm font-semibold text-gray-900">
+                <figcaption id={titleId} className="text-sm font-semibold text-fg">
                     {title}
                 </figcaption>
-                <button type="button" className="text-xs font-medium text-indigo-600 hover:text-indigo-700" onClick={() => setShowTable((s) => !s)}>
+                <button type="button" className="text-xs font-medium text-accent hover:text-accent-strong" onClick={() => setShowTable((s) => !s)}>
                     {showTable ? 'View as chart' : 'View as table'}
                 </button>
             </div>
@@ -91,12 +93,12 @@ export function TrendChart({ title, data, unit = '' }: { title: string; data: Se
                 <div className="mt-3 max-h-64 overflow-y-auto">
                     <table className="w-full text-sm">
                         <caption className="sr-only">{title}</caption>
-                        <thead className="text-left text-xs text-gray-500">
+                        <thead className="text-left text-xs text-fg-muted">
                             <tr><th className="py-1">Date</th><th className="py-1 text-right">Value</th></tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 tabular-nums">
+                        <tbody className="divide-y divide-line-subtle tabular-nums">
                             {data.map((d) => (
-                                <tr key={d.date}><td className="py-1 text-gray-700">{d.date}</td><td className="py-1 text-right text-gray-900">{formatNumber(d.value)}{unit}</td></tr>
+                                <tr key={d.date}><td className="py-1 text-fg-secondary">{d.date}</td><td className="py-1 text-right text-fg">{formatNumber(d.value)}{unit}</td></tr>
                             ))}
                         </tbody>
                     </table>
@@ -122,33 +124,33 @@ export function TrendChart({ title, data, unit = '' }: { title: string; data: Se
                     <svg width="100%" height={H} viewBox={`0 0 ${width} ${H}`} aria-hidden="true">
                         {geo.ticks.map((t) => (
                             <g key={t}>
-                                <line x1={PAD.left} x2={width - PAD.right} y1={geo.y(t)} y2={geo.y(t)} stroke={GRID} strokeWidth={1} />
-                                <text x={PAD.left - 8} y={geo.y(t)} dy="0.32em" textAnchor="end" className="fill-gray-500 text-[10px]">{compact(t)}</text>
+                                <line x1={PAD.left} x2={width - PAD.right} y1={geo.y(t)} y2={geo.y(t)} style={{ stroke: GRID }} strokeWidth={1} />
+                                <text x={PAD.left - 8} y={geo.y(t)} dy="0.32em" textAnchor="end" className="fill-fg-muted text-[10px]">{compact(t)}</text>
                             </g>
                         ))}
                         {data.map((d, i) =>
                             i % labelEvery === 0 ? (
-                                <text key={d.date} x={geo.x(i)} y={H - 6} textAnchor="middle" className="fill-gray-500 text-[10px]">{d.date.slice(5)}</text>
+                                <text key={d.date} x={geo.x(i)} y={H - 6} textAnchor="middle" className="fill-fg-muted text-[10px]">{d.date.slice(5)}</text>
                             ) : null,
                         )}
-                        <path d={geo.area} fill={SERIES} fillOpacity={0.1} />
-                        <path d={geo.line} fill="none" stroke={SERIES} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-                        <circle cx={geo.x(data.length - 1)} cy={geo.y(last.value)} r={4} fill={SERIES} stroke="#fff" strokeWidth={2} />
+                        <path d={geo.area} style={{ fill: SERIES }} fillOpacity={0.1} />
+                        <path d={geo.line} fill="none" style={{ stroke: SERIES }} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                        <circle cx={geo.x(data.length - 1)} cy={geo.y(last.value)} r={4} style={{ fill: SERIES, stroke: SURFACE }} strokeWidth={2} />
                         {a && (
                             <>
-                                <line x1={geo.x(active!)} x2={geo.x(active!)} y1={PAD.top} y2={H - PAD.bottom} stroke="#9ca3af" strokeWidth={1} />
-                                <circle cx={geo.x(active!)} cy={geo.y(a.value)} r={4} fill={SERIES} stroke="#fff" strokeWidth={2} />
+                                <line x1={geo.x(active!)} x2={geo.x(active!)} y1={PAD.top} y2={H - PAD.bottom} style={{ stroke: CROSSHAIR }} strokeWidth={1} />
+                                <circle cx={geo.x(active!)} cy={geo.y(a.value)} r={4} style={{ fill: SERIES, stroke: SURFACE }} strokeWidth={2} />
                             </>
                         )}
                     </svg>
                     {a && (
                         <div
                             role="status"
-                            className="pointer-events-none absolute top-0 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs shadow-sm"
+                            className="pointer-events-none absolute top-0 rounded-md border border-line bg-surface px-2 py-1 text-xs shadow-sm"
                             style={{ left: Math.min(Math.max(0, geo.x(active!) - 60), width - 130) }}
                         >
-                            <p className="font-semibold text-gray-900 tabular-nums">{formatNumber(a.value)}{unit}</p>
-                            <p className="text-gray-500">{formatDate(a.date + 'T00:00:00Z')}</p>
+                            <p className="font-semibold text-fg tabular-nums">{formatNumber(a.value)}{unit}</p>
+                            <p className="text-fg-muted">{formatDate(a.date + 'T00:00:00Z')}</p>
                         </div>
                     )}
                     <p className="sr-only">Latest {formatNumber(last.value)}{unit} on {last.date}</p>

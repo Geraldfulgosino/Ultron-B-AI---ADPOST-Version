@@ -41,13 +41,13 @@ function ProposalCard({ message, proposal, handlers, canWrite }: { message: Mess
         }
     };
     return (
-        <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm" data-testid="proposal">
+        <div className="rounded-lg border border-line bg-surface px-3 py-2 text-sm" data-testid="proposal">
             <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={a.type === 'request_approval' ? 'yellow' : a.type === 'delegate' ? 'indigo' : 'blue'}>{PROPOSAL_LABEL[a.type]}</Badge>
-                <span className="font-medium text-gray-900">{title}</span>
+                <span className="font-medium text-fg">{title}</span>
                 {proposal.status !== 'proposed' && <Badge variant={proposal.status === 'applied' ? 'green' : 'gray'}>{proposal.status === 'applied' ? (a.type === 'delegate' ? 'Handed off' : 'Applied') : 'Dismissed'}</Badge>}
             </div>
-            <p className="mt-1 text-xs text-gray-600">{detail}</p>
+            <p className="mt-1 text-xs text-fg-soft">{detail}</p>
             {proposal.status === 'proposed' && canWrite && (
                 <div className="mt-2 flex gap-2">
                     {handlers.apply && a.type !== 'delegate' && (
@@ -76,7 +76,7 @@ function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWri
 }) {
     if (m.author.type === 'system') {
         return (
-            <li className={cn('mx-auto max-w-xl rounded-lg px-3 py-2 text-xs', m.status === 'failed' ? 'bg-red-50 text-red-800' : 'bg-gray-100 text-gray-600')} role={m.status === 'failed' ? 'alert' : undefined}>
+            <li className={cn('mx-auto max-w-xl rounded-lg px-3 py-2 text-xs', m.status === 'failed' ? 'bg-danger-soft text-danger-ink' : 'bg-surface-strong text-fg-soft')} role={m.status === 'failed' ? 'alert' : undefined}>
                 <p className="whitespace-pre-wrap">{m.body}</p>
                 {m.status === 'failed' && canWrite && (
                     <button type="button" className="mt-1 inline-flex items-center gap-1 font-medium underline disabled:opacity-50" disabled={retrying} onClick={() => onRetry(m)}>
@@ -91,8 +91,8 @@ function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWri
     const name = m.author.type === 'user' ? userNames.get(m.author.userId) ?? 'You' : agents.find((a) => a.id === authorId)?.displayName ?? 'Agent';
     return (
         <li className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
-            <article className={cn('max-w-[85%] space-y-2 rounded-2xl px-4 py-3', isUser ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-900')} aria-label={`${name} message`}>
-                <header className={cn('flex flex-wrap items-center gap-2 text-xs', isUser ? 'text-indigo-100' : 'text-gray-500')}>
+            <article className={cn('max-w-[85%] space-y-2 rounded-2xl px-4 py-3', isUser ? 'bg-indigo-600 text-white' : 'bg-surface border border-line text-fg')} aria-label={`${name} message`}>
+                <header className={cn('flex flex-wrap items-center gap-2 text-xs', isUser ? 'text-indigo-100' : 'text-fg-muted')}>
                     <span className="font-semibold">{name}</span>
                     <span>{formatDateTime(m.createdAt)}</span>
                     {m.mode === 'simulated' && <Badge variant="blue">Simulated</Badge>}
@@ -102,7 +102,7 @@ function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWri
                 {m.attachments.length > 0 && (
                     <ul className="flex flex-wrap gap-1">
                         {m.attachments.map((a) => (
-                            <li key={a.id} className={cn('rounded px-2 py-0.5 text-xs', isUser ? 'bg-indigo-500' : 'bg-gray-100')}>
+                            <li key={a.id} className={cn('rounded px-2 py-0.5 text-xs', isUser ? 'bg-accent-soft0' : 'bg-surface-strong')}>
                                 <Paperclip className="mr-1 inline h-3 w-3" aria-hidden="true" />
                                 {a.name} {a.textExcerpt === null && '(not read)'}
                                 {canWrite && a.textExcerpt !== null && (a.knowledgeDocumentId ? <span className="ml-1 opacity-75">· in knowledge</span> : (
@@ -144,7 +144,9 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
     const inConversation = agents.filter((a) => conversation.agentInstanceIds.includes(a.id));
     const responders = conversation.kind === 'direct' ? inConversation[0]?.displayName ?? 'Agent' : 'The team';
 
-    useEffect(() => endRef.current?.scrollIntoView?.({ block: 'end' }), [messages.data?.length, send.pending]);
+    useEffect(() => {
+        endRef.current?.scrollIntoView?.({ block: 'end' });
+    }, [messages.data?.length, send.pending]);
 
     const submit = async () => {
         if (send.pending || (!body.trim() && !files.length)) return;
@@ -156,8 +158,8 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
     };
 
     return (
-        <section className="flex h-full min-h-[60vh] flex-col rounded-xl border border-gray-200 bg-gray-50" aria-label={conversation.title}>
-            <div className="border-b border-gray-200 bg-white px-4 py-3 rounded-t-xl">{header}</div>
+        <section className="flex h-full min-h-[60vh] flex-col rounded-xl border border-line bg-surface-muted" aria-label={conversation.title}>
+            <div className="border-b border-line bg-surface px-4 py-3 rounded-t-xl">{header}</div>
             <div className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
                 {messages.loading ? (
                     <LoadingState />
@@ -165,7 +167,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                     <ErrorState error={messages.error} onRetry={messages.reload} />
                 ) : (
                     <ol className="space-y-3">
-                        {!messages.data!.length && <li className="py-8 text-center text-sm text-gray-500">No messages yet. Ask {responders} anything about {brand.name}.</li>}
+                        {!messages.data!.length && <li className="py-8 text-center text-sm text-fg-muted">No messages yet. Ask {responders} anything about {brand.name}.</li>}
                         {messages.data!.map((m) => (
                             <MessageItem
                                 key={m.id}
@@ -179,17 +181,17 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                                 handlers={{ apply: applyProposal, dismiss: (mm, p) => dismiss.run(mm, p) }}
                             />
                         ))}
-                        {send.pending && <li className="text-sm text-gray-500" role="status">{responders} is responding…</li>}
+                        {send.pending && <li className="text-sm text-fg-muted" role="status">{responders} is responding…</li>}
                     </ol>
                 )}
                 <div ref={endRef} />
             </div>
             {send.error || retry.error || dismiss.error || saveAttachment.error ? (
-                <div className="px-4 pb-2">{Object.keys(errors).length ? <p className="text-xs text-red-600">{Object.values(errors)[0]}</p> : <ErrorState error={send.error ?? retry.error ?? dismiss.error ?? saveAttachment.error} />}</div>
+                <div className="px-4 pb-2">{Object.keys(errors).length ? <p className="text-xs text-danger">{Object.values(errors)[0]}</p> : <ErrorState error={send.error ?? retry.error ?? dismiss.error ?? saveAttachment.error} />}</div>
             ) : null}
             {can.write && !conversation.archived ? (
                 <form
-                    className="border-t border-gray-200 bg-white p-3 rounded-b-xl space-y-2"
+                    className="border-t border-line bg-surface p-3 rounded-b-xl space-y-2"
                     onSubmit={(e) => {
                         e.preventDefault();
                         void submit();
@@ -204,7 +206,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                                     disabled={!a.active}
                                     title={a.active ? `Mention ${a.displayName}` : `${a.displayName} is inactive`}
                                     onClick={() => setBody((b) => `${b}${b && !b.endsWith(' ') ? ' ' : ''}@${a.handle} `)}
-                                    className="rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+                                    className="rounded-full border border-line px-2 py-0.5 text-xs text-fg-secondary hover:bg-surface-strong disabled:opacity-40"
                                 >
                                     @{a.handle}
                                 </button>
@@ -214,7 +216,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                     {files.length > 0 && (
                         <ul className="flex flex-wrap gap-1">
                             {files.map((f, i) => (
-                                <li key={f.name + i} className="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                                <li key={f.name + i} className="flex items-center gap-1 rounded bg-surface-strong px-2 py-0.5 text-xs text-fg-secondary">
                                     {f.name}
                                     <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== i))}>
                                         <X className="h-3 w-3" />
@@ -237,7 +239,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                                     void submit();
                                 }
                             }}
-                            className="block w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="block w-full resize-none rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <input
                             ref={fileRef}
@@ -258,10 +260,10 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                             <Send className="h-4 w-4" />
                         </Button>
                     </div>
-                    <p className="text-[11px] text-gray-400">Enter to send · Shift+Enter for a new line · text files (≤1 MB) are read by the agent</p>
+                    <p className="text-[11px] text-fg-subtle">Enter to send · Shift+Enter for a new line · text files (≤1 MB) are read by the agent</p>
                 </form>
             ) : (
-                <p className="border-t border-gray-200 bg-white p-3 text-center text-xs text-gray-500 rounded-b-xl">
+                <p className="border-t border-line bg-surface p-3 text-center text-xs text-fg-muted rounded-b-xl">
                     {conversation.archived ? 'This conversation is archived.' : 'Your role can read conversations but not send messages.'}
                 </p>
             )}

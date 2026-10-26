@@ -49,10 +49,10 @@ export function LoginPage() {
                     <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </Field>
                 <div className="flex items-center justify-between text-sm">
-                    <Link to="/forgot-password" className="text-indigo-600 hover:text-indigo-700">
+                    <Link to="/forgot-password" className="text-accent hover:text-accent-strong">
                         Forgot password?
                     </Link>
-                    <Link to="/register" className="text-indigo-600 hover:text-indigo-700">
+                    <Link to="/register" className="text-accent hover:text-accent-strong">
                         Create account
                     </Link>
                 </div>
@@ -78,14 +78,14 @@ const DEV_ACCOUNTS: Array<[string, string]> = [
 function DevAccountsHint({ onPick }: { onPick: (email: string) => void }) {
     if (import.meta.env.VITE_BACKEND && import.meta.env.VITE_BACKEND !== 'local') return null;
     return (
-        <details className="mt-6 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
-            <summary className="cursor-pointer font-medium text-gray-700">Local dev accounts (synthetic)</summary>
+        <details className="mt-6 rounded-lg bg-surface-muted p-3 text-xs text-fg-soft">
+            <summary className="cursor-pointer font-medium text-fg-secondary">Local dev accounts (synthetic)</summary>
             <p className="mt-2">
                 Password for all: <code className="font-mono">{DEV_PASSWORD}</code>
             </p>
             <button
                 type="button"
-                className="mt-2 text-red-700 hover:underline"
+                className="mt-2 text-danger-strong hover:underline"
                 onClick={() => {
                     if (!confirm('Reset all local demo data to the synthetic fixtures?')) return;
                     LocalDatabase.reset(LOCAL_PERSIST_KEY);
@@ -98,10 +98,10 @@ function DevAccountsHint({ onPick }: { onPick: (email: string) => void }) {
             <ul className="mt-2 space-y-1">
                 {DEV_ACCOUNTS.map(([email, label]) => (
                     <li key={email}>
-                        <button type="button" className="text-indigo-600 hover:underline" onClick={() => onPick(email)}>
+                        <button type="button" className="text-accent hover:underline" onClick={() => onPick(email)}>
                             {email}
                         </button>{' '}
-                        <span className="text-gray-500">— {label}</span>
+                        <span className="text-fg-muted">— {label}</span>
                     </li>
                 ))}
             </ul>
@@ -148,9 +148,9 @@ export function RegisterPage() {
                 <Button type="submit" className="w-full" loading={pending}>
                     Create account
                 </Button>
-                <p className="text-center text-sm text-gray-500">
+                <p className="text-center text-sm text-fg-muted">
                     Already registered?{' '}
-                    <Link to="/login" className="text-indigo-600 hover:text-indigo-700">
+                    <Link to="/login" className="text-accent hover:text-accent-strong">
                         Sign in
                     </Link>
                 </p>
@@ -165,7 +165,7 @@ export function ForgotPasswordPage() {
             <Alert tone="info">
                 Password reset emails are sent by Supabase Auth, which connects in Phase 17. Local development accounts use the shared dev password shown on the sign-in page.
             </Alert>
-            <Link to="/login" className="mt-6 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700">
+            <Link to="/login" className="mt-6 inline-block text-sm font-medium text-accent hover:text-accent-strong">
                 Back to sign in
             </Link>
         </AuthLayout>

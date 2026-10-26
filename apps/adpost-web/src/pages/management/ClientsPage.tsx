@@ -48,8 +48,8 @@ export function ClientsPage() {
                         {clients.data!.map((c) => (
                             <tr key={c.id}>
                                 <Td>
-                                    <p className="font-medium text-gray-900">{c.name}</p>
-                                    <p className="text-xs text-gray-500">{c.timezone} · {c.currency}</p>
+                                    <p className="font-medium text-fg">{c.name}</p>
+                                    <p className="text-xs text-fg-muted">{c.timezone} · {c.currency}</p>
                                 </Td>
                                 <Td><Badge variant={c.status === 'active' ? 'green' : 'gray'}>{c.status === 'active' ? 'Active' : 'Archived'}</Badge></Td>
                                 <Td className="hidden md:table-cell tabular-nums">{siteCount(c.id)}</Td>

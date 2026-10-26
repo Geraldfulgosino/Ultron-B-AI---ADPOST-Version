@@ -5,10 +5,10 @@ import { Spinner } from './Button';
 type AlertTone = 'info' | 'success' | 'warning' | 'error';
 
 const tones: Record<AlertTone, string> = {
-    info:    'bg-blue-50 border-blue-200 text-blue-800',
-    success: 'bg-green-50 border-green-200 text-green-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    error:   'bg-red-50 border-red-200 text-red-800',
+    info:    'bg-info-soft border-info-line text-info-ink',
+    success: 'bg-success-soft border-success-line text-success-ink',
+    warning: 'bg-warning-soft border-warning-line text-warning-ink',
+    error:   'bg-danger-soft border-danger-line text-danger-ink',
 };
 
 export function Alert({ tone = 'info', children, className }: { tone?: AlertTone; children: React.ReactNode; className?: string }) {
@@ -29,9 +29,9 @@ export function EmptyState({
     action?: React.ReactNode;
 }) {
     return (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
-            <p className="text-sm font-semibold text-gray-900">{title}</p>
-            {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
+        <div className="rounded-xl border border-dashed border-line-strong bg-surface px-6 py-12 text-center">
+            <p className="text-sm font-semibold text-fg">{title}</p>
+            {description && <p className="mt-1 text-sm text-fg-muted">{description}</p>}
             {action && <div className="mt-4 flex justify-center">{action}</div>}
         </div>
     );
@@ -39,8 +39,8 @@ export function EmptyState({
 
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
     return (
-        <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-500" role="status">
-            <Spinner className="h-5 w-5 text-indigo-600" />
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-fg-muted" role="status">
+            <Spinner className="h-5 w-5 text-accent" />
             {label}
         </div>
     );

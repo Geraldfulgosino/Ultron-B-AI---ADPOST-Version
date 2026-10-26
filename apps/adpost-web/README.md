@@ -34,6 +34,7 @@ Password for all: `adpost-dev`. The sign-in page also lists them and has a "Rese
 - **Web Studio:** brief → design → development → checklist → approval → recorded release.
 - **Knowledge:** documents, text uploads and BM25 retrieval used to ground agents.
 - **Plans:** subscription entitlements (ADPOST is on the unlimited internal plan).
+- **Theme:** light / dark / system, switched from the sidebar. Use the semantic color tokens in `src/index.css` (`bg-surface`, `text-fg-muted`, …), not `gray-*`; a test enforces this.
 
 ## Important
 Local mode is a **simulation**: its auth and data live in the browser and provide no security boundary (see `docs/development/SECURITY_REVIEW.md`). Never use real customer data here. Real enforcement arrives with Supabase Auth + RLS in Phase 17.

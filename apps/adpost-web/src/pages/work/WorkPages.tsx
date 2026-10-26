@@ -103,7 +103,7 @@ export function ProjectsPage() {
                                 ))}
                             </Select>
                         </div>
-                        {project?.description && <p className="text-sm text-gray-500">{project.description}</p>}
+                        {project?.description && <p className="text-sm text-fg-muted">{project.description}</p>}
                         {can.admin && project && (
                             <Button variant="ghost" size="sm" className="ml-auto" onClick={() => confirm(`Delete ${project.name} and all its tasks?`) && void removeProject.run(project.id).then(() => setParams({}))}>
                                 Delete project
@@ -114,8 +114,8 @@ export function ProjectsPage() {
                         {STATUSES.map((status) => {
                             const col = (tasks.data ?? []).filter((t) => t.status === status);
                             return (
-                                <section key={status} aria-labelledby={`col-${status}`} className="rounded-xl bg-gray-100 p-3">
-                                    <h2 id={`col-${status}`} className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gray-600">
+                                <section key={status} aria-labelledby={`col-${status}`} className="rounded-xl bg-surface-strong p-3">
+                                    <h2 id={`col-${status}`} className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-fg-soft">
                                         {STATUS_LABELS[status]} <span className="tabular-nums">{col.length}</span>
                                     </h2>
                                     <ul className="space-y-2">
@@ -123,10 +123,10 @@ export function ProjectsPage() {
                                             <li key={t.id}>
                                                 <Card>
                                                     <CardContent className="space-y-2 px-3 py-3">
-                                                        <button type="button" className="text-left text-sm font-medium text-gray-900 hover:text-indigo-700" onClick={() => setEditing(t)}>
+                                                        <button type="button" className="text-left text-sm font-medium text-fg hover:text-accent-strong" onClick={() => setEditing(t)}>
                                                             {t.title}
                                                         </button>
-                                                        <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                                                        <div className="flex flex-wrap items-center gap-1 text-xs text-fg-muted">
                                                             <Badge variant={PRIORITY[t.priority].variant}>{PRIORITY[t.priority].label}</Badge>
                                                             <span>{label(t.assignee)}</span>
                                                             {t.dueDate && <span>· due {formatDate(t.dueDate + 'T00:00:00Z')}</span>}
@@ -205,8 +205,8 @@ function TaskDialog({ task, projectId, agents, people, readOnly, onClose }: { ta
                     <Field id="task-assignee" label="Assignee"><AssigneeSelect id="task-assignee" value={form.assignee} onChange={(assignee) => setForm({ ...form, assignee })} agents={agents} people={people} /></Field>
                     <Field id="task-due" label="Due date"><Input id="task-due" type="date" value={form.dueDate} error={errors.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></Field>
                 </div>
-                {errors.assignee && <p className="text-xs text-red-600">{errors.assignee}</p>}
-                {task?.sourceMessageId && <p className="text-xs text-gray-500">Created from an agent proposal in chat.</p>}
+                {errors.assignee && <p className="text-xs text-danger">{errors.assignee}</p>}
+                {task?.sourceMessageId && <p className="text-xs text-fg-muted">Created from an agent proposal in chat.</p>}
             </fieldset>
         </Dialog>
     );
@@ -252,14 +252,14 @@ export function ApprovalsPage() {
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Badge variant={APPROVAL_STATUS[r.status].variant}>{APPROVAL_STATUS[r.status].label}</Badge>
                                         <Badge variant="indigo">{APPROVAL_KIND_LABELS[r.kind]}</Badge>
-                                        <span className="font-medium text-gray-900">{r.title}</span>
+                                        <span className="font-medium text-fg">{r.title}</span>
                                     </div>
-                                    <p className="text-sm text-gray-700">{r.summary}</p>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-sm text-fg-secondary">{r.summary}</p>
+                                    <p className="text-xs text-fg-muted">
                                         Requested by {who(r)} {r.requestedBy.type === 'agent' && '(AI agent)'} · {formatDateTime(r.createdAt)}
-                                        {r.payload.conversationId && <> · <Link className="text-indigo-600" to={`/b/${brand.slug}/chat/${r.payload.conversationId}`}>source conversation</Link></>}
+                                        {r.payload.conversationId && <> · <Link className="text-accent" to={`/b/${brand.slug}/chat/${r.payload.conversationId}`}>source conversation</Link></>}
                                     </p>
-                                    {r.decisionNote && <p className="rounded bg-gray-50 p-2 text-xs text-gray-700">Decision note: {r.decisionNote}</p>}
+                                    {r.decisionNote && <p className="rounded bg-surface-muted p-2 text-xs text-fg-secondary">Decision note: {r.decisionNote}</p>}
                                     {r.status === 'pending' && (
                                         <div className="flex flex-wrap gap-2">
                                             {can.admin && !mine(r) && <Button size="sm" onClick={() => setDeciding({ req: r, decision: 'approved' })}>Approve</Button>}
@@ -291,11 +291,11 @@ function DecisionDialog({ req, decision, onClose }: { req: ApprovalRequest; deci
             footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button variant={decision === 'rejected' ? 'danger' : 'primary'} loading={decide.pending} onClick={async () => (await decide.run()) && onClose()}>{decision === 'approved' ? 'Approve' : 'Reject'}</Button></>}
         >
             <div className="space-y-3">
-                <p className="text-sm text-gray-700"><strong>{req.title}</strong>: {req.summary}</p>
+                <p className="text-sm text-fg-secondary"><strong>{req.title}</strong>: {req.summary}</p>
                 {decide.error && !Object.keys(errors).length ? <ErrorState error={decide.error} /> : null}
                 <Field id="decision-note" label={decision === 'rejected' ? 'Reason' : 'Note (optional)'} required={decision === 'rejected'}>
                     <Textarea id="decision-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-                    {errors.note && <p className="mt-1 text-xs text-red-600">{errors.note}</p>}
+                    {errors.note && <p className="mt-1 text-xs text-danger">{errors.note}</p>}
                 </Field>
             </div>
         </Dialog>

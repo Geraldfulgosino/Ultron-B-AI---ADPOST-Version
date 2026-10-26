@@ -42,23 +42,23 @@ export function KnowledgePage() {
         >
             {upload.error || remove.error ? <ErrorState error={upload.error ?? remove.error} /> : null}
             <Card>
-                <CardHeader><CardTitle>Test retrieval</CardTitle><p className="text-xs text-gray-500">See which passages an agent would receive for a question.</p></CardHeader>
+                <CardHeader><CardTitle>Test retrieval</CardTitle><p className="text-xs text-fg-muted">See which passages an agent would receive for a question.</p></CardHeader>
                 <CardContent className="space-y-3">
                     <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
+                        <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-fg-subtle" aria-hidden="true" />
                         <Input aria-label="Ask the knowledge base" className="pl-9" placeholder="e.g. how should titles be written?" value={ask} onChange={(e) => setAsk(e.target.value)} />
                     </div>
                     {ask.trim().length > 2 && (
                         hits.data?.length ? (
                             <ol className="space-y-2" aria-label="Retrieved passages">
                                 {hits.data.map((h) => (
-                                    <li key={`${h.documentId}-${h.chunkIndex}`} className="rounded-lg bg-gray-50 p-3 text-sm">
-                                        <p className="text-xs font-medium text-gray-900">{h.title} <span className="text-gray-500">· score {h.score}</span></p>
-                                        <p className="mt-1 whitespace-pre-wrap text-gray-700 line-clamp-4">{h.text}</p>
+                                    <li key={`${h.documentId}-${h.chunkIndex}`} className="rounded-lg bg-surface-muted p-3 text-sm">
+                                        <p className="text-xs font-medium text-fg">{h.title} <span className="text-fg-muted">· score {h.score}</span></p>
+                                        <p className="mt-1 whitespace-pre-wrap text-fg-secondary line-clamp-4">{h.text}</p>
                                     </li>
                                 ))}
                             </ol>
-                        ) : <p className="text-sm text-gray-500">No passages match.</p>
+                        ) : <p className="text-sm text-fg-muted">No passages match.</p>
                     )}
                 </CardContent>
             </Card>
@@ -88,15 +88,15 @@ export function KnowledgePage() {
                             <Card className="h-full">
                                 <CardContent className="space-y-2">
                                     <div className="flex items-start justify-between gap-2">
-                                        <button type="button" className="text-left font-medium text-gray-900 hover:text-indigo-700" onClick={() => setEditing(d)}>{d.title}</button>
+                                        <button type="button" className="text-left font-medium text-fg hover:text-accent-strong" onClick={() => setEditing(d)}>{d.title}</button>
                                         <Badge variant="indigo">{KIND_LABELS[d.kind]}</Badge>
                                     </div>
-                                    <p className="text-sm text-gray-600 line-clamp-3">{d.content}</p>
-                                    <div className="flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                                    <p className="text-sm text-fg-soft line-clamp-3">{d.content}</p>
+                                    <div className="flex flex-wrap items-center gap-1 text-xs text-fg-muted">
                                         {d.tags.map((t) => <Badge key={t}>{t}</Badge>)}
                                         <span>{formatNumber(d.sizeBytes)} bytes · updated {formatDateTime(d.updatedAt)}</span>
                                     </div>
-                                    {can.write && <button type="button" className="text-xs text-gray-500 hover:text-red-700" onClick={() => confirm(`Delete "${d.title}"?`) && void remove.run(d.id)}>Delete</button>}
+                                    {can.write && <button type="button" className="text-xs text-fg-muted hover:text-danger-strong" onClick={() => confirm(`Delete "${d.title}"?`) && void remove.run(d.id)}>Delete</button>}
                                 </CardContent>
                             </Card>
                         </li>
@@ -126,7 +126,7 @@ function DocumentDialog({ doc, readOnly, onClose }: { doc: KnowledgeDocument | n
                 </div>
                 <Field id="doc-content" label="Content" required>
                     <Textarea id="doc-content" rows={10} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-                    {errors.content && <p className="mt-1 text-xs text-red-600">{errors.content}</p>}
+                    {errors.content && <p className="mt-1 text-xs text-danger">{errors.content}</p>}
                 </Field>
                 <Field id="doc-tags" label="Tags" hint="Comma separated"><Input id="doc-tags" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></Field>
             </fieldset>

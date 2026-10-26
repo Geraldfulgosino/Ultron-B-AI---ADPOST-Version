@@ -52,7 +52,7 @@ export function ReportsPage() {
                 <>
                     <Card>
                         <CardHeader><CardTitle>Executive summary</CardTitle></CardHeader>
-                        <CardContent><p className="text-sm text-gray-700">{executiveSummary(r)}</p></CardContent>
+                        <CardContent><p className="text-sm text-fg-secondary">{executiveSummary(r)}</p></CardContent>
                     </Card>
                     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                         {r.filters.source !== 'ga4' && <StatCard label="GSC clicks" value={formatNumber(r.summary.gscClicks)} />}
@@ -71,7 +71,7 @@ export function ReportsPage() {
                                 <CardHeader><CardTitle>Top queries</CardTitle></CardHeader>
                                 <CardContent>
                                     <ol className="space-y-1 text-sm">
-                                        {r.topQueries.map((x) => <li key={x.query} className="flex justify-between gap-2"><span className="truncate text-gray-700">{x.query}</span><span className="tabular-nums text-gray-900">{formatNumber(x.clicks)}</span></li>)}
+                                        {r.topQueries.map((x) => <li key={x.query} className="flex justify-between gap-2"><span className="truncate text-fg-secondary">{x.query}</span><span className="tabular-nums text-fg">{formatNumber(x.clicks)}</span></li>)}
                                     </ol>
                                 </CardContent>
                             </Card>
@@ -81,7 +81,7 @@ export function ReportsPage() {
                                 <CardHeader><CardTitle>Top pages</CardTitle></CardHeader>
                                 <CardContent>
                                     <ol className="space-y-1 text-sm">
-                                        {r.topPages.map((x) => <li key={x.path} className="flex justify-between gap-2"><span className="truncate text-gray-700">{x.path}</span><span className="tabular-nums text-gray-900">{formatNumber(x.sessions)}</span></li>)}
+                                        {r.topPages.map((x) => <li key={x.path} className="flex justify-between gap-2"><span className="truncate text-fg-secondary">{x.path}</span><span className="tabular-nums text-fg">{formatNumber(x.sessions)}</span></li>)}
                                     </ol>
                                 </CardContent>
                             </Card>
@@ -96,12 +96,12 @@ export function ReportsPage() {
                                         <li key={i.id} className="flex flex-wrap items-center gap-2 text-sm">
                                             <Badge variant={SEVERITY[i.severity].variant}>{SEVERITY[i.severity].label}</Badge>
                                             <Badge variant={INSIGHT_STATUS[i.status].variant}>{INSIGHT_STATUS[i.status].label}</Badge>
-                                            <span className="text-gray-700">{i.title}</span>
+                                            <span className="text-fg-secondary">{i.title}</span>
                                         </li>
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-sm text-gray-500">No open insights.</p>
+                                <p className="text-sm text-fg-muted">No open insights.</p>
                             )}
                         </CardContent>
                     </Card>

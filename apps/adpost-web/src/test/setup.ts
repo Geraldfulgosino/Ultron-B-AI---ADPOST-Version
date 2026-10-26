@@ -5,4 +5,6 @@ import { cleanup } from '@testing-library/react';
 afterEach(() => {
     cleanup();
     localStorage.clear();
+    delete document.documentElement.dataset.theme;
+    document.documentElement.style.colorScheme = '';
 });

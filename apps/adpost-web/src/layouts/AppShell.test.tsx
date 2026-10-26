@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { AppShell } from './AppShell';
 import { NAV_GROUPS, activeNavPath } from '@/app/navigation';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 
 describe('activeNavPath', () => {
     const items = NAV_GROUPS.flatMap((g) => g.items);
@@ -27,6 +28,7 @@ describe('AppShell', () => {
 
     function renderShell(path: string, onSwitchBrand = vi.fn()) {
         render(
+            <ThemeProvider>
             <MemoryRouter initialEntries={[path]}>
                 <AppShell
                     brand={brands[0]!}
@@ -39,7 +41,8 @@ describe('AppShell', () => {
                 >
                     <p>page body</p>
                 </AppShell>
-            </MemoryRouter>,
+            </MemoryRouter>
+            </ThemeProvider>,
         );
         return { onSwitchBrand };
     }
@@ -56,5 +59,24 @@ describe('AppShell', () => {
         const { onSwitchBrand } = renderShell('/b/adpost/dashboard');
         await userEvent.selectOptions(screen.getAllByLabelText('Brand')[0]!, 'pod');
         expect(onSwitchBrand).toHaveBeenCalledWith('pod');
+    });
+
+    it('puts a keyboard-operable dark-mode switch directly above the user profile', async () => {
+        renderShell('/b/adpost/dashboard');
+        const toggle = screen.getAllByRole('switch', { name: 'Dark mode' })[0]!;
+        const signOut = screen.getAllByRole('button', { name: 'Sign out' })[0]!;
+        const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]!;
+        // nav → theme switch → profile, in document (and tab) order.
+        expect(nav.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(toggle.compareDocumentPosition(signOut) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+        toggle.focus();
+        await userEvent.keyboard(' ');
+        expect(toggle).toHaveAttribute('aria-checked', 'true');
+        expect(document.documentElement.dataset.theme).toBe('dark');
+        await userEvent.keyboard('{Enter}');
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+        expect(document.documentElement.dataset.theme).toBe('light');
     });
 });

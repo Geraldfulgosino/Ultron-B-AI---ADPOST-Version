@@ -53,18 +53,18 @@ export function Dialog({ open, title, onClose, children, footer }: DialogProps) 
                 aria-modal="true"
                 aria-labelledby={titleId}
                 tabIndex={-1}
-                className="relative w-full max-w-lg rounded-xl bg-white shadow-xl focus:outline-none"
+                className="relative w-full max-w-lg rounded-xl bg-surface shadow-xl focus:outline-none"
             >
-                <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-                    <h2 id={titleId} className="text-base font-semibold text-gray-900">
+                <div className="flex items-center justify-between border-b border-line-subtle px-6 py-4">
+                    <h2 id={titleId} className="text-base font-semibold text-fg">
                         {title}
                     </h2>
-                    <button type="button" data-dialog-close onClick={onClose} className="rounded p-1 text-gray-400 hover:text-gray-600" aria-label="Close">
+                    <button type="button" data-dialog-close onClick={onClose} className="rounded p-1 text-fg-subtle hover:text-fg-soft" aria-label="Close">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
                 <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">{children}</div>
-                {footer && <div className="flex justify-end gap-2 border-t border-gray-100 px-6 py-4">{footer}</div>}
+                {footer && <div className="flex justify-end gap-2 border-t border-line-subtle px-6 py-4">{footer}</div>}
             </div>
         </div>
     );

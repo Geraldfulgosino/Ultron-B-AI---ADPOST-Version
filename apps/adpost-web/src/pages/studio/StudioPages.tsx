@@ -47,10 +47,10 @@ export function StudioPage() {
                 <ul className="space-y-2" aria-label="Website changes">
                     {list.data!.map((c) => (
                         <li key={c.id}>
-                            <Link to={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-indigo-300">
+                            <Link to={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface p-4 shadow-sm hover:border-accent-line-strong">
                                 <div className="min-w-0">
-                                    <p className="font-medium text-gray-900">{c.title}</p>
-                                    <p className="text-xs text-gray-500">{site(c.websiteId)} · updated {formatDateTime(c.updatedAt)}</p>
+                                    <p className="font-medium text-fg">{c.title}</p>
+                                    <p className="text-xs text-fg-muted">{site(c.websiteId)} · updated {formatDateTime(c.updatedAt)}</p>
                                 </div>
                                 <Badge variant={STAGE_BADGE[c.stage].variant}>{STAGE_BADGE[c.stage].label}</Badge>
                             </Link>
@@ -78,7 +78,7 @@ function CreateChangeDialog({ websites, onClose }: { websites: Array<{ id: strin
                 <Field id="change-title" label="Title" required><Input id="change-title" value={form.title} error={errors.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
                 <Field id="change-brief" label="Brief" required hint="What should change, for whom, and how success is measured.">
                     <Textarea id="change-brief" rows={5} value={form.brief} onChange={(e) => setForm({ ...form, brief: e.target.value })} />
-                    {errors.brief && <p className="mt-1 text-xs text-red-600">{errors.brief}</p>}
+                    {errors.brief && <p className="mt-1 text-xs text-danger">{errors.brief}</p>}
                 </Field>
             </div>
         </Dialog>
@@ -89,7 +89,7 @@ function Proposal({ title, text, empty }: { title: string; text: string | null; 
     return (
         <Card>
             <CardHeader className="flex items-center justify-between"><CardTitle>{title}</CardTitle>{text && <Badge variant="blue">Simulated</Badge>}</CardHeader>
-            <CardContent>{text ? <p className="whitespace-pre-wrap text-sm text-gray-700">{text}</p> : <p className="text-sm text-gray-500">{empty}</p>}</CardContent>
+            <CardContent>{text ? <p className="whitespace-pre-wrap text-sm text-fg-secondary">{text}</p> : <p className="text-sm text-fg-muted">{empty}</p>}</CardContent>
         </Card>
     );
 }
@@ -113,13 +113,13 @@ export function StudioDetailPage() {
     const current = STAGES.findIndex((s) => s.key === c.stage);
 
     return (
-        <Page title={c.title} description="Web Studio change" actions={<Link to={`/b/${brand.slug}/studio`} className="text-sm text-indigo-600 hover:text-indigo-700">All changes</Link>}>
+        <Page title={c.title} description="Web Studio change" actions={<Link to={`/b/${brand.slug}/studio`} className="text-sm text-accent hover:text-accent-strong">All changes</Link>}>
             <ol className="flex flex-wrap gap-2" aria-label="Pipeline">
                 {STAGES.map((s, i) => {
                     const done = c.stage !== 'cancelled' && (i < current || c.stage === 'released');
                     const active = s.key === c.stage;
                     return (
-                        <li key={s.key} aria-current={active ? 'step' : undefined} className={cn('flex items-center gap-1 rounded-full border px-3 py-1 text-xs', active ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : done ? 'border-green-200 bg-green-50 text-green-800' : 'border-gray-200 text-gray-500')}>
+                        <li key={s.key} aria-current={active ? 'step' : undefined} className={cn('flex items-center gap-1 rounded-full border px-3 py-1 text-xs', active ? 'border-indigo-600 bg-accent-soft text-accent-ink' : done ? 'border-success-line bg-success-soft text-success-ink' : 'border-line text-fg-muted')}>
                             {done && <Check className="h-3 w-3" aria-hidden="true" />} {s.label}
                         </li>
                     );
@@ -129,7 +129,7 @@ export function StudioDetailPage() {
             {error ? <ErrorState error={error} /> : null}
             <Card>
                 <CardHeader><CardTitle>Brief</CardTitle></CardHeader>
-                <CardContent><p className="whitespace-pre-wrap text-sm text-gray-700">{c.brief}</p></CardContent>
+                <CardContent><p className="whitespace-pre-wrap text-sm text-fg-secondary">{c.brief}</p></CardContent>
             </Card>
             <div className="grid gap-4 lg:grid-cols-2">
                 <Proposal title="Design proposal · Web Design Agent" text={c.designProposal} empty="Not drafted yet." />
@@ -149,8 +149,8 @@ export function StudioDetailPage() {
                         <ul className="space-y-1">
                             {c.checklist.map((i) => (
                                 <li key={i.key}>
-                                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={i.done} disabled={!can.write || c.stage !== 'review'} onChange={() => void toggle.run(i.key)} />
+                                    <label className="flex items-center gap-2 text-sm text-fg-secondary">
+                                        <input type="checkbox" className="h-4 w-4 rounded border-line-strong" checked={i.done} disabled={!can.write || c.stage !== 'review'} onChange={() => void toggle.run(i.key)} />
                                         {i.label}
                                     </label>
                                 </li>

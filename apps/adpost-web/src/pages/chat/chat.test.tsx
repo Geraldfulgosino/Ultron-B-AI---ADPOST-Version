@@ -18,6 +18,22 @@ describe('chat UI', () => {
         expect(db.all('executions')).toHaveLength(1);
     });
 
+    it('survives browsers whose scrollIntoView returns a Promise (Chromium scroll promises)', async () => {
+        // jsdom has no scrollIntoView; current Chromium returns a Promise. An effect that leaks that
+        // value back to React crashes the thread on re-render/unmount with "destroy is not a function".
+        const original = Element.prototype.scrollIntoView;
+        Element.prototype.scrollIntoView = () => Promise.resolve() as unknown as void;
+        try {
+            const { unmount } = await renderApp('/b/pod/chat', 'priya');
+            await userEvent.click(await screen.findByRole('button', { name: /Start chat/ }));
+            await userEvent.type(await screen.findByLabelText('Message'), 'hello{Enter}');
+            expect(await screen.findByRole('article', { name: 'SEO Manager message' })).toBeInTheDocument();
+            expect(() => unmount()).not.toThrow();
+        } finally {
+            Element.prototype.scrollIntoView = original;
+        }
+    });
+
     it('shows failures with a retry control', async () => {
         await renderApp('/b/pod/chat', 'priya');
         await userEvent.click(await screen.findByRole('button', { name: /Start chat/ }));

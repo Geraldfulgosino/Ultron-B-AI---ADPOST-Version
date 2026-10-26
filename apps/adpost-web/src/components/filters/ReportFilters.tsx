@@ -35,15 +35,15 @@ export function ReportFiltersBar({
         <div className="flex flex-wrap items-end gap-3" role="group" aria-label="Filters">
             {dataEnd && (
                 <div>
-                    <span className="block text-sm font-medium text-gray-700 mb-1">Range</span>
-                    <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
+                    <span className="block text-sm font-medium text-fg-secondary mb-1">Range</span>
+                    <div className="inline-flex rounded-lg border border-line-strong bg-surface p-0.5">
                         {PRESETS.map((d) => (
                             <button
                                 key={d}
                                 type="button"
                                 aria-pressed={activePreset === d}
                                 onClick={() => onChange({ ...value, ...presetRange(dataEnd, d) })}
-                                className={`rounded-md px-3 py-1.5 text-sm ${activePreset === d ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+                                className={`rounded-md px-3 py-1.5 text-sm ${activePreset === d ? 'bg-indigo-600 text-white' : 'text-fg-secondary hover:bg-surface-strong'}`}
                             >
                                 {d}d
                             </button>

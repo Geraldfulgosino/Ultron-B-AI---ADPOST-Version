@@ -144,7 +144,7 @@ describe('parity pages', () => {
 
     it('integrations: connect after disconnect shows pending OAuth note', async () => {
         await renderApp('/b/pod/integrations', 'priya');
-        const card = (await screen.findAllByText('POD Store'))[0]!.closest('div.bg-white') as HTMLElement;
+        const card = (await screen.findAllByText('POD Store'))[0]!.closest('div.bg-surface') as HTMLElement;
         vi.spyOn(window, 'confirm').mockReturnValue(true);
         fireEvent.click(within(card).getAllByRole('button', { name: 'Disconnect' })[0]!);
         await userEvent.click(await within(card).findByRole('button', { name: 'Connect' }));

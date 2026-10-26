@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 import { Menu, X, Zap, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { activeNavPath, type NavGroup } from '@/app/navigation';
+import { ThemeToggle } from '@/theme/ThemeToggle';
 
 export interface ShellBrand {
     slug: string;
@@ -28,7 +29,7 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
     const active = activeNavPath(relative, navGroups.flatMap((g) => g.items));
 
     const sidebar = (
-        <div className="flex h-full flex-col bg-slate-900 text-white">
+        <div className="flex h-full flex-col bg-slate-900 text-white dark:border-r dark:border-line">
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
@@ -95,6 +96,8 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
                 ))}
             </nav>
 
+            <ThemeToggle />
+
             <div className="px-4 py-4 border-t border-slate-800">
                 <div className="flex items-center justify-between">
                     <div className="min-w-0">
@@ -110,8 +113,8 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 lg:flex">
-            <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:shadow">
+        <div className="min-h-screen bg-canvas lg:flex">
+            <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-strong focus:shadow">
                 Skip to content
             </a>
             <aside className="hidden lg:block lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:h-screen">{sidebar}</aside>
@@ -124,11 +127,11 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
             )}
 
             <div className="flex-1 min-w-0 flex flex-col">
-                <div className="lg:hidden flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-3">
-                    <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open navigation" className="text-gray-600">
+                <div className="lg:hidden flex items-center gap-3 bg-surface border-b border-line px-4 py-3">
+                    <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open navigation" className="text-fg-soft">
                         <Menu className="h-5 w-5" />
                     </button>
-                    <span className="text-sm font-semibold text-gray-900 truncate">{brand.name}</span>
+                    <span className="text-sm font-semibold text-fg truncate">{brand.name}</span>
                 </div>
                 {children}
             </div>
@@ -140,10 +143,10 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
 export function Page({ title, description, actions, children }: { title: string; description?: string; actions?: React.ReactNode; children: React.ReactNode }) {
     return (
         <>
-            <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
+            <header className="bg-surface border-b border-line px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                    <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-                    {description && <p className="text-sm text-gray-500">{description}</p>}
+                    <h1 className="text-lg font-semibold text-fg">{title}</h1>
+                    {description && <p className="text-sm text-fg-muted">{description}</p>}
                 </div>
                 {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
             </header>

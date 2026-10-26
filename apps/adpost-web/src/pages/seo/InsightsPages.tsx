@@ -74,8 +74,8 @@ export function InsightsListPage() {
             </div>
 
             {can.write && selected.size > 0 && (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm">
-                    <span className="font-medium text-indigo-900">{selected.size} selected</span>
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-accent-line bg-accent-soft px-4 py-2 text-sm">
+                    <span className="font-medium text-accent-ink">{selected.size} selected</span>
                     <Button size="sm" variant="secondary" loading={bulk.pending} onClick={async () => { const r = await bulk.run('reviewed'); if (r) { setSelected(new Set()); setNotice(`${r.updated} marked reviewed.`); } }}>Mark reviewed</Button>
                     <Button size="sm" variant="secondary" loading={bulk.pending} onClick={async () => { const r = await bulk.run('dismissed'); if (r) { setSelected(new Set()); setNotice(`${r.updated} dismissed.`); } }}>Dismiss</Button>
                 </div>
@@ -90,14 +90,14 @@ export function InsightsListPage() {
             ) : (
                 <ul className="space-y-2" aria-label="Insights">
                     {list.data!.map((i) => (
-                        <li key={i.id} className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                        <li key={i.id} className="flex items-start gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm">
                             {can.write && (
-                                <input type="checkbox" className="mt-1 h-4 w-4 rounded border-gray-300" aria-label={`Select ${i.title}`} checked={selected.has(i.id)} onChange={() => toggle(i.id)} />
+                                <input type="checkbox" className="mt-1 h-4 w-4 rounded border-line-strong" aria-label={`Select ${i.title}`} checked={selected.has(i.id)} onChange={() => toggle(i.id)} />
                             )}
                             <div className="min-w-0 flex-1">
-                                <Link to={`/b/${brand.slug}/seo/insights/${i.id}`} className="font-medium text-gray-900 hover:text-indigo-700">{i.title}</Link>
-                                <p className="mt-0.5 text-sm text-gray-600 line-clamp-2">{i.summary}</p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                <Link to={`/b/${brand.slug}/seo/insights/${i.id}`} className="font-medium text-fg hover:text-accent-strong">{i.title}</Link>
+                                <p className="mt-0.5 text-sm text-fg-soft line-clamp-2">{i.summary}</p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
                                     <Badge variant={SEVERITY[i.severity].variant}>{SEVERITY[i.severity].label}</Badge>
                                     <Badge variant={INSIGHT_STATUS[i.status].variant}>{INSIGHT_STATUS[i.status].label}</Badge>
                                     <span>{INSIGHT_TYPE_LABELS[i.type]}</span>
@@ -131,11 +131,11 @@ export function InsightDetailPage() {
         : [{ to: 'pending', label: 'Reopen', variant: 'secondary' }];
 
     return (
-        <Page title="Insight" description={`${i.websiteName} · ${i.domain}`} actions={<Link to={`/b/${brand.slug}/seo/insights`} className="text-sm text-indigo-600 hover:text-indigo-700">Back to insights</Link>}>
+        <Page title="Insight" description={`${i.websiteName} · ${i.domain}`} actions={<Link to={`/b/${brand.slug}/seo/insights`} className="text-sm text-accent hover:text-accent-strong">Back to insights</Link>}>
             <div className="grid gap-4 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
                     <CardHeader>
-                        <h2 className="text-base font-semibold text-gray-900">{i.title}</h2>
+                        <h2 className="text-base font-semibold text-fg">{i.title}</h2>
                         <div className="mt-2 flex flex-wrap gap-2">
                             <Badge variant={SEVERITY[i.severity].variant}>{SEVERITY[i.severity].label} severity</Badge>
                             <Badge variant={INSIGHT_STATUS[i.status].variant}>{INSIGHT_STATUS[i.status].label}</Badge>
@@ -143,27 +143,27 @@ export function InsightDetailPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
-                        <div><h3 className="font-medium text-gray-900">Summary</h3><p className="mt-1 text-gray-700">{i.summary}</p></div>
-                        <div><h3 className="font-medium text-gray-900">Recommendation</h3><p className="mt-1 text-gray-700">{i.recommendation}</p></div>
+                        <div><h3 className="font-medium text-fg">Summary</h3><p className="mt-1 text-fg-secondary">{i.summary}</p></div>
+                        <div><h3 className="font-medium text-fg">Recommendation</h3><p className="mt-1 text-fg-secondary">{i.recommendation}</p></div>
                         <div>
-                            <h3 className="font-medium text-gray-900">Evidence</h3>
+                            <h3 className="font-medium text-fg">Evidence</h3>
                             <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1">
                                 {Object.entries(i.evidence).map(([k, v]) => (
                                     <div key={k} className="contents">
-                                        <dt className="text-gray-500">{k.replace(/_/g, ' ')}</dt>
-                                        <dd className="text-gray-900 tabular-nums">{String(v)}</dd>
+                                        <dt className="text-fg-muted">{k.replace(/_/g, ' ')}</dt>
+                                        <dd className="text-fg tabular-nums">{String(v)}</dd>
                                     </div>
                                 ))}
                             </dl>
                         </div>
-                        <p className="text-xs text-gray-500">Raised {formatDateTime(i.createdAt)} by {i.source === 'rules' ? 'rule engine' : 'AI agent'}</p>
+                        <p className="text-xs text-fg-muted">Raised {formatDateTime(i.createdAt)} by {i.source === 'rules' ? 'rule engine' : 'AI agent'}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader><CardTitle>Review</CardTitle></CardHeader>
                     <CardContent className="space-y-3">
-                        {i.reviewedAt && <p className="text-xs text-gray-500">Last decision {formatDateTime(i.reviewedAt)}</p>}
-                        {i.reviewNotes && <p className="rounded-lg bg-gray-50 p-2 text-sm text-gray-700">{i.reviewNotes}</p>}
+                        {i.reviewedAt && <p className="text-xs text-fg-muted">Last decision {formatDateTime(i.reviewedAt)}</p>}
+                        {i.reviewNotes && <p className="rounded-lg bg-surface-muted p-2 text-sm text-fg-secondary">{i.reviewNotes}</p>}
                         {can.write ? (
                             <>
                                 <div>
@@ -186,7 +186,7 @@ export function InsightDetailPage() {
                                 </div>
                             </>
                         ) : (
-                            <p className="text-sm text-gray-500">Read-only. Your role can view but not review insights.</p>
+                            <p className="text-sm text-fg-muted">Read-only. Your role can view but not review insights.</p>
                         )}
                     </CardContent>
                 </Card>

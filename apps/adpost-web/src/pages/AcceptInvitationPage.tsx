@@ -18,10 +18,10 @@ export function AcceptInvitationPage() {
             {preview.error ? <ErrorState error={preview.error} /> : null}
             {preview.data && (
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-fg-secondary">
                         You have been invited to <strong>{preview.data.brandName}</strong> as <Badge variant="indigo">{ROLE_LABELS[preview.data.role]}</Badge>
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-fg-muted">
                         Sent to {preview.data.email} · expires {formatDate(preview.data.expiresAt)}
                     </p>
                     {preview.data.status !== 'pending' && <Alert tone="warning">This invitation is {preview.data.status}.</Alert>}

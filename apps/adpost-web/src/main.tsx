@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { routes } from '@/app/routes';
 import { BackendProvider } from '@/app/backend';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 import { createLocalBackend, LOCAL_PERSIST_KEY } from '@/data/local/backend';
 import './index.css';
 
@@ -15,8 +16,10 @@ const router = createBrowserRouter(routes);
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <BackendProvider backend={backend}>
-            <RouterProvider router={router} />
-        </BackendProvider>
+        <ThemeProvider>
+            <BackendProvider backend={backend}>
+                <RouterProvider router={router} />
+            </BackendProvider>
+        </ThemeProvider>
     </StrictMode>,
 );

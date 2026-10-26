@@ -54,9 +54,9 @@ export function MembersPage() {
                             return (
                                 <tr key={m.id}>
                                     <Td>
-                                        <p className="font-medium text-gray-900">{m.name}</p>
-                                        <p className="text-xs text-gray-500">{m.email}</p>
-                                        {m.clientName && <p className="text-xs text-gray-500">Client: {m.clientName}</p>}
+                                        <p className="font-medium text-fg">{m.name}</p>
+                                        <p className="text-xs text-fg-muted">{m.email}</p>
+                                        {m.clientName && <p className="text-xs text-fg-muted">Client: {m.clientName}</p>}
                                     </Td>
                                     <Td>
                                         {editable ? (
@@ -110,12 +110,12 @@ export function MembersPage() {
                     </CardHeader>
                     <CardContent>
                         {invitations.data?.length ? (
-                            <ul className="divide-y divide-gray-100">
+                            <ul className="divide-y divide-line-subtle">
                                 {invitations.data.map((inv) => (
                                     <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">{inv.email}</p>
-                                            <p className="text-xs text-gray-500">
+                                            <p className="text-sm font-medium text-fg">{inv.email}</p>
+                                            <p className="text-xs text-fg-muted">
                                                 {ROLE_LABELS[inv.role]} · expires {formatDate(inv.expiresAt)}
                                             </p>
                                         </div>
@@ -208,7 +208,7 @@ function InviteDialog({ onClose }: { onClose: () => void }) {
                                     </option>
                                 ))}
                             </Select>
-                            {errors.clientId && <p className="mt-1 text-xs text-red-600">{errors.clientId}</p>}
+                            {errors.clientId && <p className="mt-1 text-xs text-danger">{errors.clientId}</p>}
                         </Field>
                     )}
                 </div>

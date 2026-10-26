@@ -19,13 +19,13 @@ export function PlanUsageCard() {
                 <ul className="space-y-3" aria-label="Usage">
                     {usageVsLimits(q.data).map((r) => (
                         <li key={r.label} className="text-sm">
-                            <div className="flex justify-between text-gray-700">
+                            <div className="flex justify-between text-fg-secondary">
                                 <span>{r.label}</span>
                                 <span className="tabular-nums">{formatNumber(r.used)}{r.limit === null ? ' · unlimited' : ` / ${formatNumber(r.limit)}`}</span>
                             </div>
                             {r.ratio !== null && (
-                                <div className="mt-1 h-1.5 rounded-full bg-indigo-100" role="meter" aria-label={r.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(1, r.ratio) * 100)}>
-                                    <div className={`h-1.5 rounded-full ${r.ratio >= 0.9 ? 'bg-red-600' : r.ratio >= 0.7 ? 'bg-yellow-500' : 'bg-indigo-600'}`} style={{ width: `${Math.min(1, r.ratio) * 100}%` }} />
+                                <div className="mt-1 h-1.5 rounded-full bg-accent-muted" role="meter" aria-label={r.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.min(1, r.ratio) * 100)}>
+                                    <div className={`h-1.5 rounded-full ${r.ratio >= 0.9 ? 'bg-red-600' : r.ratio >= 0.7 ? 'bg-warning-soft0' : 'bg-indigo-600'}`} style={{ width: `${Math.min(1, r.ratio) * 100}%` }} />
                                 </div>
                             )}
                         </li>
@@ -36,7 +36,7 @@ export function PlanUsageCard() {
                         <Badge key={f} variant={plan.features.includes(f) ? 'green' : 'gray'}>{plan.features.includes(f) ? '✓' : '—'} {FEATURE_LABELS[f]}</Badge>
                     ))}
                 </div>
-                <p className="text-xs text-gray-500">Billing is not connected. Plans are enforced by the data layer today and by Edge Functions after Phase 17.</p>
+                <p className="text-xs text-fg-muted">Billing is not connected. Plans are enforced by the data layer today and by Edge Functions after Phase 17.</p>
             </CardContent>
         </Card>
     );

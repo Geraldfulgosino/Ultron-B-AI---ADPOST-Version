@@ -63,3 +63,8 @@
 
 ## Session summary (2026-10-25)
 Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai`. Phases 17–18 are blocked pending authorization. The standalone app is in `apps/adpost-web` (see its README); the Supabase schema, RLS and seed are in `supabase/migrations`; the backend contract suite is in `apps/adpost-web/src/test/contract`. The legacy Laravel app is unchanged.
+
+## UI enhancement: global dark mode (2026-10-26)
+- Light / dark / system theme with a sidebar switch directly above the user profile. It applies instantly, persists in localStorage and follows the OS until the user picks a theme (ADR-009).
+- About 390 hard-coded color classes in 33 files moved onto semantic tokens; light mode is visually unchanged. The chart series uses `#6366f1` in dark mode, which passes the dataviz validator on the dark card surface.
+- Fixed a pre-existing Chromium-only crash when opening a chat thread (ChatView effect cleanup), found during the first real-browser check.

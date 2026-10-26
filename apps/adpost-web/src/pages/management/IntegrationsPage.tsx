@@ -35,21 +35,21 @@ export function IntegrationsPage() {
                         <Card key={w.id}>
                             <CardHeader>
                                 <CardTitle>{w.name}</CardTitle>
-                                <p className="text-xs text-gray-500">{w.domain}</p>
+                                <p className="text-xs text-fg-muted">{w.domain}</p>
                             </CardHeader>
-                            <CardContent className="divide-y divide-gray-100">
+                            <CardContent className="divide-y divide-line-subtle">
                                 {PROVIDERS.map((p) => {
                                     const i = integrations.data!.find((x) => x.websiteId === w.id && x.provider === p);
                                     const status = i ? INTEGRATION_STATUS[i.status] : null;
                                     return (
                                         <div key={p} className="flex flex-wrap items-center justify-between gap-2 py-3">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-medium text-gray-900">{PROVIDER_LABELS[p]}</p>
-                                                <p className="text-xs text-gray-500">
+                                                <p className="text-sm font-medium text-fg">{PROVIDER_LABELS[p]}</p>
+                                                <p className="text-xs text-fg-muted">
                                                     {i?.externalPropertyName ?? 'Not connected'}
                                                     {i?.lastSyncedAt ? ` · synced ${formatDateTime(i.lastSyncedAt)}` : ''}
                                                 </p>
-                                                {i?.lastErrorMessage && <p className="mt-1 text-xs text-red-700">{i.lastErrorMessage}</p>}
+                                                {i?.lastErrorMessage && <p className="mt-1 text-xs text-danger-strong">{i.lastErrorMessage}</p>}
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 {status && <Badge variant={status.variant}>{status.label}</Badge>}

@@ -12,8 +12,8 @@ export function AuthLayout({ children, title, description }: { children: React.R
                     <p className="text-2xl font-bold text-white">ULTRON-B AI</p>
                     <p className="mt-1 text-sm text-slate-400">{description ?? 'ADPOST Edition'}</p>
                 </div>
-                <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-                    <h1 className="text-xl font-semibold text-gray-900 mb-6">{title}</h1>
+                <div className="bg-surface rounded-2xl shadow-xl p-6 sm:p-8">
+                    <h1 className="text-xl font-semibold text-fg mb-6">{title}</h1>
                     {children}
                 </div>
             </div>

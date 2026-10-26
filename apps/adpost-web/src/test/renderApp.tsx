@@ -4,6 +4,7 @@ import { routes } from '@/app/routes';
 import { BackendProvider } from '@/app/backend';
 import { LocalBackend } from '@/data/local/backend';
 import { DEV_PASSWORD, FIXTURE_IDS } from '@/data/local/fixtures';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 import { testDb } from './helpers';
 
 /** Render the full app at `path`, optionally already signed in as a fixture user. */
@@ -16,9 +17,11 @@ export async function renderApp(path: string, user?: keyof typeof FIXTURE_IDS.us
     }
     const router = createMemoryRouter(routes, { initialEntries: [path] });
     const utils = render(
-        <BackendProvider backend={backend}>
-            <RouterProvider router={router} />
-        </BackendProvider>,
+        <ThemeProvider>
+            <BackendProvider backend={backend}>
+                <RouterProvider router={router} />
+            </BackendProvider>
+        </ThemeProvider>,
     );
     return { ...utils, router, backend, db };
 }

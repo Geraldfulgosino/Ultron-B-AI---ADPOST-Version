@@ -16,16 +16,16 @@ export function BrandPickerPage() {
     if (brands.data?.length === 1 && canCreate.data === false) return <Navigate to={`/b/${brands.data[0]!.brand.slug}/dashboard`} replace />;
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white border-b border-gray-200">
+        <div className="min-h-screen bg-canvas">
+            <header className="bg-surface border-b border-line">
                 <div className="mx-auto max-w-4xl flex items-center justify-between px-4 py-4">
                     <div>
-                        <p className="text-sm font-bold text-gray-900">ULTRON-B AI</p>
-                        <p className="text-xs text-gray-500">Signed in as {session?.user.email}</p>
+                        <p className="text-sm font-bold text-fg">ULTRON-B AI</p>
+                        <p className="text-xs text-fg-muted">Signed in as {session?.user.email}</p>
                     </div>
                     <button
                         type="button"
-                        className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                        className="flex items-center gap-1 text-sm text-fg-soft hover:text-fg"
                         onClick={async () => {
                             await signOut();
                             navigate('/login', { replace: true });
@@ -37,7 +37,7 @@ export function BrandPickerPage() {
             </header>
             <main className="mx-auto max-w-4xl px-4 py-8 space-y-4">
                 <div className="flex items-center justify-between gap-3">
-                    <h1 className="text-lg font-semibold text-gray-900">Choose a brand</h1>
+                    <h1 className="text-lg font-semibold text-fg">Choose a brand</h1>
                     {canCreate.data && (
                         <Button onClick={() => setCreating(true)}>
                             <Plus className="h-4 w-4" aria-hidden="true" /> New brand
@@ -55,15 +55,15 @@ export function BrandPickerPage() {
                         <li key={brand.id}>
                             <Link
                                 to={`/b/${brand.slug}/dashboard`}
-                                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm hover:border-accent-line-strong focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                                 <span className="h-10 w-10 shrink-0 rounded-lg" style={{ backgroundColor: brand.color }} aria-hidden="true" />
                                 <span className="min-w-0 flex-1">
-                                    <span className="block font-medium text-gray-900 truncate">{brand.name}</span>
-                                    <span className="block text-xs text-gray-500 truncate">{brand.description}</span>
+                                    <span className="block font-medium text-fg truncate">{brand.name}</span>
+                                    <span className="block text-xs text-fg-muted truncate">{brand.description}</span>
                                 </span>
                                 <Badge variant={brand.status === 'active' ? 'green' : 'gray'}>{roleLabel}</Badge>
-                                <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
+                                <ChevronRight className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
                             </Link>
                         </li>
                     ))}

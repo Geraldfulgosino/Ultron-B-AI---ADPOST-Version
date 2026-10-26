@@ -58,8 +58,8 @@ export function WebsitesPage() {
                         {websites.data!.map((w) => (
                             <tr key={w.id}>
                                 <Td>
-                                    <p className="font-medium text-gray-900">{w.name}</p>
-                                    <p className="text-xs text-gray-500">{w.domain}</p>
+                                    <p className="font-medium text-fg">{w.name}</p>
+                                    <p className="text-xs text-fg-muted">{w.domain}</p>
                                 </Td>
                                 <Td className="hidden md:table-cell">{clientName(w.clientId)}</Td>
                                 <Td className="hidden md:table-cell">{PLATFORMS[w.platform]}</Td>
@@ -121,7 +121,7 @@ function WebsiteDialog({ website, clients, onClose }: { website: Website | null;
                     <Select id="site-client" value={form.clientId} onChange={(e) => set('clientId', e.target.value)}>
                         {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </Select>
-                    {errors.clientId && <p className="mt-1 text-xs text-red-600">{errors.clientId}</p>}
+                    {errors.clientId && <p className="mt-1 text-xs text-danger">{errors.clientId}</p>}
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Field id="site-name" label="Name" required>

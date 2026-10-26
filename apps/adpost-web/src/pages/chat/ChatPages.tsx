@@ -26,17 +26,17 @@ function ConversationList({ kind, base, activeId }: { kind: ConversationKind; ba
     return (
         <nav aria-label="Conversations" className="space-y-3">
             <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
+                <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-fg-subtle" aria-hidden="true" />
                 <Input aria-label="Search messages" placeholder="Search messages…" className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
             {query.trim().length >= 2 ? (
                 <ul className="space-y-1" aria-label="Search results">
-                    {!searchHits.length && <li className="text-xs text-gray-500">No matches.</li>}
+                    {!searchHits.length && <li className="text-xs text-fg-muted">No matches.</li>}
                     {searchHits.map((h) => (
                         <li key={h.message.id}>
-                            <Link to={`${base}/${h.conversationId}`} className="block rounded-lg px-3 py-2 hover:bg-gray-100">
-                                <p className="text-xs font-medium text-gray-900">{h.conversationTitle}</p>
-                                <p className="text-xs text-gray-600 line-clamp-2">{h.message.body}</p>
+                            <Link to={`${base}/${h.conversationId}`} className="block rounded-lg px-3 py-2 hover:bg-surface-strong">
+                                <p className="text-xs font-medium text-fg">{h.conversationTitle}</p>
+                                <p className="text-xs text-fg-soft line-clamp-2">{h.message.body}</p>
                             </Link>
                         </li>
                     ))}
@@ -47,25 +47,25 @@ function ConversationList({ kind, base, activeId }: { kind: ConversationKind; ba
                 <ErrorState error={list.error} />
             ) : (
                 <ul className="space-y-1">
-                    {!list.data!.length && <li className="text-xs text-gray-500">No conversations yet.</li>}
+                    {!list.data!.length && <li className="text-xs text-fg-muted">No conversations yet.</li>}
                     {list.data!.map((c) => (
                         <li key={c.id}>
                             <Link
                                 to={`${base}/${c.id}`}
                                 aria-current={c.id === activeId ? 'page' : undefined}
-                                className={cn('block rounded-lg px-3 py-2', c.id === activeId ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-gray-100')}
+                                className={cn('block rounded-lg px-3 py-2', c.id === activeId ? 'bg-accent-soft ring-1 ring-accent-line' : 'hover:bg-surface-strong')}
                             >
-                                <p className="flex items-center gap-1 text-sm font-medium text-gray-900 truncate">
+                                <p className="flex items-center gap-1 text-sm font-medium text-fg truncate">
                                     {c.title} {c.archived && <Badge>Archived</Badge>}
                                 </p>
-                                <p className="text-xs text-gray-500 truncate">{c.lastMessage ? c.lastMessage.body.slice(0, 80) : 'No messages'}</p>
+                                <p className="text-xs text-fg-muted truncate">{c.lastMessage ? c.lastMessage.body.slice(0, 80) : 'No messages'}</p>
                             </Link>
                         </li>
                     ))}
                 </ul>
             )}
-            <label className="flex items-center gap-2 text-xs text-gray-600">
-                <input type="checkbox" className="h-3.5 w-3.5 rounded border-gray-300" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+            <label className="flex items-center gap-2 text-xs text-fg-soft">
+                <input type="checkbox" className="h-3.5 w-3.5 rounded border-line-strong" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
                 Show archived
             </label>
         </nav>
@@ -96,7 +96,7 @@ function ThreadHeader({ conversationId }: { conversationId: string }) {
                         <Button type="submit" size="sm">Save</Button>
                     </form>
                 ) : (
-                    <button type="button" className="text-left font-semibold text-gray-900 disabled:cursor-default" disabled={!can.write} onClick={() => { setTitle(c.data!.title); setEditing(true); }}>
+                    <button type="button" className="text-left font-semibold text-fg disabled:cursor-default" disabled={!can.write} onClick={() => { setTitle(c.data!.title); setEditing(true); }}>
                         {c.data.title}
                     </button>
                 )}
@@ -115,8 +115,8 @@ function ThreadHeader({ conversationId }: { conversationId: string }) {
                 )}
             </div>
             {c.data.summary && (
-                <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-700" aria-label="Thread summary">
-                    <p className="font-semibold text-gray-900 mb-1">Summary</p>
+                <div className="rounded-lg bg-surface-muted p-3 text-xs text-fg-secondary" aria-label="Thread summary">
+                    <p className="font-semibold text-fg mb-1">Summary</p>
                     <p className="whitespace-pre-wrap">{c.data.summary}</p>
                 </div>
             )}
@@ -149,7 +149,7 @@ export function AgentChatPage() {
         <Page title="Agent Chat" description="One-to-one conversations with a specialist">
             <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
                 <aside className="space-y-4">
-                    <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-3">
+                    <div className="space-y-2 rounded-xl border border-line bg-surface p-3">
                         <Label htmlFor="new-chat-agent">New conversation with</Label>
                         <Select id="new-chat-agent" value={agentId} onChange={(e) => setAgentId(e.target.value)}>
                             {agents.data?.map((a) => (
@@ -205,8 +205,8 @@ export function TeamChatPage() {
             <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
                 <aside className="space-y-4">
                     {can.write && (
-                        <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-3">
-                            <p className="text-sm font-medium text-gray-700">Start a team thread</p>
+                        <div className="space-y-2 rounded-xl border border-line bg-surface p-3">
+                            <p className="text-sm font-medium text-fg-secondary">Start a team thread</p>
                             {TEAMS.map((t) => (
                                 <button
                                     key={t.key}
@@ -215,10 +215,10 @@ export function TeamChatPage() {
                                         const c = await create.run(t.key);
                                         if (c) navigate(`${base}/${c.id}`);
                                     }}
-                                    className="block w-full rounded-lg border border-gray-200 px-3 py-2 text-left hover:border-indigo-300"
+                                    className="block w-full rounded-lg border border-line px-3 py-2 text-left hover:border-accent-line-strong"
                                 >
-                                    <span className="block text-sm font-medium text-gray-900">{t.label}</span>
-                                    <span className="block text-xs text-gray-500">{t.description}</span>
+                                    <span className="block text-sm font-medium text-fg">{t.label}</span>
+                                    <span className="block text-xs text-fg-muted">{t.description}</span>
                                 </button>
                             ))}
                             {create.error ? <ErrorState error={create.error} /> : null}
@@ -237,7 +237,7 @@ export function TeamChatPage() {
                     ) : (
                         <ChatView key={conv.data.id} conversation={conv.data} agents={agents.data ?? []} header={<ThreadHeader conversationId={conv.data.id} />} applyProposal={apply} />
                     )}
-                    {conv.data && <p className="text-xs text-gray-500">Created {formatDateTime(conv.data.createdAt)} · {conv.data.agentInstanceIds.length} agents</p>}
+                    {conv.data && <p className="text-xs text-fg-muted">Created {formatDateTime(conv.data.createdAt)} · {conv.data.agentInstanceIds.length} agents</p>}
                 </div>
             </div>
         </Page>

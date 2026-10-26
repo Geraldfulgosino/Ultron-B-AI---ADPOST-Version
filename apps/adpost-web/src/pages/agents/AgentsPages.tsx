@@ -25,12 +25,12 @@ function UsageLine({ agent, usage }: { agent: AgentInstance; usage?: AgentUsage 
     const pct = agent.limits.monthlyBudgetUsd ? Math.min(1, usage.costMonthUsd / agent.limits.monthlyBudgetUsd) : 1;
     return (
         <div className="space-y-1">
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-fg-muted">
                 <span>{formatCurrency(usage.costMonthUsd)} of {formatCurrency(agent.limits.monthlyBudgetUsd)} this month</span>
                 <span>{usage.runsToday}/{agent.limits.maxRunsPerDay} runs today</span>
             </div>
-            <div className="h-1.5 rounded-full bg-indigo-100" role="meter" aria-label={`${agent.displayName} monthly budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
-                <div className={`h-1.5 rounded-full ${pct >= 0.9 ? 'bg-red-600' : pct >= 0.7 ? 'bg-yellow-500' : 'bg-indigo-600'}`} style={{ width: `${pct * 100}%` }} />
+            <div className="h-1.5 rounded-full bg-accent-muted" role="meter" aria-label={`${agent.displayName} monthly budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}>
+                <div className={`h-1.5 rounded-full ${pct >= 0.9 ? 'bg-red-600' : pct >= 0.7 ? 'bg-warning-soft0' : 'bg-indigo-600'}`} style={{ width: `${pct * 100}%` }} />
             </div>
         </div>
     );
@@ -65,20 +65,20 @@ export function AgentsPage() {
                                 <Card key={a.id} className="flex flex-col">
                                     <CardHeader className="flex items-start justify-between gap-2">
                                         <div className="min-w-0">
-                                            <Link to={a.id} className="font-semibold text-gray-900 hover:text-indigo-700">{a.displayName}</Link>
-                                            <p className="text-xs text-gray-500">@{a.handle} · {t.team === 'seo' ? 'SEO team' : 'Web team'}</p>
+                                            <Link to={a.id} className="font-semibold text-fg hover:text-accent-strong">{a.displayName}</Link>
+                                            <p className="text-xs text-fg-muted">@{a.handle} · {t.team === 'seo' ? 'SEO team' : 'Web team'}</p>
                                         </div>
                                         <Badge variant={a.active ? 'green' : 'gray'}>{a.active ? 'Active' : 'Inactive'}</Badge>
                                     </CardHeader>
                                     <CardContent className="flex-1 space-y-3">
-                                        <p className="text-sm text-gray-600">{t.description}</p>
-                                        <p className="text-xs text-gray-500">{modelOption(a.model)?.label ?? a.model.model} · {a.tools.length} tools</p>
+                                        <p className="text-sm text-fg-soft">{t.description}</p>
+                                        <p className="text-xs text-fg-muted">{modelOption(a.model)?.label ?? a.model.model} · {a.tools.length} tools</p>
                                         <UsageLine agent={a} usage={usage.data?.find((u) => u.agentInstanceId === a.id)} />
                                     </CardContent>
-                                    <div className="flex gap-2 border-t border-gray-100 px-6 py-3">
-                                        <Link to={a.id} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">Configure</Link>
+                                    <div className="flex gap-2 border-t border-line-subtle px-6 py-3">
+                                        <Link to={a.id} className="text-sm font-medium text-accent hover:text-accent-strong">Configure</Link>
                                         {can.admin && (
-                                            <button type="button" className="ml-auto text-sm text-gray-600 hover:text-gray-900" onClick={() => void toggle.run(a)}>
+                                            <button type="button" className="ml-auto text-sm text-fg-soft hover:text-fg" onClick={() => void toggle.run(a)}>
                                                 {a.active ? 'Deactivate' : 'Activate'}
                                             </button>
                                         )}
@@ -120,7 +120,7 @@ export function AgentDetailPage() {
     const u = usage.data?.find((x) => x.agentInstanceId === a.id);
 
     return (
-        <Page title={a.displayName} description={`${t.name} · @${a.handle}`} actions={<Link to={`/b/${brand.slug}/agents`} className="text-sm text-indigo-600 hover:text-indigo-700">All agents</Link>}>
+        <Page title={a.displayName} description={`${t.name} · @${a.handle}`} actions={<Link to={`/b/${brand.slug}/agents`} className="text-sm text-accent hover:text-accent-strong">All agents</Link>}>
             <div className="grid gap-4 lg:grid-cols-3">
                 <div className="space-y-4 lg:col-span-2">
                     <ConfigCard agent={a} readOnly={!can.admin} />
@@ -133,39 +133,39 @@ export function AgentDetailPage() {
                             <UsageLine agent={a} usage={u} />
                             {u && (
                                 <dl className="grid grid-cols-2 gap-y-1">
-                                    <dt className="text-gray-500">Runs</dt><dd className="text-right tabular-nums">{formatNumber(u.runsMonth)}</dd>
-                                    <dt className="text-gray-500">Tokens</dt><dd className="text-right tabular-nums">{formatNumber(u.tokensMonth)}</dd>
-                                    <dt className="text-gray-500">Est. cost</dt><dd className="text-right tabular-nums">{formatCurrency(u.costMonthUsd)}</dd>
-                                    <dt className="text-gray-500">Budget left</dt><dd className="text-right tabular-nums">{formatCurrency(u.budgetRemainingUsd)}</dd>
+                                    <dt className="text-fg-muted">Runs</dt><dd className="text-right tabular-nums">{formatNumber(u.runsMonth)}</dd>
+                                    <dt className="text-fg-muted">Tokens</dt><dd className="text-right tabular-nums">{formatNumber(u.tokensMonth)}</dd>
+                                    <dt className="text-fg-muted">Est. cost</dt><dd className="text-right tabular-nums">{formatCurrency(u.costMonthUsd)}</dd>
+                                    <dt className="text-fg-muted">Budget left</dt><dd className="text-right tabular-nums">{formatCurrency(u.budgetRemainingUsd)}</dd>
                                 </dl>
                             )}
-                            {u && u.unpricedRunsMonth > 0 && <p className="text-xs text-yellow-800">{u.unpricedRunsMonth} run(s) used a model with no configured rate. Their cost is unknown, not zero.</p>}
-                            <p className="text-xs text-gray-500">Costs are estimates from token counts (~4 characters per token).</p>
+                            {u && u.unpricedRunsMonth > 0 && <p className="text-xs text-warning-ink">{u.unpricedRunsMonth} run(s) used a model with no configured rate. Their cost is unknown, not zero.</p>}
+                            <p className="text-xs text-fg-muted">Costs are estimates from token counts (~4 characters per token).</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader><CardTitle>Capabilities</CardTitle></CardHeader>
                         <CardContent>
-                            <ul className="list-disc pl-5 text-sm text-gray-700 space-y-0.5">{t.capabilities.map((c) => <li key={c}>{c}</li>)}</ul>
+                            <ul className="list-disc pl-5 text-sm text-fg-secondary space-y-0.5">{t.capabilities.map((c) => <li key={c}>{c}</li>)}</ul>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex items-center justify-between">
                             <CardTitle>Recent runs</CardTitle>
-                            <Link to={`/b/${brand.slug}/executions`} className="text-xs font-medium text-indigo-600">All</Link>
+                            <Link to={`/b/${brand.slug}/executions`} className="text-xs font-medium text-accent">All</Link>
                         </CardHeader>
                         <CardContent>
                             {recent.data?.length ? (
-                                <ul className="divide-y divide-gray-100 text-sm">
+                                <ul className="divide-y divide-line-subtle text-sm">
                                     {recent.data.slice(0, 6).map((e) => (
                                         <li key={e.id} className="flex items-center justify-between gap-2 py-2">
-                                            <span className="text-xs text-gray-500">{formatDateTime(e.startedAt)}</span>
+                                            <span className="text-xs text-fg-muted">{formatDateTime(e.startedAt)}</span>
                                             <Badge variant={EXEC_STATUS[e.status].variant}>{EXEC_STATUS[e.status].label}</Badge>
                                         </li>
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-sm text-gray-500">No runs yet. Start a conversation in Agent Chat.</p>
+                                <p className="text-sm text-fg-muted">No runs yet. Start a conversation in Agent Chat.</p>
                             )}
                         </CardContent>
                     </Card>
@@ -219,21 +219,21 @@ function ConfigCard({ agent, readOnly }: { agent: AgentInstance; readOnly: boole
                     </div>
                     {model?.live && <Alert tone="warning">Live models only run through the server-side agent-execute function (Phase 17). In local mode, runs with this model fail with an explanation.</Alert>}
                     <fieldset>
-                        <legend className="text-sm font-medium text-gray-700 mb-1">Tool permissions</legend>
+                        <legend className="text-sm font-medium text-fg-secondary mb-1">Tool permissions</legend>
                         <div className="grid gap-2 sm:grid-cols-2">
                             {ALL_TOOLS.map((tool) => (
                                 <label key={tool} className="flex items-start gap-2 text-sm">
                                     <input
                                         type="checkbox"
-                                        className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                                        className="mt-0.5 h-4 w-4 rounded border-line-strong"
                                         disabled={readOnly}
                                         checked={form.tools.includes(tool)}
                                         onChange={() => setForm({ ...form, tools: form.tools.includes(tool) ? form.tools.filter((x) => x !== tool) : [...form.tools, tool] })}
                                     />
                                     <span>
-                                        <span className="text-gray-900">{TOOL_LABELS[tool].label}</span>
+                                        <span className="text-fg">{TOOL_LABELS[tool].label}</span>
                                         {TOOL_LABELS[tool].external && <Badge variant="yellow" className="ml-1">needs approval</Badge>}
-                                        <span className="block text-xs text-gray-500">{TOOL_LABELS[tool].description}</span>
+                                        <span className="block text-xs text-fg-muted">{TOOL_LABELS[tool].description}</span>
                                     </span>
                                 </label>
                             ))}
@@ -250,8 +250,8 @@ function ConfigCard({ agent, readOnly }: { agent: AgentInstance; readOnly: boole
                             <Input id="agent-budget" type="number" min={0} step="0.5" value={form.monthlyBudgetUsd} disabled={readOnly} error={errors.monthlyBudgetUsd} onChange={(e) => setForm({ ...form, monthlyBudgetUsd: e.target.value })} />
                         </Field>
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled={readOnly} checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+                    <label className="flex items-center gap-2 text-sm text-fg-secondary">
+                        <input type="checkbox" className="h-4 w-4 rounded border-line-strong" disabled={readOnly} checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
                         Active (inactive agents ignore messages and @mentions)
                     </label>
                     {!readOnly && <Button type="submit" loading={save.pending}>Save configuration</Button>}
@@ -293,7 +293,7 @@ function InstructionsCard({ agent, versions, readOnly }: { agent: AgentInstance;
                 <div>
                     <Label htmlFor="agent-instructions">System instructions</Label>
                     <Textarea id="agent-instructions" rows={6} value={text} disabled={readOnly} onChange={(e) => setText(e.target.value)} />
-                    {errors.instructions && <p className="mt-1 text-xs text-red-600">{errors.instructions}</p>}
+                    {errors.instructions && <p className="mt-1 text-xs text-danger">{errors.instructions}</p>}
                 </div>
                 {!readOnly && (
                     <div className="flex flex-wrap items-end gap-2">
@@ -309,13 +309,13 @@ function InstructionsCard({ agent, versions, readOnly }: { agent: AgentInstance;
                 )}
                 {activate.error ? <ErrorState error={activate.error} /> : null}
                 <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Version history</h3>
-                    <ul className="divide-y divide-gray-100">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-muted mb-2">Version history</h3>
+                    <ul className="divide-y divide-line-subtle">
                         {versions.map((v) => (
                             <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                                 <div className="min-w-0">
-                                    <span className="font-medium text-gray-900">v{v.version}</span> <span className="text-gray-600">{v.note}</span>
-                                    <p className="text-xs text-gray-500">{formatDateTime(v.createdAt)}</p>
+                                    <span className="font-medium text-fg">v{v.version}</span> <span className="text-fg-soft">{v.note}</span>
+                                    <p className="text-xs text-fg-muted">{formatDateTime(v.createdAt)}</p>
                                 </div>
                                 {v.id === agent.activeInstructionVersionId ? (
                                     <Badge variant="green">Active</Badge>
@@ -359,7 +359,7 @@ export function ExecutionsPage() {
                         {Object.entries(EXEC_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </Select>
                 </div>
-                <p className="ml-auto text-sm text-gray-600 tabular-nums">
+                <p className="ml-auto text-sm text-fg-soft tabular-nums">
                     {formatNumber(rows.length)} runs · {formatNumber(totalTokens)} tokens · {formatCurrency(totalCost)} est.
                 </p>
             </div>
@@ -378,12 +378,12 @@ export function ExecutionsPage() {
                         {rows.map((e) => (
                             <tr key={e.id}>
                                 <Td className="whitespace-nowrap text-xs">{formatDateTime(e.startedAt)}</Td>
-                                <Td>{name(e.agentInstanceId)}{e.handoffDepth > 0 && <span className="ml-1 text-xs text-gray-500">(handoff {e.handoffDepth})</span>}</Td>
+                                <Td>{name(e.agentInstanceId)}{e.handoffDepth > 0 && <span className="ml-1 text-xs text-fg-muted">(handoff {e.handoffDepth})</span>}</Td>
                                 <Td><Badge variant={EXEC_STATUS[e.status].variant}>{EXEC_STATUS[e.status].label}</Badge></Td>
                                 <Td><ModeBadge mode={e.mode} /></Td>
                                 <Td className="text-right tabular-nums">{formatNumber(e.inputTokens + e.outputTokens)}</Td>
                                 <Td className="text-right tabular-nums">{formatCurrency(e.costUsd)}</Td>
-                                <Td className="hidden lg:table-cell text-xs text-gray-500 max-w-xs truncate">{e.error ?? `${e.model} · instructions v${e.instructionVersion}`}</Td>
+                                <Td className="hidden lg:table-cell text-xs text-fg-muted max-w-xs truncate">{e.error ?? `${e.model} · instructions v${e.instructionVersion}`}</Td>
                             </tr>
                         ))}
                     </TBody>

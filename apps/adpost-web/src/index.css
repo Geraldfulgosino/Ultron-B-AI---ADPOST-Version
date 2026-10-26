@@ -1,7 +1,153 @@
 @import 'tailwindcss';
 
+/* `dark:` follows the resolved theme on <html data-theme>, not the OS directly (see src/theme). */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @theme {
     --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --color-indigo-600: #4f46e5;
     --color-indigo-700: #4338ca;
+}
+
+/*
+ * Semantic theme tokens. Light values equal the Tailwind grays/tints the UI used before
+ * dark mode existed, so light mode renders unchanged. Every token here MUST be redefined
+ * in the dark block below (enforced by src/theme/tokens.test.ts).
+ */
+:root {
+    color-scheme: light;
+    accent-color: #4f46e5;
+    --canvas: #f9fafb;
+    --surface: #ffffff;
+    --surface-muted: #f9fafb;
+    --surface-strong: #f3f4f6;
+    --fg: #111827;
+    --fg-secondary: #374151;
+    --fg-soft: #4b5563;
+    --fg-muted: #6b7280;
+    --fg-subtle: #9ca3af;
+    --line: #e5e7eb;
+    --line-strong: #d1d5db;
+    --line-subtle: #f3f4f6;
+    --accent: #4f46e5;
+    --accent-strong: #4338ca;
+    --accent-ink: #3730a3;
+    --accent-soft: #eef2ff;
+    --accent-muted: #e0e7ff;
+    --accent-line: #c7d2fe;
+    --accent-line-strong: #a5b4fc;
+    --success: #15803d;
+    --success-ink: #166534;
+    --success-soft: #f0fdf4;
+    --success-muted: #dcfce7;
+    --success-line: #bbf7d0;
+    --warning-ink: #854d0e;
+    --warning-soft: #fefce8;
+    --warning-muted: #fef9c3;
+    --warning-line: #fef08a;
+    --danger: #dc2626;
+    --danger-strong: #b91c1c;
+    --danger-ink: #991b1b;
+    --danger-soft: #fef2f2;
+    --danger-muted: #fee2e2;
+    --danger-line: #fecaca;
+    --danger-line-strong: #fca5a5;
+    --info-ink: #1e40af;
+    --info-soft: #eff6ff;
+    --info-muted: #dbeafe;
+    --info-line: #bfdbfe;
+    /* Chart series: dataviz validator PASS on --surface in each mode. */
+    --chart-series: #4f46e5;
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --canvas: #0b1120;
+    --surface: #1e293b;
+    --surface-muted: #172033;
+    --surface-strong: #293548;
+    --fg: #f8fafc;
+    --fg-secondary: #cbd5e1;
+    --fg-soft: #b4c0d0;
+    --fg-muted: #94a3b8;
+    --fg-subtle: #7c8ba1;
+    --line: #334155;
+    --line-strong: #475569;
+    --line-subtle: #283447;
+    --accent: #a5b4fc;
+    --accent-strong: #c7d2fe;
+    --accent-ink: #e0e7ff;
+    --accent-soft: rgb(99 102 241 / 0.16);
+    --accent-muted: rgb(99 102 241 / 0.3);
+    --accent-line: rgb(129 140 248 / 0.45);
+    --accent-line-strong: #818cf8;
+    --success: #4ade80;
+    --success-ink: #bbf7d0;
+    --success-soft: rgb(34 197 94 / 0.12);
+    --success-muted: rgb(34 197 94 / 0.2);
+    --success-line: rgb(74 222 128 / 0.35);
+    --warning-ink: #fde68a;
+    --warning-soft: rgb(234 179 8 / 0.12);
+    --warning-muted: rgb(234 179 8 / 0.2);
+    --warning-line: rgb(250 204 21 / 0.35);
+    --danger: #f87171;
+    --danger-strong: #fca5a5;
+    --danger-ink: #fecaca;
+    --danger-soft: rgb(239 68 68 / 0.12);
+    --danger-muted: rgb(239 68 68 / 0.22);
+    --danger-line: rgb(248 113 113 / 0.35);
+    --danger-line-strong: #f87171;
+    --info-ink: #bfdbfe;
+    --info-soft: rgb(59 130 246 / 0.12);
+    --info-muted: rgb(59 130 246 / 0.22);
+    --info-line: rgb(96 165 250 / 0.35);
+    --chart-series: #6366f1;
+}
+
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-surface-muted: var(--surface-muted);
+    --color-surface-strong: var(--surface-strong);
+    --color-fg: var(--fg);
+    --color-fg-secondary: var(--fg-secondary);
+    --color-fg-soft: var(--fg-soft);
+    --color-fg-muted: var(--fg-muted);
+    --color-fg-subtle: var(--fg-subtle);
+    --color-line: var(--line);
+    --color-line-strong: var(--line-strong);
+    --color-line-subtle: var(--line-subtle);
+    --color-accent: var(--accent);
+    --color-accent-strong: var(--accent-strong);
+    --color-accent-ink: var(--accent-ink);
+    --color-accent-soft: var(--accent-soft);
+    --color-accent-muted: var(--accent-muted);
+    --color-accent-line: var(--accent-line);
+    --color-accent-line-strong: var(--accent-line-strong);
+    --color-success: var(--success);
+    --color-success-ink: var(--success-ink);
+    --color-success-soft: var(--success-soft);
+    --color-success-muted: var(--success-muted);
+    --color-success-line: var(--success-line);
+    --color-warning-ink: var(--warning-ink);
+    --color-warning-soft: var(--warning-soft);
+    --color-warning-muted: var(--warning-muted);
+    --color-warning-line: var(--warning-line);
+    --color-danger: var(--danger);
+    --color-danger-strong: var(--danger-strong);
+    --color-danger-ink: var(--danger-ink);
+    --color-danger-soft: var(--danger-soft);
+    --color-danger-muted: var(--danger-muted);
+    --color-danger-line: var(--danger-line);
+    --color-danger-line-strong: var(--danger-line-strong);
+    --color-info-ink: var(--info-ink);
+    --color-info-soft: var(--info-soft);
+    --color-info-muted: var(--info-muted);
+    --color-info-line: var(--info-line);
+    --color-chart-series: var(--chart-series);
+}
+
+body {
+    background-color: var(--canvas);
+    color: var(--fg);
 }

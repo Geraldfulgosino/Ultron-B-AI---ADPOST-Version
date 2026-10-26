@@ -64,18 +64,18 @@ export function AutomationPage() {
                                     <Input id="n8n-url" type="url" autoComplete="off" value={form.webhookUrl} error={errors.webhookUrl} onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })} />
                                 </Field>
                                 <fieldset>
-                                    <legend className="text-sm font-medium text-gray-700 mb-1">Events</legend>
+                                    <legend className="text-sm font-medium text-fg-secondary mb-1">Events</legend>
                                     <div className="space-y-1">
                                         {N8N_EVENTS.map((e) => (
-                                            <label key={e} className="flex items-center gap-2 text-sm text-gray-700">
-                                                <input type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={form.events.includes(e)} onChange={() => toggle(e)} />
-                                                {EVENT_LABELS[e]} <code className="text-xs text-gray-400">{e}</code>
+                                            <label key={e} className="flex items-center gap-2 text-sm text-fg-secondary">
+                                                <input type="checkbox" className="h-4 w-4 rounded border-line-strong" checked={form.events.includes(e)} onChange={() => toggle(e)} />
+                                                {EVENT_LABELS[e]} <code className="text-xs text-fg-subtle">{e}</code>
                                             </label>
                                         ))}
                                     </div>
                                 </fieldset>
-                                <label className="flex items-center gap-2 text-sm text-gray-700">
-                                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
+                                <label className="flex items-center gap-2 text-sm text-fg-secondary">
+                                    <input type="checkbox" className="h-4 w-4 rounded border-line-strong" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
                                     Active
                                 </label>
                                 <div className="flex flex-wrap gap-2">
@@ -93,12 +93,12 @@ export function AutomationPage() {
                         </CardHeader>
                         <CardContent>
                             {state.data?.deliveries.length ? (
-                                <ul className="divide-y divide-gray-100">
+                                <ul className="divide-y divide-line-subtle">
                                     {state.data.deliveries.map((d) => (
                                         <li key={d.id} className="flex items-center justify-between gap-2 py-2 text-sm">
                                             <div>
-                                                <p className="text-gray-900">{EVENT_LABELS[d.event]}</p>
-                                                <p className="text-xs text-gray-500">{formatDateTime(d.createdAt)} · attempt {d.attempt}</p>
+                                                <p className="text-fg">{EVENT_LABELS[d.event]}</p>
+                                                <p className="text-xs text-fg-muted">{formatDateTime(d.createdAt)} · attempt {d.attempt}</p>
                                             </div>
                                             <Badge variant={d.status === 'delivered' ? 'green' : d.status === 'failed' ? 'red' : 'blue'}>{d.status === 'simulated' ? 'Simulated' : d.status === 'delivered' ? 'Delivered' : 'Failed'}</Badge>
                                         </li>

@@ -7,11 +7,11 @@ import { formatDate, formatNumber, formatPercent } from '@/lib/utils';
 import { useReportFilters } from './useReportFilters';
 
 function Delta({ value }: { value: number | null }) {
-    if (value === null) return <span className="text-gray-400">—</span>;
+    if (value === null) return <span className="text-fg-subtle">—</span>;
     const up = value >= 0;
     const Icon = up ? ArrowUpRight : ArrowDownRight;
     return (
-        <span className={`inline-flex items-center gap-0.5 tabular-nums ${up ? 'text-green-700' : 'text-red-700'}`}>
+        <span className={`inline-flex items-center gap-0.5 tabular-nums ${up ? 'text-success' : 'text-danger-strong'}`}>
             <Icon className="h-3 w-3" aria-hidden="true" />
             {`${up ? '+' : ''}${(value * 100).toFixed(1)}%`}
         </span>
@@ -42,7 +42,7 @@ export function IntelligencePage() {
                             <TBody>
                                 {q.data.comparison.map((r) => (
                                     <tr key={r.websiteId}>
-                                        <Td><p className="font-medium text-gray-900">{r.name}</p><p className="text-xs text-gray-500">{r.domain}</p></Td>
+                                        <Td><p className="font-medium text-fg">{r.name}</p><p className="text-xs text-fg-muted">{r.domain}</p></Td>
                                         <Td className="text-right tabular-nums">{formatNumber(r.sessions)}</Td>
                                         <Td className="text-right"><Delta value={r.sessionsDelta} /></Td>
                                         <Td className="text-right tabular-nums">{formatPercent(r.conversionRate, 2)}</Td>
@@ -60,16 +60,16 @@ export function IntelligencePage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Anomalies</CardTitle>
-                                <p className="text-xs text-gray-500">Days more than 2.5 standard deviations from the trailing 14-day mean.</p>
+                                <p className="text-xs text-fg-muted">Days more than 2.5 standard deviations from the trailing 14-day mean.</p>
                             </CardHeader>
                             <CardContent>
                                 {q.data.anomalies.length ? (
-                                    <ul className="divide-y divide-gray-100" aria-label="Anomalies">
+                                    <ul className="divide-y divide-line-subtle" aria-label="Anomalies">
                                         {q.data.anomalies.map((a) => (
                                             <li key={`${a.websiteId}-${a.metric}-${a.date}`} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                                                 <div>
-                                                    <p className="text-gray-900">{siteName(a.websiteId)}: {a.metric} {a.direction === 'spike' ? 'spike' : 'drop'}</p>
-                                                    <p className="text-xs text-gray-500">{formatDate(a.date + 'T00:00:00Z')} · {formatNumber(a.value)} vs ~{formatNumber(a.expected)} expected</p>
+                                                    <p className="text-fg">{siteName(a.websiteId)}: {a.metric} {a.direction === 'spike' ? 'spike' : 'drop'}</p>
+                                                    <p className="text-xs text-fg-muted">{formatDate(a.date + 'T00:00:00Z')} · {formatNumber(a.value)} vs ~{formatNumber(a.expected)} expected</p>
                                                 </div>
                                                 <Badge variant={a.direction === 'drop' ? 'red' : 'blue'}>{a.direction === 'drop' ? 'Drop' : 'Spike'} · z {a.z}</Badge>
                                             </li>
@@ -83,19 +83,19 @@ export function IntelligencePage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Click opportunities</CardTitle>
-                                <p className="text-xs text-gray-500">Estimated extra clicks if each query reached a typical CTR for its position, or moved to position 3.</p>
+                                <p className="text-xs text-fg-muted">Estimated extra clicks if each query reached a typical CTR for its position, or moved to position 3.</p>
                             </CardHeader>
                             <CardContent>
                                 <Alert tone="info" className="mb-3">These are estimates from an approximate industry CTR curve, not forecasts.</Alert>
                                 {q.data.opportunities.length ? (
                                     <ol className="space-y-2" aria-label="Opportunities">
                                         {q.data.opportunities.map((o) => (
-                                            <li key={`${o.websiteId}-${o.query}`} className="rounded-lg border border-gray-100 p-2 text-sm">
+                                            <li key={`${o.websiteId}-${o.query}`} className="rounded-lg border border-line-subtle p-2 text-sm">
                                                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                                    <span className="font-medium text-gray-900">{o.query}</span>
-                                                    <span className="text-xs text-gray-600 tabular-nums">~{formatNumber(o.ctrGap + o.rankGain)} clicks</span>
+                                                    <span className="font-medium text-fg">{o.query}</span>
+                                                    <span className="text-xs text-fg-soft tabular-nums">~{formatNumber(o.ctrGap + o.rankGain)} clicks</span>
                                                 </div>
-                                                <p className="text-xs text-gray-500 tabular-nums">
+                                                <p className="text-xs text-fg-muted tabular-nums">
                                                     {siteName(o.websiteId)} · pos {o.position.toFixed(1)} · CTR {formatPercent(o.ctr, 2)} vs ~{formatPercent(o.expectedCtr, 1)} typical · {formatNumber(o.impressions)} impressions
                                                 </p>
                                             </li>
