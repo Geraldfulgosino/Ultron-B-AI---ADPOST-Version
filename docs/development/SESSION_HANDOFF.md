@@ -1,37 +1,36 @@
 # Session Handoff
 
-**Updated:** 2026-11-02 (resume session: local QA + Phase 17 preparation)
+**Updated:** 2026-11-02 (Phase 17 started)
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai` (pushed; `main` untouched at `13bc3d0`)
-**Last completed milestone:** Phases 00–16, global dark mode, real-browser and accessibility QA, Phase 17 staging runbook
-**Last synced commit:** `f1194ea` (QA fixes + runbook); the sync-log commit follows it. Source of truth: `git log origin/feature/adpost-react-supabase-ai -1`
+**Supabase:** the only authorized project is `adpost-staging`, ref `ppwkxlwxzutigepaizob`. **No migration applied yet.**
+**Last synced commit:** see GITHUB_SYNC_LOG.md (source of truth: `git log origin/feature/adpost-react-supabase-ai -1`)
 
-## Test status (2026-11-02)
-- adpost-web: `tsc` 0 errors · **200/200** Vitest tests · build ok · `npm audit` 0 vulnerabilities.
-- Real-browser QA (headless Edge, desktop and 390 px mobile, both themes):
-  - Checked: brand switching, role navigation and 403 deep links for six accounts, agent and team chat end to end, form validation, mobile drawer, theme persistence.
-  - axe-core WCAG 2.1 AA: **0 violations** on 22 routes plus the open-table, open-drawer and open-thread states.
-  - Six issues were found and fixed (see TEST_RESULTS.md).
-- Supabase SQL: four migrations parse with the Postgres 18 parser. **Never executed.**
-- Legacy frontend: unchanged this session. Laravel PHPUnit: **not run** (B-001).
+## Status by milestone
+| Area | Implemented locally | Validated locally | On staging |
+|---|---|---|---|
+| 17A Supabase client/config/provider factory | yes | yes (unit tests) | not yet |
+| Migrations 0001–0005 + RLS hardening | yes | yes (real Postgres via PGlite, 37 tests) | **awaiting approval** |
+| Auth adapter, data adapters, realtime client, storage client | no | — | — |
+| AI Edge Functions | no | — | awaiting model credentials |
+| GA4/GSC sync | no | — | awaiting Google OAuth credentials |
+
+## Test status
+- adpost-web: tsc 0 errors · **244/244** tests (37 run on real Postgres in PGlite, all others on mocks/jsdom) · build ok · 0 vulnerabilities.
+- **Nothing has been tested against remote staging yet.**
 
 ## Blockers
 - B-001: no PHP/Docker on host.
-- B-002: Supabase not authorized (Phase 17).
 - B-003: Netlify not authorized (Phase 18).
-
-## Open items
-- Not tested: Lighthouse, Firefox/Safari, real phones, a screen-reader walkthrough.
-- RLS policies need the runbook §5 test matrix on staging. Check SQL risks R1 (FORCE RLS with definer helpers) and R2 (auth trigger privileges) first.
-- The `AuthApi` contract needs password reset and a `/reset-password` route before live auth (runbook §6.3).
-- By design: a viewer can open `/settings` (all fields disabled) even though the sidebar hides it for non-admins.
-- Live model pricing is intentionally unset (`MODEL_CATALOG` rates are null).
+- B-004: the Supabase CLI isn't logged in here. The owner runs `npx supabase@2.121.0 login` (browser flow; the token stays in the CLI's own store, never in the repo).
+- B-005: the first remote migration needs owner approval after the dry run.
+- `.env.local` holds a placeholder publishable key. The owner pastes the real **publishable** key; never a secret key.
 
 ## Next exact task
-**Owner action (first step that needs authorization):** create the Supabase project `adpost-staging` and share only its URL and anon key. See `PHASE17_STAGING_RUNBOOK.md` §0.
-Then, each step confirmed separately:
-1. `supabase db push` the four migrations.
-2. Check R1 and R2.
-3. Seed the test matrix.
-4. Add the `@supabase/supabase-js` adapter (after a security review).
-5. Add `supabase.contract.test.ts` and the RLS suite.
+1. Owner: `npx supabase@2.121.0 login`.
+2. `npx supabase@2.121.0 link --project-ref ppwkxlwxzutigepaizob`. The owner enters the DB password at the prompt; it is not shared.
+3. `migration list` (remote history must be empty), then `db push --dry-run`.
+4. Owner approves migrations 0001–0005, then `db push`, then sign-up and RLS spot checks on staging.
+5. Build the Supabase auth adapter, then the data adapters, gated by `runBackendContract` against staging.
+
+Each step's details are in PHASE17_STAGING_RUNBOOK.md §3.

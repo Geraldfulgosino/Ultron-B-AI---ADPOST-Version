@@ -74,7 +74,7 @@
     },
     {
       "phase": "17",
-      "status": "blocked"
+      "status": "in_progress"
     },
     {
       "phase": "18",
@@ -87,20 +87,41 @@
       "text": "No PHP/Docker on host; Laravel PHPUnit cannot run"
     },
     {
-      "id": "B-002",
-      "text": "Live Supabase integration not authorized"
-    },
-    {
       "id": "B-003",
       "text": "Netlify deployment not authorized"
+    },
+    {
+      "id": "B-004",
+      "text": "Supabase CLI not authenticated on this host (owner must run `npx supabase@2.121.0 login`)"
+    },
+    {
+      "id": "B-005",
+      "text": "First remote migration needs owner approval after dry run"
     }
   ],
-  "nextTask": "Owner: create the staging Supabase project (PHASE17_STAGING_RUNBOOK.md §0). Then apply migrations 0001-0004, check risks R1-R2, seed, build the Supabase adapter, run the contract suite + RLS test plan.",
+  "nextTask": "Owner: `npx supabase@2.121.0 login` + link; Claude: migration list + db push --dry-run; owner approves first remote migration (0001-0005).",
   "tests": {
-    "adpostWeb": "200/200 pass",
+    "adpostWeb": "244/244 pass (incl. 37 real-Postgres DB tests via PGlite)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
-    "sql": "4 migrations parse-checked (libpg-query 18.1.5); never executed",
+    "sql": "5 migrations parse + apply on PGlite; RLS matrix pass; not applied to staging",
     "browserQa": "headless Edge 2026-11-02: role nav, brand switch, chat/team chat, forms, mobile drawer, axe WCAG 2.1 AA 0 violations (both themes)"
+  },
+  "supabase": {
+    "projectRef": "ppwkxlwxzutigepaizob",
+    "projectName": "adpost-staging",
+    "appliedMigrations": [],
+    "remoteHistoryChecked": false
+  },
+  "phase17": {
+    "17A client foundation": "implemented + validated locally (config validation, project-ref guard, secret-key refusal, provider factory, status screen); not run against staging",
+    "17B/C schema + RLS hardening": "implemented + validated locally on real Postgres (PGlite, 37 tests); awaiting approval to deploy to staging",
+    "17D auth": "not implemented (adapter); DB side (profile trigger, invitation RPCs, deactivation) validated locally",
+    "17E-F adapters": "not implemented",
+    "17G realtime": "publication migration validated locally; client not implemented",
+    "17H storage": "bucket policies/limits validated locally; client not implemented",
+    "17I AI edge functions": "not implemented; awaiting model provider credentials",
+    "17J SEO/analytics": "not implemented; Google OAuth awaiting credentials",
+    "17K tasks/approvals": "DB rules validated locally; adapter not implemented"
   }
 }

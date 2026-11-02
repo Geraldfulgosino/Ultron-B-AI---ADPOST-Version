@@ -6,6 +6,7 @@ import { fieldErrors, useBackend } from '@/app/backend';
 import { DEV_PASSWORD } from '@/data/local/fixtures';
 import { LocalDatabase } from '@/data/local/db';
 import { LOCAL_PERSIST_KEY } from '@/data/local/backend';
+import { selectProvider } from '@/data/supabase/config';
 
 /** Only allow same-app relative redirects (no open redirect via ?next=). */
 export function safeNext(next: string | null): string {
@@ -76,7 +77,14 @@ const DEV_ACCOUNTS: Array<[string, string]> = [
 
 /** Local-adapter only: synthetic accounts for exercising roles. */
 function DevAccountsHint({ onPick }: { onPick: (email: string) => void }) {
-    if (import.meta.env.VITE_BACKEND && import.meta.env.VITE_BACKEND !== 'local') return null;
+    // Synthetic accounts exist only in mock mode; they are never offered against a real backend.
+    let mock = false;
+    try {
+        mock = selectProvider(import.meta.env) === 'mock';
+    } catch {
+        mock = false;
+    }
+    if (!mock) return null;
     return (
         <details className="mt-6 rounded-lg bg-surface-muted p-3 text-xs text-fg-soft">
             <summary className="cursor-pointer font-medium text-fg-secondary">Local dev accounts (synthetic)</summary>

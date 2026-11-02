@@ -35,3 +35,35 @@ The local adapter keeps the signed-in user id in `sessionStorage`. Anyone with d
 - Rate limiting for exports and agent runs (legacy throttles) must move to Edge Functions.
 - Invitation tokens are stored raw locally. The schema stores `token_hash` only.
 - No browser-level visual or a11y audit (axe, Lighthouse) has been run yet. jsdom tests only.
+
+---
+
+# Security Review: Phase 17 database hardening (2026-11-02)
+
+**Method:** static review of `supabase/migrations/*`, then execution on **real Postgres** (PGlite = Postgres compiled to WASM) with an emulation of the Supabase platform (`apps/adpost-web/src/test/db/pg.ts`): roles `anon`/`authenticated`/`service_role`/`supabase_auth_admin`, `auth.uid()`/`auth.jwt()` defined as Supabase defines them, `auth.users`, `storage.*`, default grants, and the `supabase_realtime` publication. Migrations run as a **non-superuser role without BYPASSRLS** (the worst case).
+
+**Status: validated locally, not yet deployed or verified on staging.** The emulation covers SQL and RLS semantics, not the PostgREST, GoTrue, Storage or Realtime servers.
+
+| ID | Finding | Fix | Evidence |
+|---|---|---|---|
+| R1 | `FORCE ROW LEVEL SECURITY` bound the table owner, which the SECURITY DEFINER code runs as. **Reproduced:** migration 0003 (template seed) failed, and the sign-up trigger could not insert profiles | FORCE removed in 0002 (never applied anywhere) and re-asserted in 0005; client roles are never owners | `migrations.db.test.ts` (FORCE re-applied → sign-up fails) |
+| R2 | The `auth.users` trigger runs in schema `app` after function execute was revoked | Explicit `usage`/`execute` for `supabase_auth_admin`; direct calls by users denied | Sign-up as `supabase_auth_admin` creates a profile |
+| S1 | Membership UPDATE checked only the new row, so an **admin could demote or remove the owner** | USING and WITH CHECK both require `can_manage_owners` for owner rows | `rls.db.test.ts` S1 |
+| S2 | `invitations` was `for all` with no role cap, so an **admin could invite themselves as owner** | Direct insert/delete revoked. `create_invitation` / `preview_invitation` / `accept_invitation` RPCs store a SHA-256 token hash and require the **verified** auth email (not profile data) | Invitations suite |
+| S3 | `brand_id` and `brands.agency_id`/`slug` were updatable, so rows could move between brands | `prevent_tenant_change` trigger on all 25 brand tables; column-level UPDATE grants | brand_id immutability test |
+| S4 | Users could change their own `profiles.email` | Only `name` is updatable | S4 test |
+| S5 | Users could insert messages carrying fake agent proposals or executions, or tasks claiming agent authorship | Tightened insert checks; authorship columns are not updatable | S5 and task tests |
+| S6 | `anon` held Supabase's default table grants | All table privileges revoked from `anon`; default privileges too | anon gets 42501 on every table |
+| S7 | Storage cast `::uuid` raised on bad paths; buckets had no limits | `app.try_uuid`; 1 MB / 20 MB limits and MIME allow-lists | Storage suite |
+| S8 | No account deactivation | `profiles.deactivated_at`, checked inside every helper (including own-membership reads) | Deactivation test |
+| — | Approvals could be self-approved, re-decided, or recorded under another decider | Mirrors `work.ts`: admins decide only pending rows, never their own, as themselves; requesters may cancel | Approvals suite |
+
+**Mutation check:** with `PG_MIGRATION_SKIP=security_hardening`, 18 of the 34 RLS tests fail. So the suite detects each fix being absent, and isn't passing vacuously.
+
+**Still open (needs staging):**
+- Run the same matrix through PostgREST with real JWTs.
+- Storage API upload, download and signed URLs.
+- Realtime delivery filtering per subscriber.
+- Auth email flows (confirmation, recovery, invitation emails).
+- Rate limits.
+- `pgvector`.

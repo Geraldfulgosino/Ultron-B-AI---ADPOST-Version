@@ -65,13 +65,18 @@ grant usage on schema app to authenticated;
 grant execute on all functions in schema app to authenticated;
 
 -- ── Enable RLS everywhere ──────────────────────────────────────────────────
+-- Not FORCE (changed 2026-11-02, before this migration was ever applied): FORCE binds the table
+-- owner, which is the role the SECURITY DEFINER code runs as. Verified on real Postgres
+-- (apps/adpost-web/src/test/db): with FORCE and a migration role lacking BYPASSRLS, the
+-- agent_templates seed (0003) fails and the auth.users -> profiles trigger cannot insert, so
+-- sign-up fails. Helpers reading their own policy's table could also recurse. anon/authenticated
+-- never own tables, so RLS still applies to them in full.
 
 do $$
 declare t text;
 begin
     for t in select tablename from pg_tables where schemaname = 'public' loop
         execute format('alter table public.%I enable row level security', t);
-        execute format('alter table public.%I force row level security', t);
     end loop;
 end $$;
 

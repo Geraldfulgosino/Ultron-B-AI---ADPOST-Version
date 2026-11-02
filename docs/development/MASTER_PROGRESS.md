@@ -80,3 +80,11 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
   - Mobile drawer focus and Escape handling.
 - 200/200 tests, including three new regression tests.
 - Phase 17 prep: added `PHASE17_STAGING_RUNBOOK.md` (project config, auth redirects, env vars, migration order, RLS test matrix, storage, Edge Function order, adapter plan, and known SQL risks R1–R5) and the prepared migration `20261102000004_realtime.sql`. Nothing was connected or applied.
+
+## Phase 17 — Supabase (started 2026-11-02, staging `adpost-staging` / `ppwkxlwxzutigepaizob`)
+| Milestone | Status |
+|---|---|
+| 17A Client foundation | **Validated locally.** `@supabase/supabase-js` 2.118.0 (MIT, no install scripts). Env validation, project-ref guard, secret-key refusal, `mock`/`supabase` provider factory, connection status screen. Mock mode unchanged |
+| 17B/C Schema + RLS hardening | **Validated locally on real Postgres** (PGlite 0.5.10, Apache-2.0, dev-only). R1 reproduced and fixed; R2 and S1–S8 fixed (SECURITY_REVIEW.md); 37 DB tests; mutation check passes. **Not deployed to staging** |
+| First remote migration | **Awaiting:** CLI login (owner), then a dry run, then owner approval |
+| 17D–K Adapters, auth, realtime, storage, AI, SEO, work | Not implemented |
