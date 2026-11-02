@@ -33,3 +33,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-11-02 | Ignore Supabase CLI link state | 79858c7 | ok | 79858c7 |
 | 2026-11-02 | 17D staging migrations applied + verified | 3463589 | ok | 3463589 |
 | 2026-11-02 | 17I/17J SEO registry + SSRF guard + AI docs | 3cb4851 | ok | 3cb4851 |
+| 2026-11-02 | v5 M2+M4-7,M9-10: provider schema + AI runtime | b10ef28 | ok | b10ef28 |

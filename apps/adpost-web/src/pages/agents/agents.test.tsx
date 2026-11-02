@@ -26,7 +26,7 @@ describe('agents UI', () => {
 
     it('warns when a live model is selected', async () => {
         await renderApp('/b/pod/agents/agt_pod_content_seo', 'priya');
-        await userEvent.selectOptions(await screen.findByLabelText('Model'), '1');
+        await userEvent.selectOptions(await screen.findByLabelText('Model (when no AI routing applies)'), '1');
         expect(screen.getByText(/Live models only run through the server-side/)).toBeInTheDocument();
     });
 

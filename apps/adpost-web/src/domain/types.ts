@@ -357,6 +357,8 @@ export interface AgentExecution {
     outputTokens: number;
     costUsd: number;
     error: string | null;
+    /** AI connection that served (or was attempted for) the run; absent on older records. */
+    connectionId?: ID | null;
     startedAt: ISODate;
     finishedAt: ISODate | null;
 }

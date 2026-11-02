@@ -3,7 +3,8 @@ import { Paperclip, RotateCcw, Send, X } from 'lucide-react';
 import { Badge, Button, ErrorState, LoadingState } from '@/components/ui';
 import { fieldErrors, useAction, useBrand, useQuery } from '@/app/backend';
 import type { AttachmentInput } from '@/data/contracts';
-import type { AgentInstance, Conversation, Message, Proposal } from '@/domain/types';
+import type { AgentExecution, AgentInstance, Conversation, Message, Proposal } from '@/domain/types';
+import { CONNECTION_STATUS, providerInfo } from '@/domain/aiProviders';
 import { cn, formatDateTime } from '@/lib/utils';
 
 const TEXT_TYPES = /^(text\/|application\/(json|xml|csv))/;
@@ -64,8 +65,9 @@ function ProposalCard({ message, proposal, handlers, canWrite }: { message: Mess
     );
 }
 
-function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWrite, onSaveAttachment }: {
+function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWrite, onSaveAttachment, run }: {
     m: Message;
+    run?: AgentExecution;
     agents: AgentInstance[];
     userNames: Map<string, string>;
     onRetry: (m: Message) => void;
@@ -97,6 +99,7 @@ function MessageItem({ m, agents, userNames, onRetry, retrying, handlers, canWri
                     <span>{formatDateTime(m.createdAt)}</span>
                     {m.mode === 'simulated' && <Badge variant="blue">Simulated</Badge>}
                     {m.mode === 'live' && <Badge variant="green">Live</Badge>}
+                    {run && <span title="Provider and model that produced this reply">{providerInfo(run.provider).name} · {run.model}{run.inputTokens + run.outputTokens > 0 && ` · ${run.inputTokens + run.outputTokens} tokens`}</span>}
                 </header>
                 {m.body && <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.body}</p>}
                 {m.attachments.length > 0 && (
@@ -131,6 +134,9 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
     const { brand, can } = useBrand();
     const messages = useQuery((api) => api.chat.messages(brand.id, conversation.id), [brand.id, conversation.id]);
     const members = useQuery((api) => (can.staff ? api.members.list(brand.id) : Promise.resolve([])), [brand.id]);
+    const runs = useQuery((api) => api.agents.executions(brand.id, { conversationId: conversation.id }), [brand.id, conversation.id, messages.data?.length]);
+    const routing = useQuery((api) => api.ai.assignments(brand.id), [brand.id]);
+    const runById = new Map((runs.data ?? []).map((r) => [r.id, r]));
     const [body, setBody] = useState('');
     const [files, setFiles] = useState<AttachmentInput[]>([]);
     const send = useAction((api, input: { body: string; attachments: AttachmentInput[] }) => api.chat.send(brand.id, conversation.id, input));
@@ -159,7 +165,10 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
 
     return (
         <section className="flex h-full min-h-[60vh] flex-col rounded-xl border border-line bg-surface-muted" aria-label={conversation.title}>
-            <div className="border-b border-line bg-surface px-4 py-3 rounded-t-xl">{header}</div>
+            <div className="border-b border-line bg-surface px-4 py-3 rounded-t-xl">
+                {header}
+                <ModelIndicator agents={inConversation} assignments={routing.data ?? []} />
+            </div>
             <div className="flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
                 {messages.loading ? (
                     <LoadingState />
@@ -172,6 +181,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                             <MessageItem
                                 key={m.id}
                                 m={m}
+                                run={m.executionId ? runById.get(m.executionId) : undefined}
                                 agents={agents}
                                 userNames={userNames}
                                 canWrite={can.write}
@@ -268,5 +278,31 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                 </p>
             )}
         </section>
+    );
+}
+
+/** Which provider/model each agent in the thread will use next, and whether that connection is verified. */
+function ModelIndicator({ agents, assignments }: { agents: AgentInstance[]; assignments: Array<import('@/data/contracts').AiAssignmentView> }) {
+    if (!agents.length) return null;
+    const shown = agents.slice(0, 6);
+    return (
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted" aria-label="AI models in this conversation">
+            {shown.map((a) => {
+                const x = assignments.find((y) => y.agentInstanceId === a.id);
+                return (
+                    <li key={a.id} className="flex flex-wrap items-center gap-1">
+                        <span className="font-medium text-fg-soft">{a.displayName}:</span>
+                        {x ? (
+                            <>
+                                {x.connectionName} · <code>{x.modelId}</code>
+                                <Badge variant={x.provider === 'simulated' ? 'blue' : CONNECTION_STATUS[x.connectionStatus].variant}>{x.provider === 'simulated' ? 'Simulated' : CONNECTION_STATUS[x.connectionStatus].label}</Badge>
+                            </>
+                        ) : (
+                            <span>default model</span>
+                        )}
+                    </li>
+                );
+            })}
+        </ul>
     );
 }

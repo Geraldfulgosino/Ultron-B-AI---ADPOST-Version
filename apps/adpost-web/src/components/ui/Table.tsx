@@ -1,10 +1,10 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Table({ children, className, 'aria-label': ariaLabel }: { children: React.ReactNode; className?: string; 'aria-label'?: string }) {
     return (
         <div className={cn('overflow-x-auto rounded-xl border border-line bg-surface shadow-sm', className)}>
-            <table className="min-w-full divide-y divide-line text-sm">{children}</table>
+            <table className="min-w-full divide-y divide-line text-sm" aria-label={ariaLabel}>{children}</table>
         </div>
     );
 }

@@ -19,6 +19,8 @@ import {
     Settings,
     Palette,
     Radar,
+    PlugZap,
+    Gauge,
 } from 'lucide-react';
 
 /** Minimum capability needed to see a nav item. Mirrors access.ts capabilities. */
@@ -67,6 +69,8 @@ export const NAV_GROUPS: NavGroup[] = [
             { label: 'Agent Chat', path: 'chat', icon: MessageSquare, requires: 'staff' },
             { label: 'Team Chat', path: 'team', icon: UsersRound, requires: 'staff' },
             { label: 'Executions', path: 'executions', icon: Activity, requires: 'staff' },
+            { label: 'AI Providers', path: 'settings/ai-providers', icon: PlugZap, requires: 'admin' },
+            { label: 'AI Usage', path: 'settings/ai-usage', icon: Gauge, requires: 'staff' },
         ],
     },
     {

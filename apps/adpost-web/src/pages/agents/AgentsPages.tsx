@@ -6,7 +6,8 @@ import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptySt
 import { fieldErrors, useAction, useApi, useBrand, useQuery } from '@/app/backend';
 import { MODEL_CATALOG, TOOL_LABELS, ALL_TOOLS, modelOption, templateByKey } from '@/domain/agents';
 import type { AgentInstance, ExecutionMode, ExecutionStatus, ToolKey } from '@/domain/types';
-import type { AgentUsage } from '@/data/contracts';
+import type { AgentUsage, AiAssignmentView } from '@/data/contracts';
+import { CONNECTION_STATUS, FALLBACK_LABEL } from '@/domain/aiProviders';
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/utils';
 
 export const EXEC_STATUS: Record<ExecutionStatus, { label: string; variant: 'green' | 'red' | 'yellow' | 'blue' }> = {
@@ -48,7 +49,7 @@ export function AgentsPage() {
     return (
         <Page title="AI Agents" description={`${brand.name}'s specialist workforce. Each agent is configured for this brand only.`}>
             <Alert tone="info">
-                Agents run on the <strong>simulated</strong> offline provider until Supabase and server-side model keys are connected (Phase 17). Simulated replies are always labelled.
+                Each agent uses the provider and model assigned in <Link className="underline" to={`/b/${brand.slug}/settings/ai-routing`}>AI routing</Link>. In local mode only the <strong>simulated</strong> offline provider runs; live providers run in the server-side function after a verified connection test. Simulated replies are always labelled.
             </Alert>
             {toggle.error || provision.error ? <ErrorState error={toggle.error ?? provision.error} /> : null}
             {agents.loading ? (
@@ -112,6 +113,7 @@ export function AgentDetailPage() {
     const versions = useQuery((a) => a.agents.instructionVersions(brand.id, agentId), [brand.id, agentId]);
     const usage = useQuery((a) => a.agents.usage(brand.id), [brand.id]);
     const recent = useQuery((a) => a.agents.executions(brand.id, { agentInstanceId: agentId }), [brand.id, agentId]);
+    const assignment = useQuery((a) => a.ai.assignments(brand.id).then((list) => list.find((x) => x.agentInstanceId === agentId) ?? null), [brand.id, agentId]);
 
     if (agent.loading) return <Page title="Agent"><LoadingState /></Page>;
     if (agent.error || !agent.data) return <Page title="Agent"><ErrorState error={agent.error} /></Page>;
@@ -123,7 +125,8 @@ export function AgentDetailPage() {
         <Page title={a.displayName} description={`${t.name} · @${a.handle}`} actions={<Link to={`/b/${brand.slug}/agents`} className="text-sm text-accent hover:text-accent-strong">All agents</Link>}>
             <div className="grid gap-4 lg:grid-cols-3">
                 <div className="space-y-4 lg:col-span-2">
-                    <ConfigCard agent={a} readOnly={!can.admin} />
+                    <AiModelCard assignment={assignment.data ?? null} loading={assignment.loading} legacy={modelOption(a.model)?.label ?? a.model.model} canAssign={can.admin} />
+                    <ConfigCard agent={a} readOnly={!can.admin} assigned={!!assignment.data} />
                     <InstructionsCard agent={a} versions={versions.data ?? []} readOnly={!can.admin} />
                 </div>
                 <div className="space-y-4">
@@ -175,7 +178,31 @@ export function AgentDetailPage() {
     );
 }
 
-function ConfigCard({ agent, readOnly }: { agent: AgentInstance; readOnly: boolean }) {
+function AiModelCard({ assignment, loading, legacy, canAssign }: { assignment: AiAssignmentView | null; loading: boolean; legacy: string; canAssign: boolean }) {
+    const { brand } = useBrand();
+    return (
+        <Card>
+            <CardHeader className="flex items-center justify-between">
+                <CardTitle>AI model</CardTitle>
+                {canAssign && <Link className="text-sm text-accent hover:text-accent-strong" to={`/b/${brand.slug}/settings/ai-routing`}>Change in AI routing</Link>}
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+                {loading ? <LoadingState /> : assignment ? (
+                    <>
+                        <p className="flex flex-wrap items-center gap-2"><span className="text-fg-muted">Connection:</span> {assignment.connectionName} <Badge variant={CONNECTION_STATUS[assignment.connectionStatus].variant}>{CONNECTION_STATUS[assignment.connectionStatus].label}</Badge></p>
+                        <p><span className="text-fg-muted">Model:</span> <code>{assignment.modelId}</code> · <span className="text-fg-muted">Fallback:</span> {FALLBACK_LABEL[assignment.fallbackPolicy]}</p>
+                        {assignment.warnings.map((w) => <p key={w} className="text-xs text-warning-ink">{w}</p>)}
+                    </>
+                ) : (
+                    <p className="text-fg-muted">No AI routing assignment. The brand or organization default applies, otherwise the model below ({legacy}).</p>
+                )}
+                <p className="text-xs text-fg-muted">Instructions, tools and skills are independent of the provider: switching models needs no other change.</p>
+            </CardContent>
+        </Card>
+    );
+}
+
+function ConfigCard({ agent, readOnly, assigned }: { agent: AgentInstance; readOnly: boolean; assigned: boolean }) {
     const { brand } = useBrand();
     const [form, setForm] = useState(() => toForm(agent));
     const [saved, setSaved] = useState(false);
@@ -211,7 +238,7 @@ function ConfigCard({ agent, readOnly }: { agent: AgentInstance; readOnly: boole
                         <Field id="agent-name" label="Display name" required>
                             <Input id="agent-name" value={form.displayName} disabled={readOnly} error={errors.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
                         </Field>
-                        <Field id="agent-model" label="Model">
+                        <Field id="agent-model" label={assigned ? 'Fallback model (unused: AI routing assigns this agent)' : 'Model (when no AI routing applies)'}>
                             <Select id="agent-model" value={form.modelIndex} disabled={readOnly} onChange={(e) => setForm({ ...form, modelIndex: e.target.value })}>
                                 {MODEL_CATALOG.map((m, i) => <option key={m.model} value={i}>{m.label}</option>)}
                             </Select>

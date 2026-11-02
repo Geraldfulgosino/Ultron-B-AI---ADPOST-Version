@@ -13,6 +13,7 @@ import type { AgentTemplate } from '@/domain/agents';
 import type { Anomaly, Opportunity, WebsiteComparisonRow } from '@/domain/intelligence';
 import type { RetrievalHit } from '@/domain/knowledge';
 import type { AgencyUsage } from '@/domain/plans';
+import type * as AI from '@/domain/aiProviders';
 
 export interface Session {
     user: T.User;
@@ -405,6 +406,137 @@ export interface KnowledgeApi {
     saveAttachment(brandId: T.ID, messageId: T.ID, attachmentId: T.ID): Promise<T.KnowledgeDocument>;
 }
 
+// ── AI providers (connection manager, routing, usage) ────────────────────
+
+export interface AiAccess {
+    /** Agency staff: create, edit, rotate, disable and remove connections; curate the model catalog. */
+    canManageConnections: boolean;
+    /** Brand admins: assign connections and models to this brand's agents; brand routing policy. */
+    canAssign: boolean;
+    /** Admins see all brand usage; other staff see their own requests. */
+    canViewAllUsage: boolean;
+}
+
+export interface AiConnectionView extends AI.AiConnection {
+    scope: 'organization' | 'brand';
+    assignedAgents: Array<{ agentInstanceId: T.ID; name: string; brandId: T.ID }>;
+}
+
+export interface AiConnectionInput {
+    provider: AI.AiProviderCode;
+    scope: 'organization' | 'brand';
+    displayName: string;
+    /** Logical server-side secret slot name (e.g. ANTHROPIC_API_KEY). Never the key itself. */
+    credentialReference?: string | null;
+    apiOrganization?: string | null;
+    apiProject?: string | null;
+    defaultModel?: string | null;
+    maxOutputTokens?: number;
+    monthlyBudgetUsd?: number | null;
+    maxCostPerRequestUsd?: number | null;
+    monthlyRequestLimit?: number | null;
+    enabled?: boolean;
+}
+
+export type AiConnectionPatch = Partial<Omit<AiConnectionInput, 'provider' | 'scope'>>;
+
+export interface AiConnectionTestView {
+    connectionId: T.ID;
+    ok: boolean;
+    status: AI.ConnectionStatus;
+    errorCategory: AI.AIErrorCategory | null;
+    message: string;
+    modelsReported: number;
+    latencyMs: number;
+    testedAt: T.ISODate;
+    /** false when no server test could run (local mode). The status is then left unchanged. */
+    ranOnServer: boolean;
+}
+
+export interface AiModelInput {
+    id?: T.ID;
+    provider: AI.AiProviderCode;
+    modelId: string;
+    displayName: string;
+    capabilities: AI.Capability[];
+    contextWindow?: number | null;
+    maxOutputTokens?: number | null;
+    active?: boolean;
+    /** Prices only with a source and verification date (USD per million tokens). */
+    inputUsdPerMTok?: number | null;
+    outputUsdPerMTok?: number | null;
+    pricingSource?: string | null;
+}
+
+export interface AiAssignmentInput {
+    connectionId: T.ID;
+    modelId: string;
+    temperature?: number | null;
+    fallbackPolicy: AI.FallbackPolicy;
+    fallbackConnectionId?: T.ID | null;
+    fallbackModelId?: string | null;
+    enabled?: boolean;
+}
+
+export interface AiAssignmentView extends AI.AiAgentAssignment {
+    agentName: string;
+    connectionName: string;
+    connectionStatus: AI.ConnectionStatus;
+    /** Why runs may fail or be limited with this configuration (shown before saving takes effect). */
+    warnings: string[];
+}
+
+export type AiPolicyPatch = Partial<Pick<AI.AiRoutingPolicy, 'defaultConnectionId' | 'defaultModel' | 'allowCrossProviderFallback' | 'monthlyBudgetUsd' | 'perUserMonthlyBudgetUsd' | 'maxCostPerRequestUsd' | 'monthlyRequestLimit' | 'monthlyTokenLimit'>>;
+
+export interface AiUsageRow {
+    key: string;
+    label: string;
+    requests: number;
+    failures: number;
+    inputTokens: number;
+    outputTokens: number;
+    /** Sum over requests with a verified price; null when none were priced. */
+    estimatedCostUsd: number | null;
+    /** Requests whose cost is unknown (no verified price). */
+    unpriced: number;
+}
+
+export interface AiUsageSummary {
+    window: { from: string; to: string };
+    scope: 'brand' | 'own';
+    totals: AiUsageRow;
+    byProvider: AiUsageRow[];
+    byModel: AiUsageRow[];
+    byAgent: AiUsageRow[];
+    byUser: AiUsageRow[];
+    daily: Array<{ date: string; requests: number; tokens: number; failures: number }>;
+    recent: AI.AiUsageEvent[];
+}
+
+export interface AiProvidersApi {
+    providers(): AI.AiProviderInfo[];
+    access(brandId: T.ID): Promise<AiAccess>;
+    connections(brandId: T.ID): Promise<AiConnectionView[]>;
+    connection(brandId: T.ID, id: T.ID): Promise<AiConnectionView>;
+    createConnection(brandId: T.ID, input: AiConnectionInput): Promise<AiConnectionView>;
+    updateConnection(brandId: T.ID, id: T.ID, patch: AiConnectionPatch): Promise<AiConnectionView>;
+    /** Point the connection at another server-side secret slot; resets verification. */
+    rotateCredential(brandId: T.ID, id: T.ID, credentialReference: string): Promise<AiConnectionView>;
+    removeConnection(brandId: T.ID, id: T.ID): Promise<void>;
+    /** Server-side, lowest-cost verification (model listing). Never returns the credential. */
+    testConnection(brandId: T.ID, id: T.ID): Promise<AiConnectionTestView>;
+    healthChecks(brandId: T.ID, connectionId: T.ID): Promise<AI.AiHealthCheck[]>;
+    models(brandId: T.ID): Promise<AI.AiModel[]>;
+    saveModel(brandId: T.ID, input: AiModelInput): Promise<AI.AiModel>;
+    assignments(brandId: T.ID): Promise<AiAssignmentView[]>;
+    assign(brandId: T.ID, agentInstanceId: T.ID, input: AiAssignmentInput): Promise<AiAssignmentView>;
+    unassign(brandId: T.ID, agentInstanceId: T.ID): Promise<void>;
+    policies(brandId: T.ID): Promise<{ organization: AI.AiRoutingPolicy | null; brand: AI.AiRoutingPolicy | null }>;
+    updatePolicy(brandId: T.ID, level: 'organization' | 'brand', patch: AiPolicyPatch): Promise<AI.AiRoutingPolicy>;
+    usage(brandId: T.ID, filters?: { from?: string; to?: string }): Promise<AiUsageSummary>;
+    audit(brandId: T.ID): Promise<AI.AiAuditEvent[]>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
@@ -423,6 +555,7 @@ export interface BrandApi {
     intelligence: IntelligenceApi;
     studio: StudioApi;
     knowledge: KnowledgeApi;
+    ai: AiProvidersApi;
 }
 
 export interface Backend {

@@ -14,6 +14,13 @@ const page = <M extends Record<string, unknown>>(load: () => Promise<M>, name: k
 
 const MembersPage = page(() => import('@/pages/members/MembersPage'), 'MembersPage');
 const BrandSettingsPage = page(() => import('@/pages/brand/BrandSettingsPage'), 'BrandSettingsPage');
+const aiSettings = () => import('@/pages/settings/AiSettingsPages');
+const AiProvidersPage = page(aiSettings, 'AiProvidersPage');
+const AiConnectionNewPage = page(aiSettings, 'AiConnectionNewPage');
+const AiConnectionDetailPage = page(aiSettings, 'AiConnectionDetailPage');
+const AiModelsPage = page(aiSettings, 'AiModelsPage');
+const AiRoutingPage = page(aiSettings, 'AiRoutingPage');
+const AiUsagePage = page(aiSettings, 'AiUsagePage');
 const DashboardPage = page(() => import('@/pages/dashboard/DashboardPage'), 'DashboardPage');
 const ClientsPage = page(() => import('@/pages/management/ClientsPage'), 'ClientsPage');
 const WebsitesPage = page(() => import('@/pages/management/WebsitesPage'), 'WebsitesPage');
@@ -77,6 +84,12 @@ export const routes: RouteObject[] = [
                     { path: 'knowledge', element: guard('staff', <KnowledgePage />) },
                     { path: 'automation', element: guard('admin', <AutomationPage />) },
                     { path: 'settings', element: guard('staff', <BrandSettingsPage />) },
+                    { path: 'settings/ai-providers', element: guard('admin', <AiProvidersPage />) },
+                    { path: 'settings/ai-providers/new', element: guard('admin', <AiConnectionNewPage />) },
+                    { path: 'settings/ai-providers/:connectionId', element: guard('admin', <AiConnectionDetailPage />) },
+                    { path: 'settings/ai-models', element: guard('staff', <AiModelsPage />) },
+                    { path: 'settings/ai-routing', element: guard('admin', <AiRoutingPage />) },
+                    { path: 'settings/ai-usage', element: guard('staff', <AiUsagePage />) },
                     { path: '*', element: <NotFoundPage /> },
                 ],
             },

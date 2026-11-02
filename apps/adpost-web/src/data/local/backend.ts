@@ -15,6 +15,7 @@ import { localWork } from './work';
 import { localIntelligence } from './intelligence';
 import { localStudio } from './studio';
 import { localKnowledge } from './knowledge';
+import { localAi } from './ai';
 import { buildFixtures } from './fixtures';
 
 /** Assemble the full API for one user. Exported for tests (no auth round-trip needed). */
@@ -37,6 +38,7 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
         intelligence: localIntelligence(scope),
         studio: localStudio(scope),
         knowledge: localKnowledge(scope),
+        ai: localAi(scope),
     };
 }
 

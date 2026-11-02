@@ -1,4 +1,5 @@
 import type * as T from '@/domain/types';
+import type * as AI from '@/domain/aiProviders';
 
 /** One array per future Postgres table. Keys map to snake_case table names. */
 export interface Tables {
@@ -29,6 +30,13 @@ export interface Tables {
     knowledgeDocuments: T.KnowledgeDocument;
     knowledgeChunks: T.KnowledgeChunk;
     webChanges: T.WebChange;
+    aiConnections: AI.AiConnection;
+    aiModels: AI.AiModel;
+    aiPolicies: AI.AiRoutingPolicy;
+    aiAssignments: AI.AiAgentAssignment;
+    aiUsage: AI.AiUsageEvent;
+    aiHealthChecks: AI.AiHealthCheck;
+    aiAudit: AI.AiAuditEvent;
 }
 
 export type TableName = keyof Tables;
@@ -46,6 +54,7 @@ export const EMPTY_SNAPSHOT = (): DbSnapshot => ({
     seoInsights: [], n8nConnections: [], n8nDeliveries: [], auditLogs: [], agentInstances: [],
     instructionVersions: [], conversations: [], messages: [], executions: [], projects: [], tasks: [],
     approvals: [], knowledgeDocuments: [], knowledgeChunks: [], webChanges: [],
+    aiConnections: [], aiModels: [], aiPolicies: [], aiAssignments: [], aiUsage: [], aiHealthChecks: [], aiAudit: [],
 });
 
 type Listener = (table: TableName) => void;

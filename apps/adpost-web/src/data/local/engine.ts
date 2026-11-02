@@ -13,6 +13,7 @@ import { newId } from '@/lib/utils';
 import type { LocalDatabase } from './db';
 import type { Scope } from './scope';
 import { planForBrand, runQuotaExceeded } from './entitlements';
+import { localRouteFor } from './ai';
 
 export interface RunInput {
     agentInstanceId: ID;
@@ -91,16 +92,29 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
     if (!agent || agent.brandId !== brandId) throw new AccessDeniedError('Agent not found in this brand.');
     const version = db.find('instructionVersions', agent.activeInstructionVersionId);
     const brand = db.find('brands', brandId)!;
+    // Settings → AI Providers: the agent's assignment (or brand/organization default) decides the model.
+    const route = localRouteFor(db, brandId, agent.id);
+    const modelRef = route ? { provider: route.connection?.provider ?? 'simulated', model: route.modelId } : agent.model;
 
     const base: AgentExecution = {
         id: newId('exe'), brandId, agentInstanceId: agent.id, conversationId: input.conversationId, triggerMessageId: input.triggerMessageId,
         parentExecutionId: input.parentExecutionId ?? null, handoffDepth: input.handoffDepth ?? 0, status: 'running',
-        mode: provider.mode, provider: agent.model.provider, model: agent.model.model, instructionVersion: version?.version ?? 0,
+        mode: provider.mode, provider: modelRef.provider, model: modelRef.model, connectionId: route?.connection?.id ?? null, instructionVersion: version?.version ?? 0,
         inputTokens: 0, outputTokens: 0, costUsd: 0, error: null, startedAt: db.nowIso(), finishedAt: null,
+    };
+    const recordUsage = (e: AgentExecution) => {
+        if (e.status === 'running') return;
+        db.insert('aiUsage', {
+            id: newId('aiu'), agencyId: brand.agencyId, brandId, userId: scope.userId, agentInstanceId: agent.id, conversationId: e.conversationId,
+            executionId: e.id, connectionId: e.connectionId ?? null, provider: e.provider, modelId: e.model, requestId: null,
+            inputTokens: e.inputTokens, outputTokens: e.outputTokens, reportedCost: null, estimatedCost: null, currency: 'USD', pricingVersion: null,
+            executionStatus: e.status, errorCategory: e.status === 'failed' ? 'unknown' : e.status === 'limited' ? 'budget_exceeded' : null, latencyMs: null, createdAt: e.startedAt,
+        });
     };
     const finish = (patch: Partial<AgentExecution>): RunResult => {
         const execution = { ...base, ...patch, finishedAt: db.nowIso() };
         db.insert('executions', execution);
+        recordUsage(execution);
         return { execution: structuredClone(execution), response: null };
     };
 
@@ -108,11 +122,23 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
     const spend = agentSpend(db, agent.id);
     const quota = runQuotaExceeded(db, brandId);
     if (quota) return finish({ status: 'limited', error: quota });
-    if (agent.model.provider !== 'simulated' && !planForBrand(db, brandId).features.includes('live_models')) return finish({ status: 'limited', error: 'Live AI models are not included in this plan.' });
+    if (route) {
+        const c = route.connection;
+        if (!c || !c.enabled) return finish({ status: 'failed', error: `The AI connection assigned to ${agent.displayName} is disabled or was removed. Choose another in Settings → AI routing.` });
+        if (c.provider !== 'simulated') {
+            return finish({
+                status: 'failed',
+                error: c.status !== 'connected'
+                    ? `Connection "${c.displayName}" is not verified (${c.status.replace(/_/g, ' ')}). Run a connection test in Settings → AI Providers.`
+                    : `${c.displayName} runs only in the server-side agent-execute function (Supabase mode). Local mode never calls an AI model and never substitutes a simulated answer.`,
+            });
+        }
+    }
+    if (modelRef.provider !== 'simulated' && !planForBrand(db, brandId).features.includes('live_models')) return finish({ status: 'limited', error: 'Live AI models are not included in this plan.' });
     if (spend.runsToday >= agent.limits.maxRunsPerDay) return finish({ status: 'limited', error: `Daily run limit reached (${agent.limits.maxRunsPerDay}).` });
     if (spend.costMonthUsd >= agent.limits.monthlyBudgetUsd) return finish({ status: 'limited', error: `Monthly budget reached ($${agent.limits.monthlyBudgetUsd}).` });
-    if (agent.model.provider !== 'simulated' && provider.mode === 'simulated') {
-        return finish({ status: 'failed', error: `${modelOption(agent.model)?.label ?? agent.model.model} needs the server-side agent-execute function (Phase 17). Switch the agent to the simulated model for local use.` });
+    if (modelRef.provider !== 'simulated' && provider.mode === 'simulated') {
+        return finish({ status: 'failed', error: `${modelOption(modelRef)?.label ?? modelRef.model} needs the server-side agent-execute function (Phase 17). Switch the agent to the simulated model for local use.` });
     }
 
     const last = [...input.messages].reverse().find((m) => m.role === 'user')?.content ?? '';
@@ -126,12 +152,13 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
             maxOutputTokens: agent.limits.maxOutputTokens,
             allowedTools: agent.tools,
         });
-        const cost = estimateCost(agent.model, response.inputTokens, response.outputTokens) ?? 0;
+        const cost = estimateCost(modelRef, response.inputTokens, response.outputTokens) ?? 0;
         const execution: AgentExecution = {
             ...base, status: 'succeeded', mode: response.mode, model: response.model, inputTokens: response.inputTokens,
             outputTokens: response.outputTokens, costUsd: cost, finishedAt: db.nowIso(),
         };
         db.insert('executions', execution);
+        recordUsage(execution);
         return { execution: structuredClone(execution), response };
     } catch (e) {
         return finish({ status: 'failed', error: e instanceof ProviderError ? e.message : 'Unexpected provider error.' });
