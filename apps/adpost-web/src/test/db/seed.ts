@@ -115,9 +115,44 @@ insert into storage.objects (bucket_id, name) values
     ('brand-knowledge', '${B.pod}/${X.podDoc}/guide.txt'), ('brand-knowledge', '${B.dmd}/${X.dmdDoc}/guide.txt');
 `;
 
+/** AI provider fixture (migration 0007). Logical secret-slot names only; never a credential. */
+export const AI = {
+    agencyAnthropic: id(1000), podOpenai: id(1001), dmdOpenai: id(1002), zedAnthropic: id(1003), agencySim: id(1004),
+    model: id(1100), orgPolicy: id(1200), podPolicy: id(1201),
+    podAssign: id(1300), dmdAssign: id(1301),
+    podUsageMember: id(1400), podUsageManager: id(1401), dmdUsage: id(1402),
+};
+
+export const AI_SEED = /* sql */ `
+insert into public.ai_provider_connections (id, agency_id, brand_id, provider_code, display_name, authentication_method, credential_reference) values
+    ('${AI.agencyAnthropic}', '${id(100)}', null, 'anthropic', 'Company Anthropic API', 'platform_secret', 'ANTHROPIC_API_KEY'),
+    ('${AI.podOpenai}', '${id(100)}', '${B.pod}', 'openai', 'POD OpenAI', 'platform_secret', 'OPENAI_API_KEY'),
+    ('${AI.dmdOpenai}', '${id(100)}', '${B.dmd}', 'openai', 'DMD OpenAI', 'platform_secret', 'OPENAI_API_KEY_DMD'),
+    ('${AI.zedAnthropic}', '${id(101)}', null, 'anthropic', 'Other agency Anthropic', 'platform_secret', 'ANTHROPIC_API_KEY'),
+    ('${AI.agencySim}', '${id(100)}', null, 'simulated', 'Simulator', 'none', null);
+insert into public.ai_provider_models (id, agency_id, provider_code, provider_model_id, display_name, source) values
+    ('${AI.model}', '${id(100)}', 'anthropic', 'synthetic-model-1', 'Synthetic model', 'provider_api');
+insert into public.ai_routing_policies (id, agency_id, brand_id, default_connection_id, default_model) values
+    ('${AI.orgPolicy}', '${id(100)}', null, '${AI.agencyAnthropic}', 'synthetic-model-1'),
+    ('${AI.podPolicy}', '${id(100)}', '${B.pod}', '${AI.podOpenai}', 'synthetic-model-2');
+insert into public.ai_agent_model_assignments (id, brand_id, agent_instance_id, connection_id, model_id) values
+    ('${AI.podAssign}', '${B.pod}', '${X.podAgent}', '${AI.agencyAnthropic}', 'synthetic-model-1'),
+    ('${AI.dmdAssign}', '${B.dmd}', '${X.dmdAgent}', '${AI.dmdOpenai}', 'synthetic-model-2');
+insert into public.ai_usage_events (id, agency_id, brand_id, user_id, agent_instance_id, provider_code, model_id, input_tokens, output_tokens, execution_status) values
+    ('${AI.podUsageMember}', '${id(100)}', '${B.pod}', '${U.podMember.id}', '${X.podAgent}', 'anthropic', 'synthetic-model-1', 10, 5, 'succeeded'),
+    ('${AI.podUsageManager}', '${id(100)}', '${B.pod}', '${U.podManager.id}', '${X.podAgent}', 'anthropic', 'synthetic-model-1', 20, 8, 'succeeded'),
+    ('${AI.dmdUsage}', '${id(100)}', '${B.dmd}', '${U.dmdManager.id}', '${X.dmdAgent}', 'openai', 'synthetic-model-2', 7, 3, 'failed');
+insert into public.ai_provider_health_checks (agency_id, brand_id, connection_id, result, failure_category) values
+    ('${id(100)}', '${B.pod}', '${AI.podOpenai}', 'failure', 'invalid_credentials'),
+    ('${id(100)}', '${B.dmd}', '${AI.dmdOpenai}', 'failure', 'invalid_credentials');
+`;
+
 export async function seededDb(): Promise<PGlite> {
     const db = await createDb();
     await db.exec(SEED);
+    // Only when migration 0007 is present (absent on staging today and under PG_MIGRATION_SKIP checks).
+    const ai = await db.query(`select 1 from information_schema.tables where table_schema = 'public' and table_name = 'ai_provider_connections'`);
+    if (ai.rows.length) await db.exec(AI_SEED);
     return db;
 }
 
