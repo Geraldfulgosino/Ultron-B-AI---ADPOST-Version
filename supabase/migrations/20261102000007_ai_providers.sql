@@ -203,7 +203,10 @@ alter table public.agent_executions
     add column connection_id uuid references public.ai_provider_connections (id) on delete set null,
     add column provider_request_id text,
     add column error_category text,
-    add column fallback_used boolean not null default false;
+    add column fallback_used boolean not null default false,
+    -- Duplicate prevention: a retried or double-submitted request returns the stored execution.
+    add column idempotency_key text check (idempotency_key ~ '^[A-Za-z0-9:._-]{8,200}$');
+create unique index agent_executions_idempotency_idx on public.agent_executions (brand_id, idempotency_key) where idempotency_key is not null;
 
 -- ── Helpers ────────────────────────────────────────────────────────────────
 /** Agency staff of the owning agency, or an admin of the scoped brand (any agency brand for agency-wide rows). */
