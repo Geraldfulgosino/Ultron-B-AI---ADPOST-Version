@@ -4,7 +4,7 @@
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai` (pushed; `main` untouched at `13bc3d0`)
 **Last completed milestone:** Phases 00–16, global dark mode, real-browser and accessibility QA, Phase 17 staging runbook
-**Last synced commit:** see GITHUB_SYNC_LOG.md (source of truth: `git log origin/feature/adpost-react-supabase-ai -1`)
+**Last synced commit:** `f1194ea` (QA fixes + runbook); the sync-log commit follows it. Source of truth: `git log origin/feature/adpost-react-supabase-ai -1`
 
 ## Test status (2026-11-02)
 - adpost-web: `tsc` 0 errors · **200/200** Vitest tests · build ok · `npm audit` 0 vulnerabilities.
