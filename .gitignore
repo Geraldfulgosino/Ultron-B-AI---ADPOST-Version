@@ -94,3 +94,7 @@ test-results/
 credentials*.json
 service-account*.json
 client_secret*.json
+
+# Supabase CLI link state (project ref, pooler URL); never commit
+supabase/.temp/
+supabase/.branches/

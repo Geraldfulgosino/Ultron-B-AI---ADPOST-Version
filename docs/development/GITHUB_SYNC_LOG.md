@@ -29,3 +29,4 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-10-26 | UI: global dark mode | 29d0014 | ok | 29d0014 |
 | 2026-11-02 | Local QA a11y fixes + Phase 17 runbook | f1194ea | ok | f1194ea |
 | 2026-11-02 | Sync log | 1461dc3 | ok | 1461dc3 |
+| 2026-11-02 | Phase 17A-C client + RLS hardening | 2c60d3c | ok | 2c60d3c |
