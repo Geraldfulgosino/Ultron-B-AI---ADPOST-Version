@@ -1,6 +1,6 @@
 # AI Model Provider Plan
 
-Status: **not connected.** A Claude Code subscription does **not** grant Anthropic API access. Live execution needs an API account (Anthropic Console and/or OpenAI) that the owner authorizes, with spending limits set at the provider.
+Status: **adapters implemented and mock-tested (see AI_PROVIDER_ARCHITECTURE.md); not connected to any account.** A Claude Code subscription does **not** grant Anthropic API access. Live execution needs an API account (Anthropic Console and/or OpenAI) that the owner authorizes, with spending limits set at the provider.
 
 ## Interface (server-side only, in the Edge Function)
 ```ts

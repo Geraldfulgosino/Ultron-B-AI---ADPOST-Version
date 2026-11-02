@@ -92,3 +92,21 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
 | 17I Claude SEO | Upstream audited at `6be93f4` (MIT). 40-skill registry in code, with generated SEO_SKILL_REGISTRY.md. Capability map written. **No skill runs yet** |
 | 17J SEO execution | SSRF-safe fetcher (`urlSafety.ts`, 38 tests). Edge Function not built |
 | 17G AI runtime | Architecture, provider plan and test plan documented. **Not implemented; no model credentials** |
+
+## Master prompt v5.0: AI provider connection manager (2026-11-02)
+| Milestone | Status | Commit |
+|---|---|---|
+| M1 Architecture audit | Done: existing simulated provider, local engine and orchestrator kept as mock mode; gaps documented in AI_PROVIDER_ARCHITECTURE.md | docs |
+| M2 Provider database models | Migration 0007 **validated locally** (PGlite, 19 new DB tests, RLS matrix extended to 31 tables). **Not applied to staging: awaiting approval** | `b10ef28`, `2eb9ad8` |
+| M3 Settings UI | Providers, add/detail (test, rotate, disable, remove, health), models, agent routing, usage; mock adapter mirrors RLS | `5768a48` |
+| M4 Secret management | Slot-name references, server resolver allow-list, rotation flow; BYOK deliberately disabled | `b10ef28` |
+| M5 Anthropic adapter | Implemented; tested with simulated responses; **no live call** | `b10ef28` |
+| M6 OpenAI adapter | Implemented; tested with simulated responses; **no live call** | `b10ef28` |
+| M7 Provider switching | Assignment-driven routing in the server runtime and the local engine; no code change needed | `b10ef28`, `5768a48` |
+| M8 Agent chat runtime | `agent-execute` implemented (auth, ownership, rate limit, idempotency, SSE, cancel); **not deployed** | `2eb9ad8` |
+| M9 Team chat runtime | Bounded, provider-independent orchestrator with consolidation | `b10ef28` |
+| M10 SEO tools | Page audit, robots.txt, sitemap and llms.txt executable through the tool gateway (SSRF-safe, brand hosts only) | `b10ef28` |
+| M11 Usage and budgets | Budgets and ceilings enforced pre-call; usage events; usage dashboard | `b10ef28`, `5768a48` |
+| M12 Staging integration | **Awaiting approval** (apply 0007, deploy two functions) | — |
+| M13 Real API smoke tests | **Awaiting credentials, budget and approval** | — |
+| M14 Production readiness | Not started (no deployment authorized) | — |

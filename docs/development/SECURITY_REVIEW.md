@@ -69,3 +69,29 @@ The local adapter keeps the signed-in user id in `sessionStorage`. Anyone with d
 - `pgvector`.
 
 **Staging update (2026-11-02):** migrations 0001–0005 are applied to `ppwkxlwxzutigepaizob`. The same RLS checks passed **on staging** (38/38, rollback-only). Correction to R1: on Supabase, `postgres` has BYPASSRLS, so FORCE would not have broken staging. The fix is kept because it is correct on any Postgres. The Supabase advisors report 0 errors; their warnings are handled by migration 0006 (prepared, awaiting approval). The invitation RPCs being executable by `authenticated` is accepted by design.
+
+# Security Review: AI provider connection manager (2026-11-02, local)
+Scope: migration 0007, the shared AI runtime, the two Edge Functions (not deployed) and the settings UI. See AI_CREDENTIAL_SECURITY.md.
+
+**Controls**
+- No credential storage: slot names only, with an allow-list that must match the provider.
+- Credentials reach fixed provider origins only, and redirects are refused.
+- Errors are sanitized.
+- Status, verification, usage, health and audit columns are server-written only.
+- Agency staff manage connections; brand admins assign.
+- Brand and agency isolation for connections, assignments, usage and audit.
+- Cross-provider fallback needs both organization and brand consent.
+- The tool gateway re-authorizes every call, and web or knowledge content is wrapped as untrusted.
+- SEO fetches are limited to brand hosts and go through `safeFetch` (SSRF).
+- Per-user rate limit, idempotency, and team-round bounds.
+
+**Accepted or residual risks**
+- `ai_usage_events` aggregation for budgets runs in the function: up to 50k rows per agency per month are read. Move it to SQL views before heavy use.
+- Budget checks are not atomic across concurrent requests, so parallel turns can overshoot by at most one request each. Provider-side limits remain the hard stop.
+- DNS rebinding in Edge Functions (see SEO_EXECUTION_SECURITY.md).
+- `Deno.resolveDns` availability on the Supabase Edge runtime is unverified. If it fails, SEO fetches are refused (fail closed).
+
+**Not yet verified**
+- PostgREST behaviour of the 0007 policies on staging.
+- Deployed function auth.
+- Any live provider response.

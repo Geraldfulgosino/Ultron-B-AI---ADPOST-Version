@@ -40,3 +40,12 @@
 | 2026-11-02 | 17D | **Staging** RLS verification | Rollback-only script (`src/test/db/stagingRls.ts`) proven on PGlite first, then run with `db query --linked -f`. Seeds the synthetic fixture in a transaction, impersonates users exactly as PostgREST does (`SET LOCAL ROLE authenticated` + `request.jwt.claims`), then RAISEs, which rolls back | **pass: 38/38 checks on staging, 0 failed.** Covers brand and agency isolation, stranger, deactivated, anon, secrets, client scope, viewer and member writes, smuggling, immutable brand_id, S1/S2/S4/S5, approvals, storage folders and paths, FTS retrieval, executions. Post-check: 0 agencies, 0 brands, 0 synthetic users, 0 objects persisted. **Not covered:** PostgREST HTTP layer, GoTrue sign-up emails, Storage API, Realtime delivery |
 | 2026-11-02 | 17D | **Staging** Supabase advisors | `supabase db advisors --linked` | 0 errors. WARN: `touch_updated_at` mutable search_path; 3 SECURITY DEFINER RPCs executable by authenticated (intended, authorization checked inside and tested); 10× `auth_rls_initplan`, 5× multiple permissive policies (perf). Fixes prepared as migration 0006, **awaiting separate approval** |
 | 2026-11-02 | 17I/17J | adpost-web (mock/unit) | SEO skill registry (8 tests: 40 skills, agent/tool consistency, fake-metric guard, nothing live, limits, provenance, generated-doc drift) + SSRF guard `urlSafety.ts` (38 tests: schemes, credentials, ports, internal hosts, private/obfuscated IPv4, IPv6 incl. mapped/NAT64, split DNS, redirect-to-metadata, hop/size caps, timeouts) | pass. Full suite 293 passed + 1 opt-in skipped; tsc 0; build ok; 0 vulns. **Unit level only; no real site fetched** |
+
+## 2026-11-02: master prompt v5.0 (AI provider connection manager)
+- `npm test`: **425 passed + 1 opt-in skipped** (41 files). `tsc --noEmit`: 0 errors. `vite build`: ok.
+- New suites:
+  - `test/db/aiProviders.db.test.ts` (19, real Postgres);
+  - `test/ai/adapters.test.ts` (23), `routing.test.ts` (23), `execution.test.ts` (17), `seoTools.test.ts` (15), `handlers.test.ts` (12) and `bundleSecurity.test.ts` (3);
+  - `data/local/ai.test.ts` (13) and `pages/settings/aiSettings.test.tsx` (7).
+- Mutation check: running the RLS matrix without migration 0007 (`PG_MIGRATION_SKIP=0007`) fails the table-coverage guard, as intended.
+- **Level:** all mock or local Postgres. **No staging test of the AI tables and no live provider call has been made.** The provider adapters are verified against recorded-shape responses only.

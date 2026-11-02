@@ -129,3 +129,16 @@ The UI depends only on `src/data/contracts.ts` (`Backend` = `auth` + `api()` + `
 | 6 | `n8n-dispatch` | Signing secret. **No real customer webhooks on staging** (point at a test n8n) |
 
 Until a function is deployed and tested, the UI must show it as unavailable. Don't fall back to silent simulation in Supabase mode.
+
+## AI provider manager on staging (prepared; each step needs owner approval)
+1. Dry run: `npx supabase@2.121.0 db push --dry-run`. It should list exactly `20261102000006_advisor_fixes.sql` and `20261102000007_ai_providers.sql`.
+2. Apply: `npx supabase@2.121.0 db push`. Then re-run the rollback-only RLS script and add the AI-table checks from `aiProviders.db.test.ts`.
+3. Secrets (owner's terminal only): `npx supabase@2.121.0 secrets set ANTHROPIC_API_KEY=… OPENAI_API_KEY=… ALLOWED_ORIGINS=http://localhost:5173`. Run `secrets list` to confirm the names; it never shows values.
+4. Deploy: `npx supabase@2.121.0 functions deploy ai-connection-test` and `npx supabase@2.121.0 functions deploy agent-execute`. JWT verification stays on (the default).
+5. Smoke test (Milestone 13, needs budget approval):
+   1. A connection test for each provider. This is free: it only lists models.
+   2. One reply on a staging brand with a 256-token cap.
+   3. Switch the agent's provider and send again.
+   4. One team delegation.
+
+   Record each result in TEST_RESULTS.md.

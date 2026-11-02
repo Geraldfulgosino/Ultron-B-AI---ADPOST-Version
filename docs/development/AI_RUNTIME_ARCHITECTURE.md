@@ -1,6 +1,6 @@
 # AI Runtime Architecture
 
-Status: **designed, not implemented against a real model.** The local mock engine (`src/data/local/engine.ts`, `orchestrator.ts`) is the reference behaviour and stays as mock mode. No model API credentials are authorized, so no live AI request has been made.
+Status: **implemented (shared runtime + Edge Functions, see AI_PROVIDER_ARCHITECTURE.md), tested with simulated providers only; not deployed; no live model call has been made.** The local mock engine (`src/data/local/engine.ts`, `orchestrator.ts`) is the reference behaviour and stays as mock mode. No model API credentials are authorized, so no live AI request has been made.
 
 ## Request path (chat message → agent reply)
 1. The browser inserts the user message through PostgREST. RLS checks it (`messages_insert`: author = caller, brand writable, no forged proposals).

@@ -91,12 +91,12 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Owner decisions: approve migration 0006 (advisor fixes); authorize a model API account + spend cap. Claude next: Supabase auth adapter (17E) against staging.",
+  "nextTask": "Owner decisions: (1) approve migrations 0006 + 0007 for staging and deploying agent-execute + ai-connection-test to staging; (2) create Anthropic and/or OpenAI API accounts with provider-side spend limits and set ANTHROPIC_API_KEY / OPENAI_API_KEY with `supabase secrets set` (never in chat); (3) staging test users. Claude next: Supabase auth adapter (17E) and chat adapter calling agent-execute (17F).",
   "tests": {
-    "adpostWeb": "293/293 pass + 1 opt-in staging-output test (37+3 real-Postgres DB tests via PGlite)",
+    "adpostWeb": "425/425 pass + 1 opt-in (59 real-Postgres DB tests via PGlite; AI runtime fully mocked)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
-    "sql": "5 migrations parse + apply on PGlite; RLS matrix pass; not applied to staging",
+    "sql": "7 migrations apply on PGlite; 0001-0005 applied to staging; 0006 + 0007 local only",
     "browserQa": "headless Edge 2026-11-02: role nav, brand switch, chat/team chat, forms, mobile drawer, axe WCAG 2.1 AA 0 violations (both themes)"
   },
   "supabase": {
@@ -125,5 +125,19 @@
     "17I Claude SEO capability integration": "upstream audited at 6be93f4 (MIT); 40-skill registry implemented + tested; no skill executes yet (needs model API)",
     "17J SEO execution tools": "SSRF-safe fetcher implemented + unit-tested; Edge Function not deployed",
     "17G live AI chat": "architecture + provider plan documented; NOT implemented; awaiting model API authorization"
+  },
+  "aiProviders": {
+    "M2 schema 0007": "implemented + validated locally (19 DB tests); NOT applied to staging (awaiting approval)",
+    "M3 settings UI": "implemented + tested on mock adapter",
+    "M4 secrets": "slot references + server allow-list implemented; BYOK disabled by design",
+    "M5 anthropic adapter": "implemented + tested with simulated responses; live call NOT made",
+    "M6 openai adapter": "implemented + tested with simulated responses; live call NOT made",
+    "M7 switching": "implemented (server runtime + local engine)",
+    "M8 agent-execute": "implemented + handler-tested; NOT deployed",
+    "M9 team orchestration": "implemented + tested (mock)",
+    "M10 SEO tools": "4 executable skills + gateway, tested (mock fetch/DNS)",
+    "M11 usage/budgets": "implemented + tested; usage dashboard",
+    "M12 staging": "awaiting approval",
+    "M13 live smoke tests": "awaiting credentials, budget, approval"
   }
 }
