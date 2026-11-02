@@ -260,7 +260,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
                             <Send className="h-4 w-4" />
                         </Button>
                     </div>
-                    <p className="text-[11px] text-fg-subtle">Enter to send · Shift+Enter for a new line · text files (≤1 MB) are read by the agent</p>
+                    <p className="text-[11px] text-fg-muted">Enter to send · Shift+Enter for a new line · text files (≤1 MB) are read by the agent</p>
                 </form>
             ) : (
                 <p className="border-t border-line bg-surface p-3 text-center text-xs text-fg-muted rounded-b-xl">

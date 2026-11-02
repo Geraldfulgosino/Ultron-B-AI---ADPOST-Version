@@ -59,7 +59,7 @@ export function Dialog({ open, title, onClose, children, footer }: DialogProps) 
                     <h2 id={titleId} className="text-base font-semibold text-fg">
                         {title}
                     </h2>
-                    <button type="button" data-dialog-close onClick={onClose} className="rounded p-1 text-fg-subtle hover:text-fg-soft" aria-label="Close">
+                    <button type="button" data-dialog-close onClick={onClose} className="rounded p-1 text-fg-muted hover:text-fg-soft" aria-label="Close">
                         <X className="h-5 w-5" />
                     </button>
                 </div>

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { AppShell } from './AppShell';
@@ -59,6 +59,25 @@ describe('AppShell', () => {
         const { onSwitchBrand } = renderShell('/b/adpost/dashboard');
         await userEvent.selectOptions(screen.getAllByLabelText('Brand')[0]!, 'pod');
         expect(onSwitchBrand).toHaveBeenCalledWith('pod');
+    });
+
+    it('mobile drawer is a modal dialog that closes on Escape (focus returns) and on navigation', async () => {
+        renderShell('/b/adpost/dashboard');
+        const open = screen.getByRole('button', { name: 'Open navigation' });
+        expect(screen.queryByRole('dialog', { name: 'Navigation' })).not.toBeInTheDocument();
+
+        await userEvent.click(open);
+        const drawer = screen.getByRole('dialog', { name: 'Navigation' });
+        expect(drawer).toHaveAttribute('aria-modal', 'true');
+        expect(drawer).toContainElement(document.activeElement as HTMLElement);
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog', { name: 'Navigation' })).not.toBeInTheDocument();
+        expect(open).toHaveFocus();
+
+        await userEvent.click(open);
+        const reports = within(screen.getByRole('dialog', { name: 'Navigation' })).getByRole('link', { name: 'Reports' });
+        await userEvent.click(reports);
+        expect(screen.queryByRole('dialog', { name: 'Navigation' })).not.toBeInTheDocument();
     });
 
     it('puts a keyboard-operable dark-mode switch directly above the user profile', async () => {

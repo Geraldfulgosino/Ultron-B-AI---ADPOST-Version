@@ -23,7 +23,7 @@ export function ThemeToggle() {
                 </span>
             </button>
             {preference === 'system' ? (
-                <p className="mt-1 px-2 text-[11px] text-slate-500">Following system setting</p>
+                <p className="mt-1 px-2 text-[11px] text-slate-400">Following system setting</p>
             ) : (
                 <button type="button" onClick={() => setPreference('system')} className="mt-1 px-2 text-[11px] text-slate-400 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
                     Use system setting

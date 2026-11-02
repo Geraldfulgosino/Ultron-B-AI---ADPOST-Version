@@ -90,7 +90,7 @@ export function TrendChart({ title, data, unit = '' }: { title: string; data: Se
             </div>
 
             {showTable ? (
-                <div className="mt-3 max-h-64 overflow-y-auto">
+                <div className="mt-3 max-h-64 overflow-y-auto rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500" tabIndex={0} role="region" aria-label={`${title} table`}>
                     <table className="w-full text-sm">
                         <caption className="sr-only">{title}</caption>
                         <thead className="text-left text-xs text-fg-muted">

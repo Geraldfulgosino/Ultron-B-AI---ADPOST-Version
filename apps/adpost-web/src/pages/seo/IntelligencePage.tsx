@@ -7,7 +7,7 @@ import { formatDate, formatNumber, formatPercent } from '@/lib/utils';
 import { useReportFilters } from './useReportFilters';
 
 function Delta({ value }: { value: number | null }) {
-    if (value === null) return <span className="text-fg-subtle">—</span>;
+    if (value === null) return <span className="text-fg-muted">—</span>;
     const up = value >= 0;
     const Icon = up ? ArrowUpRight : ArrowDownRight;
     return (

@@ -58,7 +58,7 @@ function ConversationList({ kind, base, activeId }: { kind: ConversationKind; ba
                                 <p className="flex items-center gap-1 text-sm font-medium text-fg truncate">
                                     {c.title} {c.archived && <Badge>Archived</Badge>}
                                 </p>
-                                <p className="text-xs text-fg-muted truncate">{c.lastMessage ? c.lastMessage.body.slice(0, 80) : 'No messages'}</p>
+                                <p className={cn('text-xs truncate', c.id === activeId ? 'text-fg-soft' : 'text-fg-muted')}>{c.lastMessage ? c.lastMessage.body.slice(0, 80) : 'No messages'}</p>
                             </Link>
                         </li>
                     ))}

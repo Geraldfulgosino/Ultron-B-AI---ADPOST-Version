@@ -150,7 +150,7 @@ export function RegisterPage() {
                 </Button>
                 <p className="text-center text-sm text-fg-muted">
                     Already registered?{' '}
-                    <Link to="/login" className="text-accent hover:text-accent-strong">
+                    <Link to="/login" className="font-medium text-accent underline underline-offset-2 hover:text-accent-strong">
                         Sign in
                     </Link>
                 </p>

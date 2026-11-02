@@ -53,6 +53,16 @@ describe('no hard-coded light-only colors in components', () => {
         });
         expect(offenders).toEqual([]);
     });
+
+    it('sidebar text stays AA-readable on the slate-900 sidebar', () => {
+        // slate-500 on #0f172b is 3.74:1 (axe color-contrast); slate-400 and lighter pass 4.5:1.
+        const sidebarFiles = files.filter((f) => /AppShell\.tsx$|ThemeToggle\.tsx$/.test(f));
+        expect(sidebarFiles).toHaveLength(2);
+        const offenders = sidebarFiles.flatMap((f) =>
+            [...readFileSync(f, 'utf8').matchAll(/(?<![\w:-])text-slate-(?:[5-9]00|950)\b/g)].map((m) => `${relative(SRC, f)}: ${m[0]}`),
+        );
+        expect(offenders).toEqual([]);
+    });
 });
 
 describe('shared components use theme tokens', () => {

@@ -69,7 +69,7 @@ export function AutomationPage() {
                                         {N8N_EVENTS.map((e) => (
                                             <label key={e} className="flex items-center gap-2 text-sm text-fg-secondary">
                                                 <input type="checkbox" className="h-4 w-4 rounded border-line-strong" checked={form.events.includes(e)} onChange={() => toggle(e)} />
-                                                {EVENT_LABELS[e]} <code className="text-xs text-fg-subtle">{e}</code>
+                                                {EVENT_LABELS[e]} <code className="text-xs text-fg-muted">{e}</code>
                                             </label>
                                         ))}
                                     </div>

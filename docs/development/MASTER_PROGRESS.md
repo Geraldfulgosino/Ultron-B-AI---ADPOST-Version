@@ -68,3 +68,15 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
 - Light / dark / system theme with a sidebar switch directly above the user profile. It applies instantly, persists in localStorage and follows the OS until the user picks a theme (ADR-009).
 - About 390 hard-coded color classes in 33 files moved onto semantic tokens; light mode is visually unchanged. The chart series uses `#6366f1` in dark mode, which passes the dataviz validator on the dark card surface.
 - Fixed a pre-existing Chromium-only crash when opening a chat thread (ChatView effect cleanup), found during the first real-browser check.
+
+## Local QA + Phase 17 preparation (2026-11-02)
+- Resumed from `c6a64e8` and re-verified it before changing anything: 197/197 tests, build ok, 0 vulnerabilities.
+- Real-browser QA in headless Edge covered brand switching, role-based navigation and 403 deep links for six accounts, agent and team chat end to end, form validation, mobile layout and the drawer, and the theme toggle with persistence. Details are in TEST_RESULTS.md.
+- Accessibility (axe-core, WCAG 2.1 AA) found six issues, all fixed, and every scanned view now passes in both themes:
+  - Sidebar label contrast.
+  - The `/register` link was distinguished by colour only.
+  - The chart table's scroll region wasn't focusable.
+  - Two low-contrast texts.
+  - Mobile drawer focus and Escape handling.
+- 200/200 tests, including three new regression tests.
+- Phase 17 prep: added `PHASE17_STAGING_RUNBOOK.md` (project config, auth redirects, env vars, migration order, RLS test matrix, storage, Edge Function order, adapter plan, and known SQL risks R1–R5) and the prepared migration `20261102000004_realtime.sql`. Nothing was connected or applied.

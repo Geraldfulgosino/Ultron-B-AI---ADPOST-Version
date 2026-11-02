@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Menu, X, Zap, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,16 @@ interface AppShellProps {
 
 export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut, onSwitchBrand, children }: AppShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const drawerRef = useRef<HTMLDivElement>(null);
+    const openRef = useRef<HTMLButtonElement>(null);
+    const closeDrawer = () => {
+        setMobileOpen(false);
+        openRef.current?.focus();
+    };
+    // Move focus into the drawer when it opens, so keyboard and screen-reader users land in it.
+    useEffect(() => {
+        if (mobileOpen) drawerRef.current?.querySelector<HTMLElement>('button[aria-label="Close navigation"]')?.focus();
+    }, [mobileOpen]);
     const location = useLocation();
     const base = `/b/${brand.slug}`;
     const relative = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : '';
@@ -37,7 +47,7 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
                     </div>
                     <span className="font-bold text-sm">ULTRON-B AI</span>
                 </div>
-                <button type="button" className="lg:hidden text-slate-400 hover:text-white" onClick={() => setMobileOpen(false)} aria-label="Close navigation">
+                <button type="button" className="lg:hidden text-slate-400 hover:text-white" onClick={closeDrawer} aria-label="Close navigation">
                     <X className="h-5 w-5" />
                 </button>
             </div>
@@ -70,7 +80,7 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5" aria-label="Main">
                 {navGroups.map((group) => (
                     <div key={group.label}>
-                        <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{group.label}</p>
+                        <p className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{group.label}</p>
                         <div className="space-y-0.5">
                             {group.items.map((item) => {
                                 const isActive = item.path === active;
@@ -120,15 +130,24 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
             <aside className="hidden lg:block lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:h-screen">{sidebar}</aside>
 
             {mobileOpen && (
-                <div className="fixed inset-0 z-40 lg:hidden">
-                    <div className="absolute inset-0 bg-slate-900/50" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+                <div
+                    ref={drawerRef}
+                    className="fixed inset-0 z-40 lg:hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Navigation"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') closeDrawer();
+                    }}
+                >
+                    <div className="absolute inset-0 bg-slate-900/50" onClick={closeDrawer} aria-hidden="true" />
                     <aside className="relative h-full w-64">{sidebar}</aside>
                 </div>
             )}
 
             <div className="flex-1 min-w-0 flex flex-col">
                 <div className="lg:hidden flex items-center gap-3 bg-surface border-b border-line px-4 py-3">
-                    <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open navigation" className="text-fg-soft">
+                    <button ref={openRef} type="button" onClick={() => setMobileOpen(true)} aria-label="Open navigation" className="text-fg-soft">
                         <Menu className="h-5 w-5" />
                     </button>
                     <span className="text-sm font-semibold text-fg truncate">{brand.name}</span>

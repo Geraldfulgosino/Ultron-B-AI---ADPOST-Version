@@ -1,6 +1,7 @@
 # Supabase Integration Plan
 
 Status: **prepared locally, not connected** (B-002). Nothing here has been validated against a live project.
+Step-by-step staging setup, env vars, redirect URLs and the SQL risks to check first: **[PHASE17_STAGING_RUNBOOK.md](PHASE17_STAGING_RUNBOOK.md)**.
 
 ## 1. Schema (Postgres) — `supabase/migrations/`
 Core: `agencies`, `brands`, `profiles` (1:1 `auth.users`), `agency_memberships`, `brand_memberships`, `invitations`.
@@ -36,6 +37,7 @@ Bucket `report-exports` (private, signed URLs, 24 h expiry).
 | `n8n-dispatch` | `{ connectionId, event }` | Signed webhooks; never called from browser |
 
 ## 5. Realtime
+Publication: `supabase/migrations/20261102000004_realtime.sql` (prepared, not applied).
 Channels: `messages:brand_id=eq.{id}` (chat), `agent_executions` status, `approval_requests`. Realtime respects RLS.
 
 ## 6. Auth
