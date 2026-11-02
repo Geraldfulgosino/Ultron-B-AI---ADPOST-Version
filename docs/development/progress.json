@@ -89,17 +89,9 @@
     {
       "id": "B-003",
       "text": "Netlify deployment not authorized"
-    },
-    {
-      "id": "B-004",
-      "text": "Supabase CLI not authenticated on this host (owner must run `npx supabase@2.121.0 login`)"
-    },
-    {
-      "id": "B-005",
-      "text": "First remote migration needs owner approval after dry run"
     }
   ],
-  "nextTask": "Owner: `npx supabase@2.121.0 login` + link; Claude: migration list + db push --dry-run; owner approves first remote migration (0001-0005).",
+  "nextTask": "Migration 0006 (advisor fixes) awaiting approval; build Supabase auth adapter (17E).",
   "tests": {
     "adpostWeb": "244/244 pass (incl. 37 real-Postgres DB tests via PGlite)",
     "legacyBuild": "pass",
@@ -110,8 +102,14 @@
   "supabase": {
     "projectRef": "ppwkxlwxzutigepaizob",
     "projectName": "adpost-staging",
-    "appliedMigrations": [],
-    "remoteHistoryChecked": false
+    "appliedMigrations": [
+      "20261025000001",
+      "20261025000002",
+      "20261025000003",
+      "20261102000004",
+      "20261102000005"
+    ],
+    "remoteHistoryChecked": true
   },
   "phase17": {
     "17A client foundation": "implemented + validated locally (config validation, project-ref guard, secret-key refusal, provider factory, status screen); not run against staging",
@@ -122,6 +120,7 @@
     "17H storage": "bucket policies/limits validated locally; client not implemented",
     "17I AI edge functions": "not implemented; awaiting model provider credentials",
     "17J SEO/analytics": "not implemented; Google OAuth awaiting credentials",
-    "17K tasks/approvals": "DB rules validated locally; adapter not implemented"
+    "17K tasks/approvals": "DB rules validated locally; adapter not implemented",
+    "17D staging migrations": "DEPLOYED + VERIFIED on staging (catalog checks; 38/38 rollback-only RLS checks; advisors 0 errors)"
   }
 }

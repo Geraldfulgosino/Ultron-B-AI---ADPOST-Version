@@ -67,3 +67,5 @@ The local adapter keeps the signed-in user id in `sessionStorage`. Anyone with d
 - Auth email flows (confirmation, recovery, invitation emails).
 - Rate limits.
 - `pgvector`.
+
+**Staging update (2026-11-02):** migrations 0001–0005 are applied to `ppwkxlwxzutigepaizob`. The same RLS checks passed **on staging** (38/38, rollback-only). Correction to R1: on Supabase, `postgres` has BYPASSRLS, so FORCE would not have broken staging. The fix is kept because it is correct on any Postgres. The Supabase advisors report 0 errors; their warnings are handled by migration 0006 (prepared, awaiting approval). The invitation RPCs being executable by `authenticated` is accepted by design.

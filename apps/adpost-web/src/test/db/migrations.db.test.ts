@@ -18,6 +18,22 @@ describe('supabase migrations on real Postgres (PGlite, non-superuser migration 
         await db.close();
     }, 60_000);
 
+    it('advisor fixes: no per-row auth.uid(), no overlapping permissive policies, pinned search_path', async () => {
+        const db = await createDb();
+        const bare = await db.query(`select tablename, policyname from pg_policies where schemaname in ('public', 'storage')
+            and (coalesce(qual, '') ~ '(?<!SELECT )auth\\.uid\\(\\)' or coalesce(with_check, '') ~ '(?<!SELECT )auth\\.uid\\(\\)')`);
+        expect(bare.rows).toEqual([]);
+        const overlap = await db.query(`select tablename, cmd from (
+                select tablename, unnest(case when cmd = 'ALL' then array['SELECT','INSERT','UPDATE','DELETE'] else array[cmd] end) as cmd
+                from pg_policies where schemaname = 'public' and permissive = 'PERMISSIVE' and 'authenticated' = any(roles)) x
+            group by tablename, cmd having count(*) > 1`);
+        expect(overlap.rows).toEqual([]);
+        const fns = await db.query(`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname in ('app', 'public') and p.prokind = 'f' and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')`);
+        expect(fns.rows).toEqual([]);
+        await db.close();
+    }, 60_000);
+
     it('R1/R2: sign-up creates a profile through the auth trigger (as supabase_auth_admin)', async () => {
         const db = await createDb();
         await db.exec(`set role supabase_auth_admin;

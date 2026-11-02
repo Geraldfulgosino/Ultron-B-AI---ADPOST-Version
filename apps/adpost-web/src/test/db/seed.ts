@@ -34,7 +34,7 @@ export const X = {
     podN8n: id(970),
 };
 
-const SEED = /* sql */ `
+export const SEED = /* sql */ `
 set role supabase_auth_admin;
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
 ${Object.values(U)
