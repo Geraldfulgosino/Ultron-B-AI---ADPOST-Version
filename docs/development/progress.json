@@ -91,9 +91,9 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Migration 0006 (advisor fixes) awaiting approval; build Supabase auth adapter (17E).",
+  "nextTask": "Owner decisions: approve migration 0006 (advisor fixes); authorize a model API account + spend cap. Claude next: Supabase auth adapter (17E) against staging.",
   "tests": {
-    "adpostWeb": "244/244 pass (incl. 37 real-Postgres DB tests via PGlite)",
+    "adpostWeb": "293/293 pass + 1 opt-in staging-output test (37+3 real-Postgres DB tests via PGlite)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
     "sql": "5 migrations parse + apply on PGlite; RLS matrix pass; not applied to staging",
@@ -121,6 +121,9 @@
     "17I AI edge functions": "not implemented; awaiting model provider credentials",
     "17J SEO/analytics": "not implemented; Google OAuth awaiting credentials",
     "17K tasks/approvals": "DB rules validated locally; adapter not implemented",
-    "17D staging migrations": "DEPLOYED + VERIFIED on staging (catalog checks; 38/38 rollback-only RLS checks; advisors 0 errors)"
+    "17D staging migrations": "DEPLOYED + VERIFIED on staging (catalog checks; 38/38 rollback-only RLS checks; advisors 0 errors)",
+    "17I Claude SEO capability integration": "upstream audited at 6be93f4 (MIT); 40-skill registry implemented + tested; no skill executes yet (needs model API)",
+    "17J SEO execution tools": "SSRF-safe fetcher implemented + unit-tested; Edge Function not deployed",
+    "17G live AI chat": "architecture + provider plan documented; NOT implemented; awaiting model API authorization"
   }
 }

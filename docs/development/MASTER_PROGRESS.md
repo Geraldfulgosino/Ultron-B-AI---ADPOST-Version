@@ -88,3 +88,7 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
 | 17B/C Schema + RLS hardening | **Validated locally on real Postgres** (PGlite 0.5.10, Apache-2.0, dev-only). R1 reproduced and fixed; R2 and S1–S8 fixed (SECURITY_REVIEW.md); 37 DB tests; mutation check passes. **Not deployed to staging** |
 | First remote migration | **Awaiting:** CLI login (owner), then a dry run, then owner approval |
 | 17D–K Adapters, auth, realtime, storage, AI, SEO, work | Not implemented |
+| 17D Staging migrations | **Deployed and verified on staging** (`3463589`): 0001–0005 applied after owner approval; catalog checks; 38/38 rollback-only RLS checks on staging; advisors 0 errors. 0006 (advisor fixes) prepared and awaiting approval |
+| 17I Claude SEO | Upstream audited at `6be93f4` (MIT). 40-skill registry in code, with generated SEO_SKILL_REGISTRY.md. Capability map written. **No skill runs yet** |
+| 17J SEO execution | SSRF-safe fetcher (`urlSafety.ts`, 38 tests). Edge Function not built |
+| 17G AI runtime | Architecture, provider plan and test plan documented. **Not implemented; no model credentials** |
