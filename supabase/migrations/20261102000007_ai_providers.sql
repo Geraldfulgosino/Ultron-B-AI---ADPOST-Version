@@ -209,10 +209,19 @@ alter table public.agent_executions
 create unique index agent_executions_idempotency_idx on public.agent_executions (brand_id, idempotency_key) where idempotency_key is not null;
 
 -- ── Helpers ────────────────────────────────────────────────────────────────
+/** Agency owners and admins (not managers): the only users who manage AI credentials and organization policy. */
+create or replace function app.is_agency_admin_for_agency(p_agency_id uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+    select app.is_active_user() and exists (
+        select 1 from public.agency_memberships am
+        where am.agency_id = p_agency_id and am.user_id = auth.uid() and am.role in ('agency_owner', 'agency_admin')
+    );
+$$;
+
 /** Agency staff of the owning agency, or an admin of the scoped brand (any agency brand for agency-wide rows). */
 create or replace function app.can_view_ai_config(p_agency_id uuid, p_brand_id uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
-    select app.is_agency_staff_for_agency(p_agency_id)
+    select app.is_agency_admin_for_agency(p_agency_id)
         or case when p_brand_id is not null then app.can_admin_brand(p_brand_id)
                 else exists (select 1 from public.brands b where b.agency_id = p_agency_id and app.can_admin_brand(b.id)) end;
 $$;
@@ -386,32 +395,32 @@ create policy ai_providers_select on public.ai_providers for select to authentic
 create policy ai_connections_select on public.ai_provider_connections for select to authenticated
     using (app.can_view_ai_config(agency_id, brand_id));
 create policy ai_connections_insert on public.ai_provider_connections for insert to authenticated
-    with check (app.is_agency_staff_for_agency(agency_id));
+    with check (app.is_agency_admin_for_agency(agency_id));
 create policy ai_connections_update on public.ai_provider_connections for update to authenticated
-    using (app.is_agency_staff_for_agency(agency_id)) with check (app.is_agency_staff_for_agency(agency_id));
+    using (app.is_agency_admin_for_agency(agency_id)) with check (app.is_agency_admin_for_agency(agency_id));
 create policy ai_connections_delete on public.ai_provider_connections for delete to authenticated
-    using (app.is_agency_staff_for_agency(agency_id));
+    using (app.is_agency_admin_for_agency(agency_id));
 
 -- Brand staff read the catalog (model pickers, chat indicator); agency staff curate it.
 create policy ai_models_select on public.ai_provider_models for select to authenticated
     using (app.is_agency_staff_for_agency(agency_id)
         or exists (select 1 from public.brands b where b.agency_id = ai_provider_models.agency_id and app.is_brand_staff(b.id)));
 create policy ai_models_insert on public.ai_provider_models for insert to authenticated
-    with check (app.is_agency_staff_for_agency(agency_id));
+    with check (app.is_agency_admin_for_agency(agency_id));
 create policy ai_models_update on public.ai_provider_models for update to authenticated
-    using (app.is_agency_staff_for_agency(agency_id)) with check (app.is_agency_staff_for_agency(agency_id));
+    using (app.is_agency_admin_for_agency(agency_id)) with check (app.is_agency_admin_for_agency(agency_id));
 create policy ai_models_delete on public.ai_provider_models for delete to authenticated
-    using (app.is_agency_staff_for_agency(agency_id));
+    using (app.is_agency_admin_for_agency(agency_id));
 
 create policy ai_policies_select on public.ai_routing_policies for select to authenticated
     using (app.can_view_ai_config(agency_id, brand_id));
 create policy ai_policies_insert on public.ai_routing_policies for insert to authenticated
-    with check (case when brand_id is null then app.is_agency_staff_for_agency(agency_id) else app.can_admin_brand(brand_id) end);
+    with check (case when brand_id is null then app.is_agency_admin_for_agency(agency_id) else app.can_admin_brand(brand_id) end);
 create policy ai_policies_update on public.ai_routing_policies for update to authenticated
-    using (case when brand_id is null then app.is_agency_staff_for_agency(agency_id) else app.can_admin_brand(brand_id) end)
-    with check (case when brand_id is null then app.is_agency_staff_for_agency(agency_id) else app.can_admin_brand(brand_id) end);
+    using (case when brand_id is null then app.is_agency_admin_for_agency(agency_id) else app.can_admin_brand(brand_id) end)
+    with check (case when brand_id is null then app.is_agency_admin_for_agency(agency_id) else app.can_admin_brand(brand_id) end);
 create policy ai_policies_delete on public.ai_routing_policies for delete to authenticated
-    using (case when brand_id is null then app.is_agency_staff_for_agency(agency_id) else app.can_admin_brand(brand_id) end);
+    using (case when brand_id is null then app.is_agency_admin_for_agency(agency_id) else app.can_admin_brand(brand_id) end);
 
 create policy ai_assignments_select on public.ai_agent_model_assignments for select to authenticated
     using (app.is_brand_staff(brand_id));
@@ -477,6 +486,6 @@ grant all on public.ai_providers, public.ai_provider_connections, public.ai_prov
     public.ai_agent_model_assignments, public.ai_usage_events, public.ai_provider_health_checks, public.ai_audit_events
     to service_role;
 
-grant execute on function app.can_view_ai_config(uuid, uuid), app.ai_connection_in_scope(uuid, uuid) to authenticated;
+grant execute on function app.can_view_ai_config(uuid, uuid), app.ai_connection_in_scope(uuid, uuid), app.is_agency_admin_for_agency(uuid) to authenticated;
 revoke execute on function app.ai_scope_guard(), app.ai_connection_reset_status(), app.ai_assignment_guard(),
     app.ai_policy_guard(), app.ai_audit() from public, authenticated;
