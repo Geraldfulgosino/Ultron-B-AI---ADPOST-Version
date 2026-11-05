@@ -22,8 +22,8 @@ describe('auth + routing', () => {
     });
 
     it('rejects open redirects in ?next', () => {
-        expect(safeNext('//evil.example')).toBe('/brands');
-        expect(safeNext('https://evil.example')).toBe('/brands');
+        expect(safeNext('//evil.example')).toBe('/agencies');
+        expect(safeNext('https://evil.example')).toBe('/agencies');
         expect(safeNext('/b/pod/dashboard')).toBe('/b/pod/dashboard');
     });
 

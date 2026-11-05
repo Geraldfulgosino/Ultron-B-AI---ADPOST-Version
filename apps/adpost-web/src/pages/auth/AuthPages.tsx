@@ -11,7 +11,7 @@ import { SAMPLE_USERS } from '@/data/local/sampleSeed';
 
 /** Only allow same-app relative redirects (no open redirect via ?next=). */
 export function safeNext(next: string | null): string {
-    return next && next.startsWith('/') && !next.startsWith('//') ? next : '/brands';
+    return next && next.startsWith('/') && !next.startsWith('//') ? next : '/agencies';
 }
 
 export function LoginPage() {
@@ -120,7 +120,7 @@ export function RegisterPage() {
     const [pending, setPending] = useState(false);
     const errors = fieldErrors(error);
 
-    if (session) return <Navigate to="/brands" replace />;
+    if (session) return <Navigate to="/agencies" replace />;
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -128,7 +128,7 @@ export function RegisterPage() {
         setError(null);
         try {
             await register(form);
-            navigate('/brands', { replace: true });
+            navigate('/agencies', { replace: true });
         } catch (err) {
             setError(err);
         } finally {

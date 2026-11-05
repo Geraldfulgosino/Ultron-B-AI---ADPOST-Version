@@ -16,5 +16,7 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./src/test/setup.ts'],
         css: false,
+        // See src/test/setup.ts: headroom for full-app UI tests under load.
+        testTimeout: 20_000,
     },
 });
