@@ -83,11 +83,24 @@ function isoDay(base: string, offsetDays: number): string {
     return d.toISOString().slice(0, 10);
 }
 
+/** Row builders shared by the test fixtures and the dev sample seed. */
+export function agencyRow(id: string, name: string, slug: string, at: string, planKey: T.Agency['planKey'] = 'internal'): T.Agency {
+    return { id, name, slug, planKey, description: '', logoUrl: null, status: 'active', timezone: 'UTC', defaultCurrency: 'USD', contactEmail: null, createdAt: at, updatedAt: at, archivedAt: null };
+}
+
+export function brandRow(b: Pick<T.Brand, 'id' | 'agencyId' | 'agencySlug' | 'name' | 'slug'> & Partial<T.Brand>, at: string): T.Brand {
+    return {
+        status: 'active', description: '', displayName: null, industry: null, logoUrl: null, primaryContactName: null, primaryContactEmail: null,
+        timezone: 'UTC', currency: 'USD', color: '#4f46e5', createdAt: at, archivedAt: null, ...b,
+    };
+}
+
+/** Synthetic TEST fixtures (with generated analytics). Not the dev seed: see sampleSeed.ts. */
 export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credentials } {
     const s = EMPTY_SNAPSHOT();
 
-    s.agencies.push({ id: FIXTURE_IDS.agency, name: 'ADPOST', slug: 'adpost', planKey: 'internal' });
-    for (const b of BRANDS) s.brands.push({ ...b, agencyId: FIXTURE_IDS.agency, status: 'active', timezone: 'UTC', currency: 'USD', createdAt: CREATED });
+    s.agencies.push(agencyRow(FIXTURE_IDS.agency, 'ADPOST', 'adpost', CREATED));
+    for (const b of BRANDS) s.brands.push(brandRow({ ...b, agencyId: FIXTURE_IDS.agency, agencySlug: 'adpost' }, CREATED));
     s.users.push(...USERS);
 
     s.agencyMemberships.push({ id: 'agm_alex', agencyId: FIXTURE_IDS.agency, userId: U.alex, role: 'agency_owner' });
@@ -108,7 +121,11 @@ export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credential
             const clientId = `cli_${brandId.slice(4)}_${i + 1}`;
             const websiteId = `web_${brandId.slice(4)}_${i + 1}`;
             s.clients.push({ id: clientId, brandId, name: c.name, slug, status: 'active', timezone: 'UTC', currency: 'USD', businessGoals: `Grow qualified ${c.conversion.toLowerCase()}s from organic search.`, createdAt: CREATED });
-            s.websites.push({ id: websiteId, brandId, clientId, name: c.name, domain: c.domain, platform: c.platform, status: 'active', primaryConversion: c.conversion, ga4PropertyId: `properties/${100000 + s.websites.length}`, gscSiteUrl: `sc-domain:${c.domain}`, createdAt: CREATED });
+            s.websites.push({
+                id: websiteId, brandId, clientId, name: c.name, domain: c.domain, websiteUrl: `https://${c.domain}`, environment: 'production', platform: c.platform,
+                status: 'active', isPrimary: i === 0, description: '', primaryConversion: c.conversion, ga4PropertyId: `properties/${100000 + s.websites.length}`,
+                gscSiteUrl: `sc-domain:${c.domain}`, createdAt: CREATED, archivedAt: null,
+            });
             addAnalytics(s, brandId, clientId, websiteId, c.domain);
         });
     }

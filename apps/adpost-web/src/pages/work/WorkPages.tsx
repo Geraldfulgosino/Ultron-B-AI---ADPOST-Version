@@ -8,6 +8,7 @@ import type { ApprovalKind, ApprovalRequest, ApprovalStatus, Assignee, Task, Tas
 import type { AgentInstance } from '@/domain/types';
 import type { MemberView } from '@/data/contracts';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { clientBase } from '@/app/paths';
 
 export const STATUS_LABELS: Record<TaskStatus, string> = { todo: 'To do', in_progress: 'In progress', review: 'In review', done: 'Done', blocked: 'Blocked' };
 const STATUSES = Object.keys(STATUS_LABELS) as TaskStatus[];
@@ -257,7 +258,7 @@ export function ApprovalsPage() {
                                     <p className="text-sm text-fg-secondary">{r.summary}</p>
                                     <p className="text-xs text-fg-muted">
                                         Requested by {who(r)} {r.requestedBy.type === 'agent' && '(AI agent)'} · {formatDateTime(r.createdAt)}
-                                        {r.payload.conversationId && <> · <Link className="text-accent" to={`/b/${brand.slug}/chat/${r.payload.conversationId}`}>source conversation</Link></>}
+                                        {r.payload.conversationId && <> · <Link className="text-accent" to={`${clientBase(brand)}/chat/${r.payload.conversationId}`}>source conversation</Link></>}
                                     </p>
                                     {r.decisionNote && <p className="rounded bg-surface-muted p-2 text-xs text-fg-secondary">Decision note: {r.decisionNote}</p>}
                                     {r.status === 'pending' && (

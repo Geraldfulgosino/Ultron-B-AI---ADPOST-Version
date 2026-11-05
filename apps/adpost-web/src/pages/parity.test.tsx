@@ -58,14 +58,25 @@ describe('parity pages', () => {
         expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     });
 
-    it('adds a website with domain normalisation', async () => {
-        await renderApp('/b/pod/websites', 'priya');
-        await userEvent.click(await screen.findByRole('button', { name: /New website/ }));
-        const dialog = screen.getByRole('dialog', { name: 'New website' });
-        await userEvent.type(within(dialog).getByLabelText(/^Name/), 'POD Help');
-        await userEvent.type(within(dialog).getByLabelText(/^Domain/), 'https://Help.POD.example.test/faq');
-        await userEvent.click(within(dialog).getByRole('button', { name: 'Create website' }));
-        expect(await screen.findByText('help.pod.example.test')).toBeInTheDocument();
+    it('adds a website with URL normalisation, and a draft without a URL', async () => {
+        const { db } = await renderApp('/b/pod/websites', 'priya');
+        await userEvent.click(await screen.findByRole('button', { name: /Add website/ }));
+        let dialog = screen.getByRole('dialog', { name: 'Add website to POD' });
+        await userEvent.type(within(dialog).getByLabelText(/^Website name/), 'POD Help');
+        await userEvent.type(within(dialog).getByLabelText(/^Website URL/), 'HTTPS://Help.POD.example.test/faq');
+        await userEvent.click(within(dialog).getByRole('button', { name: 'Add website' }));
+        expect(await screen.findByText('https://help.pod.example.test/faq')).toBeInTheDocument();
+        expect(db.all('websites').find((w) => w.name === 'POD Help')).toMatchObject({ domain: 'help.pod.example.test', platform: 'unknown' });
+
+        await userEvent.click(screen.getByRole('button', { name: /Add website/ }));
+        dialog = screen.getByRole('dialog', { name: 'Add website to POD' });
+        await userEvent.type(within(dialog).getByLabelText(/^Website URL/), 'help.pod.example.test');
+        await userEvent.type(within(dialog).getByLabelText(/^Website name/), 'Bad');
+        await userEvent.click(within(dialog).getByRole('button', { name: 'Add website' }));
+        expect(await within(dialog).findByText(/full URL starting with https/)).toBeInTheDocument();
+        await userEvent.clear(within(dialog).getByLabelText(/^Website URL/));
+        await userEvent.click(within(dialog).getByRole('button', { name: 'Add website' }));
+        expect((await screen.findAllByText(/No URL yet \(draft\)/)).length).toBe(1);
     });
 
     it('approves an insight from its detail page and records notes', async () => {

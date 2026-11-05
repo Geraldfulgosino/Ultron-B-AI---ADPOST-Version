@@ -1,10 +1,10 @@
 import type { Client, Website } from '@/domain/types';
-import type { ClientsApi, WebsitesApi } from '../contracts';
+import type { ClientsApi, WebsiteInput, WebsitesApi } from '../contracts';
+import { normalizeWebsiteUrl } from '@/domain/websites';
 import { assertValid } from '../errors';
 import { newId, slugify } from '@/lib/utils';
 import { byClientId, type Scope } from './scope';
 
-const DOMAIN = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 
 /** Accepts "https://www.Example.com/path" and stores "www.example.com" (legacy behaviour). */
 export function normalizeDomain(input: string): string {
@@ -87,20 +87,40 @@ export function localClients(scope: Scope): ClientsApi {
 export function localWebsites(scope: Scope): WebsitesApi {
     const { db } = scope;
 
-    const validate = (brandId: string, input: { name?: string; domain?: string; clientId?: string }, selfId?: string) => {
-        const domain = input.domain !== undefined ? normalizeDomain(input.domain) : undefined;
+    /** Validates the fields present in the input; returns the normalized URL/domain when a URL was given. */
+    const validate = (brandId: string, input: Partial<WebsiteInput>, selfId?: string) => {
+        let url: { url: string; domain: string } | null | undefined;
+        let urlError: string | false = false;
+        if (input.websiteUrl !== undefined) {
+            if (input.websiteUrl === null || !input.websiteUrl.trim()) url = null;
+            else {
+                const r = normalizeWebsiteUrl(input.websiteUrl);
+                if (r.ok) url = { url: r.url, domain: r.domain };
+                else urlError = r.error;
+            }
+        }
         assertValid({
-            name: input.name !== undefined && !input.name.trim() && 'Website name is required.',
-            domain:
-                domain !== undefined &&
-                (!DOMAIN.test(domain)
-                    ? 'Enter a valid domain, e.g. example.com.'
-                    : db.all('websites').some((w) => w.brandId === brandId && w.domain === domain && w.id !== selfId) && 'This domain is already tracked.'),
-            // Client must belong to the same brand: never trust a client id from the browser.
-            clientId:
-                input.clientId !== undefined && !db.all('clients').some((c) => c.id === input.clientId && c.brandId === brandId) && 'Choose a client from this brand.',
+            name: input.name !== undefined && (!input.name.trim() || input.name.trim().length > 120) && 'A website name of 1–120 characters is required.',
+            websiteUrl: urlError || (!!url && db.all('websites').some((w) => w.brandId === brandId && w.domain === url!.domain && w.id !== selfId) && 'This domain is already tracked for this client.'),
+            environment: input.environment !== undefined && !['production', 'staging', 'development'].includes(input.environment) && 'Choose an environment.',
+            platform: input.platform !== undefined && !['wordpress', 'shopify', 'custom', 'other', 'unknown'].includes(input.platform) && 'Choose a platform.',
+            status: input.status !== undefined && !['active', 'inactive', 'archived'].includes(input.status) && 'Choose a status.',
+            description: input.description !== undefined && input.description.length > 2000 && 'At most 2,000 characters.',
+            // A legacy client must belong to the same brand: never trust an id from the browser.
+            clientId: !!input.clientId && !db.all('clients').some((c) => c.id === input.clientId && c.brandId === brandId) && 'Choose a client from this brand.',
         });
-        return domain;
+        return url;
+    };
+
+    /** Mirrors app.website_normalize(): archive stamps, and one primary per client. */
+    const applyLifecycle = (brandId: string, site: Website) => {
+        if (site.status === 'archived') {
+            site.archivedAt = site.archivedAt ?? db.nowIso();
+            site.isPrimary = false;
+        } else site.archivedAt = null;
+        if (site.isPrimary) {
+            for (const w of db.all('websites')) if (w.brandId === brandId && w.id !== site.id && w.isPrimary) db.patch('websites', w.id, { isPrimary: false });
+        }
     };
 
     return {
@@ -108,7 +128,8 @@ export function localWebsites(scope: Scope): WebsitesApi {
             return scope
                 .rows('websites', brandId, { clientKey: byClientId })
                 .filter((w) => !filter?.clientId || w.clientId === filter.clientId)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .filter((w) => filter?.includeArchived || w.status !== 'archived')
+                .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.name.localeCompare(b.name));
         },
 
         async get(brandId, id) {
@@ -117,21 +138,28 @@ export function localWebsites(scope: Scope): WebsitesApi {
 
         async create(brandId, input) {
             scope.require(brandId, 'write');
-            assertValid({ name: !input.name?.trim() && 'Website name is required.', domain: !input.domain?.trim() && 'Domain is required.', clientId: !input.clientId && 'Client is required.' });
-            const domain = validate(brandId, input)!;
+            assertValid({ name: !input.name?.trim() && 'Website name is required.' });
+            const url = validate(brandId, input);
             const site: Website = {
                 id: newId('web'),
                 brandId,
-                clientId: input.clientId,
+                clientId: input.clientId ?? null,
                 name: input.name.trim(),
-                domain,
-                platform: input.platform ?? 'custom',
+                domain: url?.domain ?? null,
+                websiteUrl: url?.url ?? null,
+                environment: input.environment ?? 'production',
+                // Never assume a platform that was not supplied.
+                platform: input.platform ?? 'unknown',
                 status: input.status ?? 'active',
+                isPrimary: input.isPrimary ?? false,
+                description: input.description?.trim() ?? '',
                 primaryConversion: input.primaryConversion?.trim() || null,
                 ga4PropertyId: input.ga4PropertyId?.trim() || null,
                 gscSiteUrl: input.gscSiteUrl?.trim() || null,
                 createdAt: db.nowIso(),
+                archivedAt: null,
             };
+            applyLifecycle(brandId, site);
             db.insert('websites', site);
             scope.audit(brandId, 'website.created', 'website', site.id);
             return structuredClone(site);
@@ -139,19 +167,21 @@ export function localWebsites(scope: Scope): WebsitesApi {
 
         async update(brandId, id, input) {
             scope.require(brandId, 'write');
-            scope.owned('websites', brandId, id, 'Website');
-            const domain = validate(brandId, input, id);
-            const patch: Partial<Website> = {};
-            if (input.name !== undefined) patch.name = input.name.trim();
-            if (domain !== undefined) patch.domain = domain;
-            if (input.clientId !== undefined) patch.clientId = input.clientId;
-            if (input.platform !== undefined) patch.platform = input.platform;
-            if (input.status !== undefined) patch.status = input.status;
-            if (input.primaryConversion !== undefined) patch.primaryConversion = input.primaryConversion?.trim() || null;
-            if (input.ga4PropertyId !== undefined) patch.ga4PropertyId = input.ga4PropertyId?.trim() || null;
-            if (input.gscSiteUrl !== undefined) patch.gscSiteUrl = input.gscSiteUrl?.trim() || null;
-            const updated = db.patch('websites', id, patch);
-            scope.audit(brandId, 'website.updated', 'website', id);
+            const current = scope.owned('websites', brandId, id, 'Website');
+            const url = validate(brandId, input, id);
+            const next: Website = { ...current };
+            if (input.name !== undefined) next.name = input.name.trim();
+            if (url !== undefined) { next.websiteUrl = url?.url ?? null; next.domain = url?.domain ?? null; }
+            if (input.clientId !== undefined) next.clientId = input.clientId;
+            for (const k of ['environment', 'platform', 'status', 'isPrimary'] as const) if (input[k] !== undefined) (next as unknown as Record<string, unknown>)[k] = input[k];
+            if (input.description !== undefined) next.description = input.description.trim();
+            if (input.primaryConversion !== undefined) next.primaryConversion = input.primaryConversion?.trim() || null;
+            if (input.ga4PropertyId !== undefined) next.ga4PropertyId = input.ga4PropertyId?.trim() || null;
+            if (input.gscSiteUrl !== undefined) next.gscSiteUrl = input.gscSiteUrl?.trim() || null;
+            if (input.status !== undefined && input.status !== 'archived' && current.status === 'archived') next.archivedAt = null;
+            applyLifecycle(brandId, next);
+            const updated = db.patch('websites', id, next);
+            scope.audit(brandId, input.status === 'archived' ? 'website.archived' : current.status === 'archived' && input.status ? 'website.restored' : 'website.updated', 'website', id);
             return structuredClone(updated);
         },
 

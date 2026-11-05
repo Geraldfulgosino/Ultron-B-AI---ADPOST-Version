@@ -89,7 +89,7 @@ export function scoreOpportunities(queries: readonly SearchQuery[], from: string
 export interface WebsiteComparisonRow {
     websiteId: string;
     name: string;
-    domain: string;
+    domain: string | null;
     sessions: number;
     sessionsDelta: number | null;
     conversions: number;

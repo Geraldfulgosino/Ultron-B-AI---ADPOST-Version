@@ -6,6 +6,8 @@ import { LocalBackend } from '@/data/local/backend';
 import { DEV_PASSWORD, FIXTURE_IDS } from '@/data/local/fixtures';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 import { testDb } from './helpers';
+import { LocalDatabase } from '@/data/local/db';
+import { buildSampleSeed } from '@/data/local/sampleSeed';
 
 /** Render the full app at `path`, optionally already signed in as a fixture user. */
 export async function renderApp(path: string, user?: keyof typeof FIXTURE_IDS.users) {
@@ -15,6 +17,23 @@ export async function renderApp(path: string, user?: keyof typeof FIXTURE_IDS.us
         const email = db.find('users', FIXTURE_IDS.users[user])!.email;
         await backend.auth.signIn(email, DEV_PASSWORD);
     }
+    const router = createMemoryRouter(routes, { initialEntries: [path] });
+    const utils = render(
+        <ThemeProvider>
+            <BackendProvider backend={backend}>
+                <RouterProvider router={router} />
+            </BackendProvider>
+        </ThemeProvider>,
+    );
+    return { ...utils, router, backend, db };
+}
+
+/** Render the app on the dev SAMPLE dataset (3 agencies, 10 clients, no metrics), signed in by email. */
+export async function renderSampleApp(path: string, email?: string) {
+    const { snapshot, credentials } = buildSampleSeed();
+    const db = new LocalDatabase(snapshot, credentials, { now: () => new Date('2026-11-05T12:00:00.000Z') });
+    const backend = new LocalBackend(db);
+    if (email) await backend.auth.signIn(email, DEV_PASSWORD);
     const router = createMemoryRouter(routes, { initialEntries: [path] });
     const utils = render(
         <ThemeProvider>

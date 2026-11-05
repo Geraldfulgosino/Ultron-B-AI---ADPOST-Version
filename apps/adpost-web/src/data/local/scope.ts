@@ -83,4 +83,5 @@ export class Scope {
     }
 }
 
-export const byClientId = <R extends { clientId: ID }>(r: R): ID => r.clientId;
+/** Legacy inner-client key. Rows without one are hidden from client-portal users (mirrors can_read_client_row). */
+export const byClientId = <R extends { clientId: ID | null }>(r: R): ID => r.clientId ?? '';

@@ -22,8 +22,8 @@ describe('activeNavPath', () => {
 
 describe('AppShell', () => {
     const brands = [
-        { slug: 'adpost', name: 'ADPOST' },
-        { slug: 'pod', name: 'POD' },
+        { slug: 'adpost', name: 'ADPOST', agencySlug: 'adpost' },
+        { slug: 'pod', name: 'POD', agencySlug: 'adpost' },
     ];
 
     function renderShell(path: string, onSwitchBrand = vi.fn()) {
@@ -48,21 +48,21 @@ describe('AppShell', () => {
     }
 
     it('marks the active nav item and scopes links to the brand', () => {
-        renderShell('/b/adpost/seo/insights');
+        renderShell('/a/adpost/c/adpost/seo/insights');
         const active = screen.getAllByRole('link', { current: 'page' });
         expect(active.map((a) => a.textContent)).toEqual(['SEO Insights']);
-        expect(screen.getAllByRole('link', { name: 'Dashboard' })[0]).toHaveAttribute('href', '/b/adpost/dashboard');
+        expect(screen.getAllByRole('link', { name: 'Dashboard' })[0]).toHaveAttribute('href', '/a/adpost/c/adpost/dashboard');
         expect(screen.getByText('page body')).toBeInTheDocument();
     });
 
     it('switches brand through the selector', async () => {
-        const { onSwitchBrand } = renderShell('/b/adpost/dashboard');
+        const { onSwitchBrand } = renderShell('/a/adpost/c/adpost/dashboard');
         await userEvent.selectOptions(screen.getAllByLabelText('Brand')[0]!, 'pod');
         expect(onSwitchBrand).toHaveBeenCalledWith('pod');
     });
 
     it('mobile drawer is a modal dialog that closes on Escape (focus returns) and on navigation', async () => {
-        renderShell('/b/adpost/dashboard');
+        renderShell('/a/adpost/c/adpost/dashboard');
         const open = screen.getByRole('button', { name: 'Open navigation' });
         expect(screen.queryByRole('dialog', { name: 'Navigation' })).not.toBeInTheDocument();
 
@@ -81,7 +81,7 @@ describe('AppShell', () => {
     });
 
     it('puts a keyboard-operable dark-mode switch directly above the user profile', async () => {
-        renderShell('/b/adpost/dashboard');
+        renderShell('/a/adpost/c/adpost/dashboard');
         const toggle = screen.getAllByRole('switch', { name: 'Dark mode' })[0]!;
         const signOut = screen.getAllByRole('button', { name: 'Sign out' })[0]!;
         const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]!;

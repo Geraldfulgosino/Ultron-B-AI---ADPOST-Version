@@ -7,6 +7,7 @@ import { DEV_PASSWORD } from '@/data/local/fixtures';
 import { LocalDatabase } from '@/data/local/db';
 import { LOCAL_PERSIST_KEY } from '@/data/local/backend';
 import { selectProvider } from '@/data/supabase/config';
+import { SAMPLE_USERS } from '@/data/local/sampleSeed';
 
 /** Only allow same-app relative redirects (no open redirect via ?next=). */
 export function safeNext(next: string | null): string {
@@ -66,14 +67,8 @@ export function LoginPage() {
     );
 }
 
-const DEV_ACCOUNTS: Array<[string, string]> = [
-    ['alex@adpost.example.test', 'Agency owner: all brands'],
-    ['morgan@adpost.example.test', 'ADPOST admin, POD manager'],
-    ['priya@pod.example.test', 'POD owner'],
-    ['dana@dmd.example.test', 'DMD manager'],
-    ['vic@pod.example.test', 'POD viewer'],
-    ['casey@client.example.test', 'POD client portal'],
-];
+/** Synthetic sample accounts of the dev dataset (src/data/local/sampleSeed.ts). */
+const DEV_ACCOUNTS: Array<[string, string]> = SAMPLE_USERS.map((u) => [u.email, u.hint]);
 
 /** Local-adapter only: synthetic accounts for exercising roles. */
 function DevAccountsHint({ onPick }: { onPick: (email: string) => void }) {

@@ -8,7 +8,7 @@ describe('chat UI', () => {
         await screen.findByRole('option', { name: 'Statistics SEO Agent' });
         await userEvent.selectOptions(screen.getByLabelText('New conversation with'), 'agt_pod_statistics_seo');
         await userEvent.click(screen.getByRole('button', { name: /Start chat/ }));
-        await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/b\/pod\/chat\/cnv_/));
+        await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/a\/adpost\/c\/pod\/chat\/cnv_/));
         const composer = await screen.findByLabelText('Message');
         await userEvent.type(composer, 'Summarise our numbers{Enter}');
         const reply = await screen.findByRole('article', { name: 'Statistics SEO Agent message' });
@@ -58,7 +58,7 @@ describe('chat UI', () => {
     it('team chat: lead replies and hands off; summary can be generated', async () => {
         const { router } = await renderApp('/b/pod/team', 'priya');
         await userEvent.click(await screen.findByRole('button', { name: /^SEO Team/ }));
-        await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/b\/pod\/team\/cnv_/));
+        await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/a\/adpost\/c\/pod\/team\/cnv_/));
         expect(await screen.findByRole('button', { name: '@technical-seo' })).toBeInTheDocument();
         await userEvent.type(await screen.findByLabelText('Message'), 'Plan the technical work{Enter}');
         expect(await screen.findByRole('article', { name: 'SEO Manager message' })).toBeInTheDocument();

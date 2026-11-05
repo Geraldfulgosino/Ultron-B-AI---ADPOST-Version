@@ -69,6 +69,6 @@ describe('intelligence API', () => {
         expect(screen.getByRole('list', { name: 'Opportunities' })).toBeInTheDocument();
         await router.navigate('/b/pod/seo/insights/ins_pod_1');
         await userEvent.click(await screen.findByRole('button', { name: 'Discuss with SEO Manager' }));
-        await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/b\/pod\/chat\/cnv_/));
+        await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/a\/adpost\/c\/pod\/chat\/cnv_/));
     });
 });

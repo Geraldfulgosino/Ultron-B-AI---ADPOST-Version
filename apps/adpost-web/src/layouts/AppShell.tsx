@@ -4,10 +4,12 @@ import { Menu, X, Zap, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { activeNavPath, type NavGroup } from '@/app/navigation';
 import { ThemeToggle } from '@/theme/ThemeToggle';
+import { clientBase } from '@/app/paths';
 
 export interface ShellBrand {
     slug: string;
     name: string;
+    agencySlug: string;
 }
 
 interface AppShellProps {
@@ -18,10 +20,12 @@ interface AppShellProps {
     user: { name: string; email: string };
     onSignOut: () => void;
     onSwitchBrand: (slug: string) => void;
+    /** Hierarchical Agency → Client → Website selector; replaces the single client switcher. */
+    selector?: React.ReactNode;
     children: React.ReactNode;
 }
 
-export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut, onSwitchBrand, children }: AppShellProps) {
+export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut, onSwitchBrand, selector, children }: AppShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const drawerRef = useRef<HTMLDivElement>(null);
     const openRef = useRef<HTMLButtonElement>(null);
@@ -34,7 +38,7 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
         if (mobileOpen) drawerRef.current?.querySelector<HTMLElement>('button[aria-label="Close navigation"]')?.focus();
     }, [mobileOpen]);
     const location = useLocation();
-    const base = `/b/${brand.slug}`;
+    const base = `${clientBase(brand)}`;
     const relative = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : '';
     const active = activeNavPath(relative, navGroups.flatMap((g) => g.items));
 
@@ -52,6 +56,12 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
                 </button>
             </div>
 
+            {selector ? (
+                <div className="px-4 py-3 border-b border-slate-800">
+                    {selector}
+                    <p className="mt-1 text-xs text-slate-400">{roleLabel}</p>
+                </div>
+            ) : (
             <div className="px-4 py-3 border-b border-slate-800">
                 <label htmlFor="brand-switcher" className="text-xs text-slate-400 uppercase tracking-wide mb-1 block">
                     Brand
@@ -76,6 +86,7 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
                 )}
                 <p className="mt-1 text-xs text-slate-400">{roleLabel}</p>
             </div>
+            )}
 
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5" aria-label="Main">
                 {navGroups.map((group) => (

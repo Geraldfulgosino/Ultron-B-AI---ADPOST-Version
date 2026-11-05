@@ -8,6 +8,8 @@ import { AccessDeniedError } from '@/data/errors';
 import { AppShell } from './AppShell';
 import { ErrorState, LoadingState } from '@/components/ui';
 import { ForbiddenPage } from '@/pages/StatusPages';
+import { clientBase } from '@/app/paths';
+import { WorkspaceSelector } from '@/components/workspace/WorkspaceSelector';
 
 /** Redirects to /login (preserving the target) when signed out. */
 export function RequireAuth() {
@@ -29,10 +31,10 @@ export function RequireCapability({ cap, children }: { cap: Capability; children
 }
 
 export function BrandLayout() {
-    const { brandSlug = '' } = useParams();
+    const { brandSlug = '', agencySlug = '' } = useParams();
     const { session, signOut } = useBackend();
     const navigate = useNavigate();
-    const brand = useQuery((api) => api.workspace.brandBySlug(brandSlug), [brandSlug]);
+    const brand = useQuery((api) => api.workspace.brandBySlug(brandSlug, agencySlug), [brandSlug, agencySlug]);
     const brands = useQuery((api) => api.workspace.listBrands(), []);
 
     if (brand.error instanceof AccessDeniedError) return <ForbiddenPage />;
@@ -52,7 +54,8 @@ export function BrandLayout() {
                     await signOut();
                     navigate('/login', { replace: true });
                 }}
-                onSwitchBrand={(slug) => navigate(`/b/${slug}/dashboard`)}
+                onSwitchBrand={(slug) => navigate(`${clientBase({ agencySlug: access.brand.agencySlug, slug })}/dashboard`)}
+                selector={<WorkspaceSelector />}
             >
                 <Suspense fallback={<LoadingState />}>
                     <Outlet />
@@ -60,4 +63,14 @@ export function BrandLayout() {
             </AppShell>
         </BrandProvider>
     );
+}
+
+/** Legacy /b/:slug/* links: redirect to the canonical /a/:agency/c/:slug/* when the slug is unambiguous. */
+export function LegacyBrandRedirect() {
+    const { brandSlug = '', '*': rest = '' } = useParams();
+    const location = useLocation();
+    const brand = useQuery((api) => api.workspace.brandBySlug(brandSlug), [brandSlug]);
+    if (brand.error) return <ForbiddenPage />;
+    if (brand.loading || !brand.data) return <LoadingState />;
+    return <Navigate to={`${clientBase(brand.data.brand)}/${rest}${location.search}`} replace />;
 }

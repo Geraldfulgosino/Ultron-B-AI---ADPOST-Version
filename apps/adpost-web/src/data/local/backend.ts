@@ -15,14 +15,17 @@ import { localWork } from './work';
 import { localIntelligence } from './intelligence';
 import { localStudio } from './studio';
 import { localKnowledge } from './knowledge';
+import { localAgencies } from './agencies';
 import { localAi } from './ai';
 import { buildFixtures } from './fixtures';
+import { buildSampleSeed } from './sampleSeed';
 
 /** Assemble the full API for one user. Exported for tests (no auth round-trip needed). */
 export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
     const scope = new Scope(db, userId);
     return {
         workspace: localWorkspace(scope),
+        agencies: localAgencies(scope),
         clients: localClients(scope),
         websites: localWebsites(scope),
         members: localMembers(scope),
@@ -130,7 +133,11 @@ export class LocalBackend implements Backend {
     }
 }
 
-export function createLocalBackend(options: LocalDatabaseOptions & { persistSession?: boolean } = {}): LocalBackend {
-    const { snapshot, credentials } = buildFixtures();
+/**
+ * Local backend. The dev app uses the sample hierarchy (3 agencies, 10 clients, no metrics);
+ * `dataset: 'test'` loads the synthetic test fixtures with generated analytics.
+ */
+export function createLocalBackend(options: LocalDatabaseOptions & { persistSession?: boolean; dataset?: 'sample' | 'test' } = {}): LocalBackend {
+    const { snapshot, credentials } = options.dataset === 'test' ? buildFixtures() : buildSampleSeed();
     return new LocalBackend(new LocalDatabase(snapshot, credentials, options), options.persistSession);
 }

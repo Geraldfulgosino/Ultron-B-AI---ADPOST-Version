@@ -37,6 +37,8 @@ export interface Tables {
     aiUsage: AI.AiUsageEvent;
     aiHealthChecks: AI.AiHealthCheck;
     aiAudit: AI.AiAuditEvent;
+    /** Platform administrators (create/archive agencies; no tenant data access by itself). */
+    platformAdmins: { id: T.ID; userId: T.ID; createdAt: T.ISODate };
 }
 
 export type TableName = keyof Tables;
@@ -54,7 +56,7 @@ export const EMPTY_SNAPSHOT = (): DbSnapshot => ({
     seoInsights: [], n8nConnections: [], n8nDeliveries: [], auditLogs: [], agentInstances: [],
     instructionVersions: [], conversations: [], messages: [], executions: [], projects: [], tasks: [],
     approvals: [], knowledgeDocuments: [], knowledgeChunks: [], webChanges: [],
-    aiConnections: [], aiModels: [], aiPolicies: [], aiAssignments: [], aiUsage: [], aiHealthChecks: [], aiAudit: [],
+    aiConnections: [], aiModels: [], aiPolicies: [], aiAssignments: [], aiUsage: [], aiHealthChecks: [], aiAudit: [], platformAdmins: [],
 });
 
 type Listener = (table: TableName) => void;
@@ -70,7 +72,7 @@ export interface LocalDatabaseOptions {
  * Bump when the snapshot shape changes. Stored data from another version is
  * discarded and fixtures are reloaded (local dev data is disposable).
  */
-export const DB_SCHEMA_VERSION = 4;
+export const DB_SCHEMA_VERSION = 5;
 
 export class LocalDatabase {
     private data: DbSnapshot;

@@ -18,7 +18,7 @@ describe('auth + routing', () => {
         await userEvent.type(screen.getByLabelText(/Password/), 'adpost-dev');
         await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
         expect(await screen.findByRole('heading', { name: 'Members' })).toBeInTheDocument();
-        expect(router.state.location.pathname).toBe('/b/pod/members');
+        expect(router.state.location.pathname).toBe('/a/adpost/c/pod/members');
     });
 
     it('rejects open redirects in ?next', () => {
@@ -34,7 +34,7 @@ describe('auth + routing', () => {
 
     it('single-brand users skip the picker; multi-brand users choose', async () => {
         const one = await renderApp('/brands', 'priya');
-        await waitFor(() => expect(one.router.state.location.pathname).toBe('/b/pod/dashboard'));
+        await waitFor(() => expect(one.router.state.location.pathname).toBe('/a/adpost/c/pod/dashboard'));
         one.unmount();
 
         await renderApp('/brands', 'alex');

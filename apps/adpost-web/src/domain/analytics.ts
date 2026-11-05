@@ -21,7 +21,7 @@ export interface SeriesPoint {
 
 export interface ReportData {
     filters: ReportFilters;
-    websites: Array<{ id: string; name: string; domain: string; clientName: string }>;
+    websites: Array<{ id: string; name: string; domain: string | null; clientName: string }>;
     hasData: boolean;
     summary: { gscClicks: number; gscImpressions: number; ga4Sessions: number; ga4Conversions: number };
     trends: { gscClicks: SeriesPoint[]; gscImpressions: SeriesPoint[]; ga4Sessions: SeriesPoint[] };
@@ -128,7 +128,7 @@ export function buildReport(input: ReportInput, filters: ReportFilters): ReportD
         filters,
         websites: [...input.websites]
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map((w) => ({ id: w.id, name: w.name, domain: w.domain, clientName: input.clientNames.get(w.clientId) ?? '' })),
+            .map((w) => ({ id: w.id, name: w.name, domain: w.domain, clientName: (w.clientId ? input.clientNames.get(w.clientId) : undefined) ?? '' })),
         hasData: metrics.length > 0,
         summary: {
             gscClicks: showGsc ? t.clicks : 0,
@@ -241,7 +241,7 @@ export function reportToCsv(report: ReportData, brandName: string, generatedAt: 
 
 export interface InsightCandidate {
     websiteId: string;
-    clientId: string;
+    clientId: string | null;
     type: SeoInsightType;
     severity: Severity;
     /** Stable dedupe key: same subject is not re-raised while open. */
@@ -279,7 +279,7 @@ export function generateInsightCandidates(input: InsightInput): InsightCandidate
             if (before >= 10 && cur <= before * 0.7) {
                 out.push({
                     ...base, type: 'traffic_drop', severity: cur <= before * 0.5 ? 'high' : 'medium', subject: `clicks:${w.id}`,
-                    title: `${w.domain} lost ${before - cur} clicks week over week`,
+                    title: `${w.domain ?? w.name} lost ${before - cur} clicks week over week`,
                     summary: `Search clicks fell from ${before} to ${cur} in the 7 days ending ${end}.`,
                     recommendation: 'Check for ranking losses on top queries, recent site changes, and indexing errors in Search Console.',
                     evidence: { previous_clicks: before, current_clicks: cur, drop: before - cur, window_end: end },
@@ -345,7 +345,7 @@ export function generateInsightCandidates(input: InsightInput): InsightCandidate
                 if (a.sessions >= 200 && rate < 0.005) {
                     out.push({
                         ...base, type: 'conversion_gap', severity: 'medium', subject: `conv:${w.id}:${path}`,
-                        title: `${w.domain}${path} converts ${pct(rate)} of ${a.sessions} sessions`,
+                        title: `${w.domain ?? w.name}${path} converts ${pct(rate)} of ${a.sessions} sessions`,
                         summary: `This landing page attracts traffic but rarely leads to "${w.primaryConversion ?? 'a conversion'}".`,
                         recommendation: 'Review the call to action, page speed, and offer clarity; consider an A/B test on the primary CTA.',
                         evidence: { sessions: a.sessions, conversions: a.conversions, conversion_rate: Math.round(rate * 10000) / 100 },
@@ -359,7 +359,7 @@ export function generateInsightCandidates(input: InsightInput): InsightCandidate
         if (!ints.length) {
             out.push({
                 ...base, type: 'technical_issue', severity: 'medium', subject: `sync-missing:${w.id}`,
-                title: `${w.domain} has no analytics integration`,
+                title: `${w.domain ?? w.name} has no analytics integration`,
                 summary: 'No GA4 or Search Console data is being collected for this website.',
                 recommendation: 'Connect GA4 and Search Console on the Integrations page.',
                 evidence: { integrations: 0 },
@@ -371,7 +371,7 @@ export function generateInsightCandidates(input: InsightInput): InsightCandidate
                 const label = i.provider === 'google_analytics' ? 'GA4' : 'Search Console';
                 out.push({
                     ...base, type: 'technical_issue', severity: i.status === 'error' ? 'high' : 'medium', subject: `sync:${i.id}`,
-                    title: `${label} sync for ${w.domain} is ${i.status === 'error' ? 'failing' : 'stale'}`,
+                    title: `${label} sync for ${w.domain ?? w.name} is ${i.status === 'error' ? 'failing' : 'stale'}`,
                     summary: i.lastErrorMessage ?? `Last successful sync: ${i.lastSyncedAt ?? 'never'}.`,
                     recommendation: 'Reconnect the integration and run a manual sync.',
                     evidence: { provider: i.provider, status: i.status, last_synced_at: i.lastSyncedAt ?? 'never' },

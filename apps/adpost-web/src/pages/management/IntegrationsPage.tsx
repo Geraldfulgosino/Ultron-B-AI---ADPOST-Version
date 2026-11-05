@@ -35,7 +35,7 @@ export function IntegrationsPage() {
                         <Card key={w.id}>
                             <CardHeader>
                                 <CardTitle>{w.name}</CardTitle>
-                                <p className="text-xs text-fg-muted">{w.domain}</p>
+                                <p className="text-xs text-fg-muted">{w.domain ?? 'No URL yet'}</p>
                             </CardHeader>
                             <CardContent className="divide-y divide-line-subtle">
                                 {PROVIDERS.map((p) => {

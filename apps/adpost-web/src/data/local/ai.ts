@@ -12,7 +12,7 @@ import type { ID } from '@/domain/types';
 import type * as AI from '@/domain/aiProviders';
 import { AI_PROVIDERS, MODEL_ID_RE, providerInfo, SECRET_SLOT_RE } from '@/domain/aiProviders';
 import type { AiAccess, AiAssignmentInput, AiAssignmentView, AiConnectionInput, AiConnectionPatch, AiConnectionTestView, AiConnectionView, AiModelInput, AiPolicyPatch, AiProvidersApi, AiUsageRow, AiUsageSummary } from '../contracts';
-import { can } from '../access';
+import { can, isAgencyAdminRole } from '../access';
 import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import type { DbSnapshot, LocalDatabase } from './db';
@@ -21,17 +21,17 @@ import type { Scope } from './scope';
 const SIM_MODEL = 'sim-deterministic-1';
 
 /** Fixture: an offline simulator (usable) and an example Anthropic connection that is configured but never verified. */
-export function seedAiProviders(s: DbSnapshot, agencyId: ID, actorId: ID, at: string): void {
+export function seedAiProviders(s: DbSnapshot, agencyId: ID, actorId: ID, at: string, idSuffix = ''): void {
     const base = {
         agencyId, brandId: null, apiOrganization: null, apiProject: null, maxOutputTokens: 4000, monthlyBudgetUsd: null, maxCostPerRequestUsd: null,
         monthlyRequestLimit: null, enabled: true, lastTestedAt: null, lastErrorCategory: null, createdBy: actorId, updatedBy: actorId, createdAt: at, updatedAt: at,
     } as const;
     s.aiConnections.push(
-        { ...base, id: 'aic_simulator', provider: 'simulated', displayName: 'Simulator (offline)', authenticationMethod: 'none', credentialReference: null, defaultModel: SIM_MODEL, status: 'configured', verifiedModels: [] },
-        { ...base, id: 'aic_anthropic', provider: 'anthropic', displayName: 'Company Anthropic API', authenticationMethod: 'platform_secret', credentialReference: 'ANTHROPIC_API_KEY', defaultModel: null, status: 'configured', verifiedModels: [] },
+        { ...base, id: `aic_simulator${idSuffix}`, provider: 'simulated', displayName: 'Simulator (offline)', authenticationMethod: 'none', credentialReference: null, defaultModel: SIM_MODEL, status: 'configured', verifiedModels: [] },
+        { ...base, id: `aic_anthropic${idSuffix}`, provider: 'anthropic', displayName: 'Company Anthropic API', authenticationMethod: 'platform_secret', credentialReference: 'ANTHROPIC_API_KEY', defaultModel: null, status: 'configured', verifiedModels: [] },
     );
     s.aiModels.push({
-        id: 'aim_sim', agencyId, provider: 'simulated', modelId: SIM_MODEL, displayName: 'Simulated (offline, deterministic)', capabilities: ['text'],
+        id: `aim_sim${idSuffix}`, agencyId, provider: 'simulated', modelId: SIM_MODEL, displayName: 'Simulated (offline, deterministic)', capabilities: ['text'],
         contextWindow: null, maxOutputTokens: null, active: true, source: 'admin', inputUsdPerMTok: null, outputUsdPerMTok: null, pricingSource: null,
         pricingVerifiedAt: null, createdAt: at, updatedAt: at,
     });
@@ -45,7 +45,7 @@ export function localAi(scope: Scope): AiProvidersApi {
 
     const ctx = (brandId: ID) => {
         const f = scope.facts(brandId);
-        const access: AiAccess = { canManageConnections: !!f.agencyMembership, canAssign: can(f, 'admin'), canViewAllUsage: can(f, 'admin') };
+        const access: AiAccess = { canManageConnections: isAgencyAdminRole(f.agencyMembership?.role), canAssign: can(f, 'admin'), canViewAllUsage: can(f, 'admin') };
         return { f, access, agencyId: f.brand.agencyId };
     };
     const requireView = (brandId: ID) => {

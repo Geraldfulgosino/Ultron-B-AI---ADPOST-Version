@@ -83,14 +83,14 @@ describe('websites', () => {
 
     it('rejects a client from another brand', async () => {
         const priya = as('priya').api;
-        await expect(priya.websites.create(pod, { clientId: 'cli_dmd_1', name: 'X', domain: 'x.example.test' })).rejects.toMatchObject({
+        await expect(priya.websites.create(pod, { clientId: 'cli_dmd_1', name: 'X', websiteUrl: 'https://x.example.test' })).rejects.toMatchObject({
             fields: { clientId: 'Choose a client from this brand.' },
         });
     });
 
     it('rejects duplicate domains within a brand', async () => {
         const priya = as('priya').api;
-        await expect(priya.websites.create(pod, { clientId: 'cli_pod_1', name: 'Dup', domain: 'https://shop.pod.example.test' })).rejects.toBeInstanceOf(ValidationError);
+        await expect(priya.websites.create(pod, { clientId: 'cli_pod_1', name: 'Dup', websiteUrl: 'https://shop.pod.example.test' })).rejects.toBeInstanceOf(ValidationError);
     });
 
     it('client user only sees websites of their client; other brands are denied', async () => {

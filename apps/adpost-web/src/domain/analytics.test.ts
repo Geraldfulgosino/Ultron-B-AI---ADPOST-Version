@@ -3,8 +3,8 @@ import { buildPdf, executiveSummary, reportToPdf } from './pdf';
 import type { DailyMetric, Integration, Website } from './types';
 
 const site: Website = {
-    id: 'w1', brandId: 'b', clientId: 'c1', name: 'Site', domain: 'site.test', platform: 'custom', status: 'active',
-    primaryConversion: 'Purchase', ga4PropertyId: null, gscSiteUrl: null, createdAt: '',
+    id: 'w1', brandId: 'b', clientId: 'c1', name: 'Site', domain: 'site.test', websiteUrl: 'https://site.test', environment: 'production', platform: 'custom', status: 'active',
+    isPrimary: true, description: '', primaryConversion: 'Purchase', ga4PropertyId: null, gscSiteUrl: null, createdAt: '', archivedAt: null,
 };
 
 function day(date: string, clicks: number, sessions = 100): DailyMetric {

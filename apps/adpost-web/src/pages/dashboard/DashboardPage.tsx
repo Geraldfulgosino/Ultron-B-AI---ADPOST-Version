@@ -6,11 +6,12 @@ import { TrendChart } from '@/components/charts/TrendChart';
 import { useBrand, useQuery } from '@/app/backend';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { INSIGHT_STATUS, INTEGRATION_STATUS, PROVIDER_LABELS, SEVERITY } from '@/pages/seo/labels';
+import { clientBase } from '@/app/paths';
 
 export function DashboardPage() {
     const { brand } = useBrand();
     const q = useQuery((api) => api.analytics.dashboard(brand.id), [brand.id]);
-    const base = `/b/${brand.slug}`;
+    const base = `${clientBase(brand)}`;
 
     return (
         <Page title="Dashboard" description={brand.name}>
@@ -23,8 +24,7 @@ export function DashboardPage() {
                     const d = q.data!;
                     return (
                         <>
-                            <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-                                <StatCard label="Clients" value={d.counts.clients} />
+                            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                                 <StatCard label="Websites" value={d.counts.websites} />
                                 <StatCard label="Integrations connected" value={d.counts.integrationsConnected} />
                                 <StatCard label="Integrations failing" value={d.counts.integrationsError} hint={d.counts.integrationsError ? 'Needs reconnect' : 'All healthy'} />

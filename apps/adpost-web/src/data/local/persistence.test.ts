@@ -7,21 +7,21 @@ const KEY = 'test.db';
 
 describe('local persistence', () => {
     it('keeps registered users (hashed) across reloads', async () => {
-        const a = createLocalBackend({ persistKey: KEY });
+        const a = createLocalBackend({ persistKey: KEY, dataset: 'test' });
         await a.auth.register({ name: 'New Person', email: 'New@Example.test', password: 'long-enough-pw' });
         const stored = JSON.parse(localStorage.getItem(`${KEY}.credentials`)!) as Record<string, string>;
         expect(stored['new@example.test']).toBe(await hashPassword('new@example.test', 'long-enough-pw'));
         expect(JSON.stringify(stored)).not.toContain('long-enough-pw');
         expect(Object.keys(stored)).toEqual(['new@example.test']); // fixture creds are not written
 
-        const b = createLocalBackend({ persistKey: KEY });
+        const b = createLocalBackend({ persistKey: KEY, dataset: 'test' });
         await expect(b.auth.signIn('new@example.test', 'wrong')).rejects.toBeInstanceOf(AuthError);
         expect((await b.auth.signIn('new@example.test', 'long-enough-pw')).user.name).toBe('New Person');
     });
 
     it('persists writes and discards snapshots from another schema version', async () => {
         const reload = async () => {
-            const b = createLocalBackend({ persistKey: KEY });
+            const b = createLocalBackend({ persistKey: KEY, dataset: 'test' });
             await b.auth.signIn('priya@pod.example.test', 'adpost-dev');
             return b.api();
         };

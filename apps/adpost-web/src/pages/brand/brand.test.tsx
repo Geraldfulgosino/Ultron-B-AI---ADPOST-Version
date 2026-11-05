@@ -35,7 +35,7 @@ describe('brand workspaces (UI)', () => {
         const dialog = screen.getByRole('dialog', { name: 'New brand' });
         await userEvent.type(within(dialog).getByLabelText(/Brand name/), 'Northwind Labs');
         await userEvent.click(within(dialog).getByRole('button', { name: 'Create brand' }));
-        await waitFor(() => expect(router.state.location.pathname).toBe('/b/northwind-labs/settings'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/a/adpost/c/northwind-labs/settings'));
         expect(await screen.findByLabelText(/^Name/)).toHaveValue('Northwind Labs');
     });
 
@@ -57,9 +57,9 @@ describe('brand workspaces (UI)', () => {
 
     it('switching brand in the shell navigates to that brand', async () => {
         const { router } = await renderApp('/b/adpost/settings', 'morgan');
-        const switcher = (await screen.findAllByLabelText('Brand'))[0]!;
+        const switcher = (await screen.findAllByLabelText('Client'))[0]!;
         await userEvent.selectOptions(switcher, 'pod');
-        await waitFor(() => expect(router.state.location.pathname).toBe('/b/pod/dashboard'));
+        await waitFor(() => expect(router.state.location.pathname).toBe('/a/adpost/c/pod/dashboard'));
     });
 });
 

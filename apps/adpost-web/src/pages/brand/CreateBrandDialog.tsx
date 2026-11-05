@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, Dialog, ErrorState, Field, Input, Textarea } from '@/components/ui';
 import { fieldErrors, useAction } from '@/app/backend';
+import { clientBase } from '@/app/paths';
 
 export function CreateBrandDialog({ onClose }: { onClose: () => void }) {
     const navigate = useNavigate();
@@ -25,7 +26,7 @@ export function CreateBrandDialog({ onClose }: { onClose: () => void }) {
                         loading={create.pending}
                         onClick={async () => {
                             const brand = await create.run();
-                            if (brand) navigate(`/b/${brand.slug}/settings`);
+                            if (brand) navigate(`${clientBase(brand)}/settings`);
                         }}
                     >
                         Create brand

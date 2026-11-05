@@ -1,7 +1,10 @@
 import { can, clientRestriction, effectiveRole, assignableRoles, type AccessFacts } from './access';
 import type { BrandRole } from '@/domain/types';
 
-const brand = { id: 'b1', agencyId: 'a1', name: 'B', slug: 'b', status: 'active', description: '', timezone: 'UTC', currency: 'USD', color: '#000000', createdAt: '' } as const;
+const brand = {
+    id: 'b1', agencyId: 'a1', agencySlug: 'a', name: 'B', slug: 'b', status: 'active', description: '', displayName: null, industry: null, logoUrl: null,
+    primaryContactName: null, primaryContactEmail: null, timezone: 'UTC', currency: 'USD', color: '#000000', createdAt: '', archivedAt: null,
+} as const;
 
 function facts(role: BrandRole | null, opts: { agency?: string; clientId?: string | null } = {}): AccessFacts {
     return {

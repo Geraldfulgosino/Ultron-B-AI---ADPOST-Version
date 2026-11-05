@@ -8,6 +8,7 @@ import type { InsightFilters } from '@/data/contracts';
 import type { SeoInsightStatus, SeoInsightType, Severity } from '@/domain/types';
 import { formatDateTime } from '@/lib/utils';
 import { INSIGHT_STATUS, INSIGHT_TYPE_LABELS, SEVERITY } from './labels';
+import { clientBase } from '@/app/paths';
 
 export function InsightsListPage() {
     const { brand, can } = useBrand();
@@ -95,7 +96,7 @@ export function InsightsListPage() {
                                 <input type="checkbox" className="mt-1 h-4 w-4 rounded border-line-strong" aria-label={`Select ${i.title}`} checked={selected.has(i.id)} onChange={() => toggle(i.id)} />
                             )}
                             <div className="min-w-0 flex-1">
-                                <Link to={`/b/${brand.slug}/seo/insights/${i.id}`} className="font-medium text-fg hover:text-accent-strong">{i.title}</Link>
+                                <Link to={`${clientBase(brand)}/seo/insights/${i.id}`} className="font-medium text-fg hover:text-accent-strong">{i.title}</Link>
                                 <p className="mt-0.5 text-sm text-fg-soft line-clamp-2">{i.summary}</p>
                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
                                     <Badge variant={SEVERITY[i.severity].variant}>{SEVERITY[i.severity].label}</Badge>
@@ -131,7 +132,7 @@ export function InsightDetailPage() {
         : [{ to: 'pending', label: 'Reopen', variant: 'secondary' }];
 
     return (
-        <Page title="Insight" description={`${i.websiteName} · ${i.domain}`} actions={<Link to={`/b/${brand.slug}/seo/insights`} className="text-sm text-accent hover:text-accent-strong">Back to insights</Link>}>
+        <Page title="Insight" description={`${i.websiteName} · ${i.domain}`} actions={<Link to={`${clientBase(brand)}/seo/insights`} className="text-sm text-accent hover:text-accent-strong">Back to insights</Link>}>
             <div className="grid gap-4 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
                     <CardHeader>
@@ -172,7 +173,7 @@ export function InsightDetailPage() {
                                 </div>
                                 {update.error ? <ErrorState error={update.error} /> : null}
                                 {can.staff && (
-                                    <Button size="sm" variant="secondary" className="w-full" loading={discuss.pending} onClick={async () => { const r = await discuss.run(); if (r) navigate(`/b/${brand.slug}/chat/${r.conversationId}`); }}>
+                                    <Button size="sm" variant="secondary" className="w-full" loading={discuss.pending} onClick={async () => { const r = await discuss.run(); if (r) navigate(`${clientBase(brand)}/chat/${r.conversationId}`); }}>
                                         Discuss with SEO Manager
                                     </Button>
                                 )}

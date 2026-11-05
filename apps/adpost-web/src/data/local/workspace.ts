@@ -1,12 +1,10 @@
-import type { Brand, ID } from '@/domain/types';
+import type { Brand } from '@/domain/types';
 import type { BrandAccess, BrandInput, WorkspaceApi } from '../contracts';
-import { assignableRoles, can, clientRestriction, effectiveRole, ROLE_LABELS, type AccessFacts } from '../access';
+import { assignableRoles, can, clientRestriction, effectiveRole, isAgencyAdminRole, ROLE_LABELS, type AccessFacts } from '../access';
+import { createClientRecord } from './agencies';
 import { AccessDeniedError, assertValid } from '../errors';
-import { newId, slugify } from '@/lib/utils';
 import type { Scope } from './scope';
-import { AGENT_TEMPLATES } from '@/domain/agents';
-import { buildAgentInstance } from './agents';
-import { agencyUsage, assertCanAddBrand } from './entitlements';
+import { agencyUsage } from './entitlements';
 
 export function toBrandAccess(f: AccessFacts): BrandAccess {
     const role = effectiveRole(f)!;
@@ -38,12 +36,6 @@ export function localWorkspace(scope: Scope): WorkspaceApi {
         return out.sort((a, b) => a.brand.name.localeCompare(b.brand.name));
     };
 
-    const agencyFor = (): ID => {
-        const m = db.all('agencyMemberships').find((a) => a.userId === scope.userId);
-        if (!m) throw new AccessDeniedError('Only agency staff can create brands.');
-        return m.agencyId;
-    };
-
     return {
         me() {
             const user = db.find('users', scope.userId);
@@ -55,53 +47,33 @@ export function localWorkspace(scope: Scope): WorkspaceApi {
             return accessible();
         },
 
-        async brandBySlug(slug) {
-            const found = accessible().find((b) => b.brand.slug === slug);
-            if (!found) throw new AccessDeniedError();
-            return found;
+        async brandBySlug(slug, agencySlug) {
+            const matches = accessible().filter((b) => b.brand.slug === slug && (!agencySlug || b.brand.agencySlug === agencySlug));
+            if (matches.length !== 1) throw new AccessDeniedError();
+            return matches[0]!;
         },
 
         async agencyUsage() {
-            const m = db.all('agencyMemberships').find((a) => a.userId === scope.userId);
-            if (!m) throw new AccessDeniedError('Only agency staff can view plan usage.');
+            const m = db.all('agencyMemberships').find((a) => a.userId === scope.userId && isAgencyAdminRole(a.role));
+            if (!m) throw new AccessDeniedError('Only agency staff (owners and admins) can view plan usage.');
             return agencyUsage(db, m.agencyId);
         },
 
         async canCreateBrands() {
-            return db.all('agencyMemberships').some((a) => a.userId === scope.userId);
+            return db.all('agencyMemberships').some((a) => a.userId === scope.userId && isAgencyAdminRole(a.role));
         },
 
         async createBrand(input: BrandInput) {
-            const agencyId = agencyFor();
-            assertCanAddBrand(db, agencyId);
-            const name = input.name?.trim() ?? '';
-            const slug = slugify(name);
-            assertValid({
-                name: !name && 'Brand name is required.',
-                slug: name && db.all('brands').some((b) => b.slug === slug) && 'A brand with this name already exists.',
-                color: input.color && !HEX.test(input.color) && 'Color must be a hex value like #4f46e5.',
-            });
-            const brand: Brand = {
-                id: newId('brd'),
-                agencyId,
-                name,
-                slug,
-                status: 'active',
-                description: input.description?.trim() ?? '',
-                timezone: input.timezone ?? 'UTC',
-                currency: input.currency ?? 'USD',
-                color: input.color ?? '#4f46e5',
-                createdAt: db.nowIso(),
-            };
-            db.insert('brands', brand);
-            // Every brand gets its own independent set of the six specialist agents.
-            for (const t of AGENT_TEMPLATES) {
-                const { agent, version } = buildAgentInstance(brand.id, brand.name, t.key, scope.userId, brand.createdAt);
-                db.insert('instructionVersions', version);
-                db.insert('agentInstances', agent);
-            }
-            scope.audit(brand.id, 'brand.created', 'brand', brand.id);
-            return structuredClone(brand);
+            // Clients are added to the caller's agency (owners/admins only); same path as AgenciesApi.createClient.
+            const m = db.all('agencyMemberships').find((x) => x.userId === scope.userId && isAgencyAdminRole(x.role));
+            if (!m) throw new AccessDeniedError('Only agency administrators can create clients.');
+            assertValid({ color: input.color && !HEX.test(input.color) && 'Color must be a hex value like #4f46e5.' });
+            const brand = createClientRecord(scope, m.agencyId, { name: input.name, description: input.description });
+            const patch: Partial<Brand> = {};
+            if (input.timezone) patch.timezone = input.timezone;
+            if (input.currency) patch.currency = input.currency;
+            if (input.color) patch.color = input.color;
+            return structuredClone(Object.keys(patch).length ? db.patch('brands', brand.id, patch) : brand);
         },
 
         async updateBrand(brandId, input) {

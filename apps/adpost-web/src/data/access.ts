@@ -13,14 +13,24 @@ export interface AccessFacts {
     agencyMembership: AgencyMembership | null;
 }
 
-/** Effective role: agency staff act as owners on every brand of their agency. */
-export function effectiveRole(f: AccessFacts): BrandRole | 'agency' | null {
-    if (f.agencyMembership && f.agencyMembership.agencyId === f.brand.agencyId) return 'agency';
+export type EffectiveRole = BrandRole | 'agency' | 'agency_manager';
+
+/**
+ * Effective role. Agency owners/admins act as owners on every client of their agency;
+ * agency managers read and write every client but do not administer (migration 0008).
+ */
+export function effectiveRole(f: AccessFacts): EffectiveRole | null {
+    if (f.agencyMembership && f.agencyMembership.agencyId === f.brand.agencyId) {
+        return f.agencyMembership.role === 'agency_manager' ? 'agency_manager' : 'agency';
+    }
     return f.membership?.role ?? null;
 }
 
-const WRITE_ROLES: ReadonlyArray<BrandRole | 'agency'> = ['agency', 'owner', 'admin', 'manager', 'member'];
-const ADMIN_ROLES: ReadonlyArray<BrandRole | 'agency'> = ['agency', 'owner', 'admin'];
+/** Agency owners/admins (not managers): mirrors app.is_agency_admin_for_agency. */
+export const isAgencyAdminRole = (role: AgencyMembership['role'] | undefined | null) => role === 'agency_owner' || role === 'agency_admin';
+
+const WRITE_ROLES: ReadonlyArray<EffectiveRole> = ['agency', 'agency_manager', 'owner', 'admin', 'manager', 'member'];
+const ADMIN_ROLES: ReadonlyArray<EffectiveRole> = ['agency', 'owner', 'admin'];
 
 export function can(f: AccessFacts, capability: Capability): boolean {
     const role = effectiveRole(f);
@@ -44,8 +54,9 @@ export function clientRestriction(f: AccessFacts): ID | null | 'none' {
     return f.membership?.clientId ?? 'none';
 }
 
-export const ROLE_LABELS: Record<BrandRole | 'agency', string> = {
+export const ROLE_LABELS: Record<EffectiveRole, string> = {
     agency: 'Agency admin',
+    agency_manager: 'Agency manager',
     owner: 'Owner',
     admin: 'Admin',
     manager: 'Manager',

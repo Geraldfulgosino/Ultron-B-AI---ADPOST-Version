@@ -60,12 +60,12 @@ describe('AI provider settings UI', () => {
     });
 
     it('chat shows the provider/model route and the model that produced each reply', async () => {
-        const { backend, router } = await renderApp('/b/pod/dashboard', 'priya');
+        const { backend, router } = await renderApp('/a/adpost/c/pod/dashboard', 'priya');
         const api = backend.api();
         await api.ai.assign('brd_pod', 'agt_pod_seo_manager', { connectionId: 'aic_simulator', modelId: 'sim-deterministic-1', fallbackPolicy: 'disabled' });
         const conv = await api.chat.createDirect('brd_pod', 'agt_pod_seo_manager');
         await api.chat.send('brd_pod', conv.id, { body: 'What is good for my website?' });
-        await router.navigate(`/b/pod/chat/${conv.id}`);
+        await router.navigate(`/a/adpost/c/pod/chat/${conv.id}`);
         const indicator = await screen.findByRole('list', { name: 'AI models in this conversation' });
         expect(await within(indicator).findByText((_t, el) => el?.tagName === 'LI' && /SEO Manager:\s*Simulator \(offline\) · sim-deterministic-1/.test(el.textContent ?? ''))).toBeInTheDocument();
         expect(await screen.findByText((_t, el) => el?.tagName === 'SPAN' && /^Simulated \(offline\) · sim-deterministic-1 · \d+ tokens$/.test(el.textContent ?? ''))).toBeInTheDocument();

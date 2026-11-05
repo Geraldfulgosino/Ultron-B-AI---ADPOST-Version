@@ -6,6 +6,7 @@ import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog,
 import { fieldErrors, useAction, useBrand, useQuery } from '@/app/backend';
 import type { WebChangeStage } from '@/domain/types';
 import { cn, formatDateTime } from '@/lib/utils';
+import { clientBase } from '@/app/paths';
 
 export const STAGES: Array<{ key: WebChangeStage; label: string }> = [
     { key: 'design', label: 'Design' },
@@ -70,7 +71,7 @@ function CreateChangeDialog({ websites, onClose }: { websites: Array<{ id: strin
     const create = useAction((api) => api.studio.create(brand.id, form));
     const errors = fieldErrors(create.error);
     return (
-        <Dialog open title="New website change" onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.pending} onClick={async () => { const c = await create.run(); if (c) navigate(`/b/${brand.slug}/studio/${c.id}`); }}>Create</Button></>}>
+        <Dialog open title="New website change" onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.pending} onClick={async () => { const c = await create.run(); if (c) navigate(`${clientBase(brand)}/studio/${c.id}`); }}>Create</Button></>}>
             <div className="space-y-4">
                 <Field id="change-site" label="Website" required>
                     <Select id="change-site" value={form.websiteId} onChange={(e) => setForm({ ...form, websiteId: e.target.value })}>{websites.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</Select>
@@ -113,7 +114,7 @@ export function StudioDetailPage() {
     const current = STAGES.findIndex((s) => s.key === c.stage);
 
     return (
-        <Page title={c.title} description="Web Studio change" actions={<Link to={`/b/${brand.slug}/studio`} className="text-sm text-accent hover:text-accent-strong">All changes</Link>}>
+        <Page title={c.title} description="Web Studio change" actions={<Link to={`${clientBase(brand)}/studio`} className="text-sm text-accent hover:text-accent-strong">All changes</Link>}>
             <ol className="flex flex-wrap gap-2" aria-label="Pipeline">
                 {STAGES.map((s, i) => {
                     const done = c.stage !== 'cancelled' && (i < current || c.stage === 'released');
@@ -162,7 +163,7 @@ export function StudioDetailPage() {
                         {c.stage === 'awaiting_approval' && (
                             <Alert tone={approval.data?.status === 'approved' ? 'success' : approval.data?.status === 'rejected' ? 'error' : 'info'}>
                                 Release approval is <strong>{approval.data?.status ?? 'pending'}</strong>.{' '}
-                                <Link to={`/b/${brand.slug}/approvals`} className="underline">Open approvals</Link>
+                                <Link to={`${clientBase(brand)}/approvals`} className="underline">Open approvals</Link>
                             </Alert>
                         )}
                         {c.stage === 'awaiting_approval' && approval.data?.status === 'approved' && can.admin && (

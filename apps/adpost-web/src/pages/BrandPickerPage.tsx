@@ -4,6 +4,7 @@ import { ChevronRight, LogOut, Plus } from 'lucide-react';
 import { useBackend, useQuery } from '@/app/backend';
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from '@/components/ui';
 import { CreateBrandDialog } from './brand/CreateBrandDialog';
+import { clientBase } from '@/app/paths';
 
 export function BrandPickerPage() {
     const { session, signOut } = useBackend();
@@ -13,7 +14,7 @@ export function BrandPickerPage() {
     const [creating, setCreating] = useState(false);
 
     // One brand: skip the picker (legacy behaviour: straight to dashboard).
-    if (brands.data?.length === 1 && canCreate.data === false) return <Navigate to={`/b/${brands.data[0]!.brand.slug}/dashboard`} replace />;
+    if (brands.data?.length === 1 && canCreate.data === false) return <Navigate to={`${clientBase(brands.data[0]!.brand)}/dashboard`} replace />;
 
     return (
         <div className="min-h-screen bg-canvas">
@@ -54,7 +55,7 @@ export function BrandPickerPage() {
                     {brands.data?.map(({ brand, roleLabel }) => (
                         <li key={brand.id}>
                             <Link
-                                to={`/b/${brand.slug}/dashboard`}
+                                to={`${clientBase(brand)}/dashboard`}
                                 className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm hover:border-accent-line-strong focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                                 <span className="h-10 w-10 shrink-0 rounded-lg" style={{ backgroundColor: brand.color }} aria-hidden="true" />

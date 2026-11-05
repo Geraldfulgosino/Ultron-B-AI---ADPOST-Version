@@ -4,7 +4,8 @@ import { Navigate } from 'react-router';
 import type { Capability } from '@/data/access';
 import { NotFoundPage, RouteErrorPage } from '@/pages/StatusPages';
 import { ForgotPasswordPage, LoginPage, RegisterPage } from '@/pages/auth/AuthPages';
-import { BrandLayout, RequireAuth, RequireCapability } from '@/layouts/BrandLayout';
+import { BrandLayout, LegacyBrandRedirect, RequireAuth, RequireCapability } from '@/layouts/BrandLayout';
+import { AgencyLayout } from '@/layouts/AgencyLayout';
 import { BrandPickerPage } from '@/pages/BrandPickerPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 
@@ -13,6 +14,11 @@ const page = <M extends Record<string, unknown>>(load: () => Promise<M>, name: k
     lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType })));
 
 const MembersPage = page(() => import('@/pages/members/MembersPage'), 'MembersPage');
+const agencyPages = () => import('@/pages/agencies/AgencyPages');
+const AgenciesPage = page(agencyPages, 'AgenciesPage');
+const AgencyOverviewPage = page(agencyPages, 'AgencyOverviewPage');
+const AgencyClientsPage = page(agencyPages, 'AgencyClientsPage');
+const AgencySettingsPage = page(agencyPages, 'AgencySettingsPage');
 const BrandSettingsPage = page(() => import('@/pages/brand/BrandSettingsPage'), 'BrandSettingsPage');
 const aiSettings = () => import('@/pages/settings/AiSettingsPages');
 const AiProvidersPage = page(aiSettings, 'AiProvidersPage');
@@ -24,6 +30,7 @@ const AiUsagePage = page(aiSettings, 'AiUsagePage');
 const DashboardPage = page(() => import('@/pages/dashboard/DashboardPage'), 'DashboardPage');
 const ClientsPage = page(() => import('@/pages/management/ClientsPage'), 'ClientsPage');
 const WebsitesPage = page(() => import('@/pages/management/WebsitesPage'), 'WebsitesPage');
+const WebsiteDetailPage = page(() => import('@/pages/management/WebsitesPage'), 'WebsiteDetailPage');
 const IntegrationsPage = page(() => import('@/pages/management/IntegrationsPage'), 'IntegrationsPage');
 const SeoOverviewPage = page(() => import('@/pages/seo/SeoOverviewPage'), 'SeoOverviewPage');
 const InsightsListPage = page(() => import('@/pages/seo/InsightsPages'), 'InsightsListPage');
@@ -45,7 +52,7 @@ const KnowledgePage = page(() => import('@/pages/knowledge/KnowledgePage'), 'Kno
 const guard = (cap: Capability, el: React.ReactNode) => <RequireCapability cap={cap}>{el}</RequireCapability>;
 
 export const routes: RouteObject[] = [
-    { path: '/', element: <Navigate to="/brands" replace /> },
+    { path: '/', element: <Navigate to="/agencies" replace /> },
     { path: '/login', element: <LoginPage /> },
     { path: '/register', element: <RegisterPage /> },
     { path: '/forgot-password', element: <ForgotPasswordPage /> },
@@ -54,9 +61,20 @@ export const routes: RouteObject[] = [
         errorElement: <RouteErrorPage />,
         children: [
             { path: '/brands', element: <BrandPickerPage /> },
+            { path: '/agencies', element: <AgenciesPage /> },
+            {
+                path: '/a/:agencySlug',
+                element: <AgencyLayout />,
+                children: [
+                    { index: true, element: <AgencyOverviewPage /> },
+                    { path: 'clients', element: <AgencyClientsPage /> },
+                    { path: 'settings', element: <AgencySettingsPage /> },
+                ],
+            },
+            { path: '/b/:brandSlug/*', element: <LegacyBrandRedirect /> },
             { path: '/invitations/:token', element: <AcceptInvitationPage /> },
             {
-                path: '/b/:brandSlug',
+                path: '/a/:agencySlug/c/:brandSlug',
                 element: <BrandLayout />,
                 children: [
                     { index: true, element: <Navigate to="dashboard" replace /> },
@@ -64,6 +82,7 @@ export const routes: RouteObject[] = [
                     { path: 'dashboard', element: <DashboardPage /> },
                     { path: 'clients', element: <ClientsPage /> },
                     { path: 'websites', element: <WebsitesPage /> },
+                    { path: 'websites/:websiteId', element: <WebsiteDetailPage /> },
                     { path: 'integrations', element: <IntegrationsPage /> },
                     { path: 'seo', element: <SeoOverviewPage /> },
                     { path: 'seo/insights', element: <InsightsListPage /> },

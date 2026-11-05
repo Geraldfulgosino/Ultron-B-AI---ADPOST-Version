@@ -60,7 +60,7 @@ describe('web studio (UI)', () => {
         await userEvent.type(within(d).getByLabelText(/^Title/), 'Hero refresh');
         await userEvent.type(within(d).getByLabelText(/^Brief/), 'Make the hero CTA obvious');
         await userEvent.click(within(d).getByRole('button', { name: 'Create' }));
-        await waitFor(() => expect(router.state.location.pathname).toMatch(/\/b\/pod\/studio\/wch_/));
+        await waitFor(() => expect(router.state.location.pathname).toMatch(/\/a\/adpost\/c\/pod\/studio\/wch_/));
         await userEvent.click(await screen.findByRole('button', { name: 'Draft design' }));
         expect(await screen.findByText(/Design recommendations for POD/)).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: 'Draft implementation' }));

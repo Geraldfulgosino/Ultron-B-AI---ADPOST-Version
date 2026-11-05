@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
     LayoutDashboard,
-    Building2,
     Globe,
     Users,
     Plug,
@@ -47,7 +46,6 @@ export const NAV_GROUPS: NavGroup[] = [
     {
         label: 'Management',
         items: [
-            { label: 'Clients', path: 'clients', icon: Building2 },
             { label: 'Websites', path: 'websites', icon: Globe },
             { label: 'Integrations', path: 'integrations', icon: Plug },
             { label: 'Members', path: 'members', icon: Users, requires: 'admin' },

@@ -10,7 +10,10 @@ export type ISODate = string;
 // ── Tenancy ──────────────────────────────────────────────────────────────
 
 export type BrandRole = 'owner' | 'admin' | 'manager' | 'member' | 'viewer' | 'client';
-export type AgencyRole = 'agency_owner' | 'agency_admin';
+export type AgencyRole = 'agency_owner' | 'agency_admin' | 'agency_manager';
+/** Labels for assignment and filtering. They grant no permissions (mirrors migration 0008). */
+export type JobFunction = 'client_manager' | 'seo_specialist' | 'web_developer' | 'employee' | 'other';
+export type LifecycleStatus = 'active' | 'inactive' | 'archived';
 
 export interface Agency {
     id: ID;
@@ -18,19 +21,38 @@ export interface Agency {
     slug: string;
     /** Subscription plan (Phase 16). ADPOST = 'internal' (unlimited). */
     planKey: import('./plans').PlanKey;
+    description: string;
+    logoUrl: string | null;
+    status: LifecycleStatus;
+    timezone: string;
+    defaultCurrency: string;
+    contactEmail: string | null;
+    createdAt: ISODate;
+    updatedAt: ISODate;
+    archivedAt: ISODate | null;
 }
 
+/** A client of an agency (product term "Client"; table `brands`). */
 export interface Brand {
     id: ID;
     agencyId: ID;
+    /** Denormalized for routing (/a/:agencySlug/c/:slug). Agency slugs never change. */
+    agencySlug: string;
     name: string;
+    /** Unique within the agency. */
     slug: string;
-    status: 'active' | 'archived';
+    status: LifecycleStatus;
     description: string;
+    displayName: string | null;
+    industry: string | null;
+    logoUrl: string | null;
+    primaryContactName: string | null;
+    primaryContactEmail: string | null;
     timezone: string;
     currency: string;
     color: string;
     createdAt: ISODate;
+    archivedAt: ISODate | null;
 }
 
 export interface User {
@@ -44,6 +66,7 @@ export interface AgencyMembership {
     agencyId: ID;
     userId: ID;
     role: AgencyRole;
+    jobFunction?: JobFunction | null;
 }
 
 export interface BrandMembership {
@@ -54,6 +77,7 @@ export interface BrandMembership {
     /** Set only for role `client`: the client whose data the user may see. */
     clientId: ID | null;
     department: string | null;
+    jobFunction?: JobFunction | null;
     joinedAt: ISODate;
 }
 
@@ -86,20 +110,29 @@ export interface Client {
     createdAt: ISODate;
 }
 
-export type WebsitePlatform = 'wordpress' | 'shopify' | 'custom' | 'other';
+export type WebsitePlatform = 'wordpress' | 'shopify' | 'custom' | 'other' | 'unknown';
+export type WebsiteEnvironment = 'production' | 'staging' | 'development';
 
 export interface Website {
     id: ID;
     brandId: ID;
-    clientId: ID;
+    /** Legacy inner client (client-portal scoping); optional. */
+    clientId: ID | null;
     name: string;
-    domain: string;
+    /** Host of websiteUrl; null for drafts without a known URL. */
+    domain: string | null;
+    /** Normalized http(s) URL; null = incomplete draft (never crawled or treated as connected). */
+    websiteUrl: string | null;
+    environment: WebsiteEnvironment;
     platform: WebsitePlatform;
-    status: 'active' | 'archived';
+    status: LifecycleStatus;
+    isPrimary: boolean;
+    description: string;
     primaryConversion: string | null;
     ga4PropertyId: string | null;
     gscSiteUrl: string | null;
     createdAt: ISODate;
+    archivedAt: ISODate | null;
 }
 
 export type IntegrationProvider = 'google_analytics' | 'google_search_console';
@@ -109,7 +142,7 @@ export type IntegrationStatus = 'pending' | 'connected' | 'error' | 'disconnecte
 export interface Integration {
     id: ID;
     brandId: ID;
-    clientId: ID;
+    clientId: ID | null;
     websiteId: ID;
     provider: IntegrationProvider;
     status: IntegrationStatus;
@@ -123,7 +156,7 @@ export interface Integration {
 export interface DailyMetric {
     id: ID;
     brandId: ID;
-    clientId: ID;
+    clientId: ID | null;
     websiteId: ID;
     date: string; // YYYY-MM-DD
     sessions: number;
@@ -138,7 +171,7 @@ export interface DailyMetric {
 export interface SearchQuery {
     id: ID;
     brandId: ID;
-    clientId: ID;
+    clientId: ID | null;
     websiteId: ID;
     /** Start of the weekly bucket (YYYY-MM-DD). Legacy stores daily rows; weekly keeps local storage small. */
     date: string;
@@ -151,7 +184,7 @@ export interface SearchQuery {
 export interface LandingPage {
     id: ID;
     brandId: ID;
-    clientId: ID;
+    clientId: ID | null;
     websiteId: ID;
     /** Start of the weekly bucket (YYYY-MM-DD). */
     date: string;
@@ -168,7 +201,7 @@ export type Severity = 'low' | 'medium' | 'high';
 export interface SeoInsight {
     id: ID;
     brandId: ID;
-    clientId: ID;
+    clientId: ID | null;
     websiteId: ID;
     type: SeoInsightType;
     severity: Severity;
@@ -312,6 +345,8 @@ export interface Conversation {
     title: string;
     agentInstanceIds: ID[];
     teamKey: TeamKey | null;
+    /** Optional website scope: agents then use only this website and its tools. */
+    websiteId?: ID | null;
     createdBy: ID;
     archived: boolean;
     summary: string | null;

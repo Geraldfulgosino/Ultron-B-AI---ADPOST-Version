@@ -9,6 +9,7 @@ import type { AgentInstance, ExecutionMode, ExecutionStatus, ToolKey } from '@/d
 import type { AgentUsage, AiAssignmentView } from '@/data/contracts';
 import { CONNECTION_STATUS, FALLBACK_LABEL } from '@/domain/aiProviders';
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/utils';
+import { clientBase } from '@/app/paths';
 
 export const EXEC_STATUS: Record<ExecutionStatus, { label: string; variant: 'green' | 'red' | 'yellow' | 'blue' }> = {
     succeeded: { label: 'Succeeded', variant: 'green' },
@@ -49,7 +50,7 @@ export function AgentsPage() {
     return (
         <Page title="AI Agents" description={`${brand.name}'s specialist workforce. Each agent is configured for this brand only.`}>
             <Alert tone="info">
-                Each agent uses the provider and model assigned in <Link className="underline" to={`/b/${brand.slug}/settings/ai-routing`}>AI routing</Link>. In local mode only the <strong>simulated</strong> offline provider runs; live providers run in the server-side function after a verified connection test. Simulated replies are always labelled.
+                Each agent uses the provider and model assigned in <Link className="underline" to={`${clientBase(brand)}/settings/ai-routing`}>AI routing</Link>. In local mode only the <strong>simulated</strong> offline provider runs; live providers run in the server-side function after a verified connection test. Simulated replies are always labelled.
             </Alert>
             {toggle.error || provision.error ? <ErrorState error={toggle.error ?? provision.error} /> : null}
             {agents.loading ? (
@@ -122,7 +123,7 @@ export function AgentDetailPage() {
     const u = usage.data?.find((x) => x.agentInstanceId === a.id);
 
     return (
-        <Page title={a.displayName} description={`${t.name} · @${a.handle}`} actions={<Link to={`/b/${brand.slug}/agents`} className="text-sm text-accent hover:text-accent-strong">All agents</Link>}>
+        <Page title={a.displayName} description={`${t.name} · @${a.handle}`} actions={<Link to={`${clientBase(brand)}/agents`} className="text-sm text-accent hover:text-accent-strong">All agents</Link>}>
             <div className="grid gap-4 lg:grid-cols-3">
                 <div className="space-y-4 lg:col-span-2">
                     <AiModelCard assignment={assignment.data ?? null} loading={assignment.loading} legacy={modelOption(a.model)?.label ?? a.model.model} canAssign={can.admin} />
@@ -155,7 +156,7 @@ export function AgentDetailPage() {
                     <Card>
                         <CardHeader className="flex items-center justify-between">
                             <CardTitle>Recent runs</CardTitle>
-                            <Link to={`/b/${brand.slug}/executions`} className="text-xs font-medium text-accent">All</Link>
+                            <Link to={`${clientBase(brand)}/executions`} className="text-xs font-medium text-accent">All</Link>
                         </CardHeader>
                         <CardContent>
                             {recent.data?.length ? (
@@ -184,7 +185,7 @@ function AiModelCard({ assignment, loading, legacy, canAssign }: { assignment: A
         <Card>
             <CardHeader className="flex items-center justify-between">
                 <CardTitle>AI model</CardTitle>
-                {canAssign && <Link className="text-sm text-accent hover:text-accent-strong" to={`/b/${brand.slug}/settings/ai-routing`}>Change in AI routing</Link>}
+                {canAssign && <Link className="text-sm text-accent hover:text-accent-strong" to={`${clientBase(brand)}/settings/ai-routing`}>Change in AI routing</Link>}
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
                 {loading ? <LoadingState /> : assignment ? (

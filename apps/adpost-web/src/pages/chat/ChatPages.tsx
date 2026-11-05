@@ -7,6 +7,7 @@ import { ChatView, type ProposalHandlers } from '@/components/chat/ChatView';
 import { useAction, useBrand, useQuery } from '@/app/backend';
 import type { ConversationKind, TeamKey } from '@/domain/types';
 import { cn, formatDateTime } from '@/lib/utils';
+import { clientBase } from '@/app/paths';
 
 const TEAMS: Array<{ key: TeamKey; label: string; description: string }> = [
     { key: 'seo', label: 'SEO Team', description: 'SEO Manager with the Technical, Content and Statistics specialists' },
@@ -143,7 +144,7 @@ export function AgentChatPage() {
     const [agentId, setAgentId] = useState('');
     const create = useAction((api) => api.chat.createDirect(brand.id, agentId || agents.data![0]!.id));
     const apply = useProposalApply();
-    const base = `/b/${brand.slug}/chat`;
+    const base = `${clientBase(brand)}/chat`;
 
     return (
         <Page title="Agent Chat" description="One-to-one conversations with a specialist">
@@ -198,7 +199,7 @@ export function TeamChatPage() {
     const conv = useQuery((api) => (conversationId ? api.chat.get(brand.id, conversationId) : Promise.resolve(null)), [brand.id, conversationId]);
     const create = useAction((api, team: TeamKey) => api.chat.createGroup(brand.id, { team }));
     const apply = useProposalApply();
-    const base = `/b/${brand.slug}/team`;
+    const base = `${clientBase(brand)}/team`;
 
     return (
         <Page title="Team Chat" description="Collaborate with a team of agents. The lead agent delegates to specialists automatically, within limits.">

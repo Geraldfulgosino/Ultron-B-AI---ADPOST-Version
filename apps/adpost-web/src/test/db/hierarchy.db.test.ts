@@ -91,7 +91,7 @@ describe('agencies', () => {
             expect(await attempt(db, u, `select public.create_agency('Rogue', 'rogue')`), u.email).toBe(DENIED);
         }
         expect(await attempt(db, U.adpostOwner, `insert into public.agencies (name, slug) values ('Direct', 'direct')`)).toBe(DENIED);
-        const [{ create_agency: newId }] = await as<{ create_agency: string }>(db, U.platform, `select public.create_agency('North Agency', 'north-agency')`);
+        const newId = (await as<{ create_agency: string }>(db, U.platform, `select public.create_agency('North Agency', 'north-agency')`))[0]!.create_agency;
         expect(await count(U.platform, 'agency_memberships', `agency_id = '${newId}' and user_id = '${U.platform.id}' and role = 'agency_owner'`)).toBe(1);
         expect(await attempt(db, U.platform, `select public.create_agency('Bad', 'Bad Slug!')`)).toBe(CHECK);
         expect(await attempt(db, U.platform, `select public.create_agency('Dup', 'adpost')`)).toBe(UNIQUE);
@@ -100,7 +100,7 @@ describe('agencies', () => {
     it('platform admins see the directory and totals but no client data; others cannot read totals', async () => {
         expect(await count(U.platform, 'agencies', `slug in ('adpost', 'vca', 'lugenix-digital-services')`)).toBe(3);
         expect(await count(U.platform, 'brands', `agency_id = '${A.adpost}'`)).toBe(0);
-        const [{ platform_overview: o }] = await as<{ platform_overview: Record<string, number> }>(db, U.platform, 'select public.platform_overview()');
+        const o = (await as<{ platform_overview: Record<string, number> }>(db, U.platform, 'select public.platform_overview()'))[0]!.platform_overview;
         expect(o).toMatchObject({ agencies: 4, clients: 10, websites: 0 });
         for (const u of [U.adpostOwner, U.podAdmin, U.stranger]) expect(await attempt(db, u, 'select public.platform_overview()'), u.email).toBe(DENIED);
     });
@@ -119,7 +119,7 @@ describe('agencies', () => {
 
 describe('clients', () => {
     it('agency owners add clients to their own agency only; slugs unique per agency, reusable across agencies', async () => {
-        const [{ create_client: nc }] = await as<{ create_client: string }>(db, U.adpostOwner, `select public.create_client('${A.adpost}', 'Northwind', 'northwind')`);
+        const nc = (await as<{ create_client: string }>(db, U.adpostOwner, `select public.create_client('${A.adpost}', 'Northwind', 'northwind')`))[0]!.create_client;
         expect(await count(U.adpostOwner, 'agent_instances', `brand_id = '${nc}'`)).toBe(6);
         expect(await attempt(db, U.adpostOwner, `select public.create_client('${A.adpost}', 'POD again', 'pod')`)).toBe(UNIQUE);
         expect(await attempt(db, U.vcaAdmin, `select public.create_client('${A.vca}', 'POD (VCA)', 'pod')`)).toBe('ok');
@@ -166,7 +166,7 @@ describe('isolation across agencies and clients', () => {
         expect(await attempt(db, U.vcaAdmin, `insert into public.websites (brand_id, name) values ('${C.pod}', 'Cross-agency site')`)).toBe(DENIED);
         await db.exec(`insert into public.clients (id, brand_id, name, slug) values ('${id(2100)}', '${C.dsp}', 'DSP legacy', 'dsp-legacy')`);
         expect(await attempt(db, U.podAdmin, `insert into public.websites (brand_id, client_id, name) values ('${C.pod}', '${id(2100)}', 'Foreign client')`)).toBe(DENIED);
-        const [{ id: dspSite }] = await as<{ id: string }>(db, U.adpostOwner, `insert into public.websites (brand_id, name) values ('${C.dsp}', 'DSP site') returning id`);
+        const dspSite = (await as<{ id: string }>(db, U.adpostOwner, `insert into public.websites (brand_id, name) values ('${C.dsp}', 'DSP site') returning id`))[0]!.id;
         expect(await attempt(db, U.podAdmin, `insert into public.conversations (brand_id, kind, title, created_by, website_id) values ('${C.pod}', 'direct', 't', '${U.podAdmin.id}', '${dspSite}')`)).toBe(DENIED);
         expect(await as(db, U.podAdmin, `update public.websites set name = 'hijack' where id = '${dspSite}' returning 1`)).toHaveLength(0);
         expect(await as(db, U.dspViewer, `update public.websites set name = 'viewer edit' where id = '${dspSite}' returning 1`)).toHaveLength(0);

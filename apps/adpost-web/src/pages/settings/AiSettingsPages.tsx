@@ -14,6 +14,7 @@ import { AI_PROVIDERS, CAPABILITY_LABEL, CONNECTION_STATUS, FALLBACK_LABEL, prov
 import type { AiAssignmentView, AiConnectionTestView, AiConnectionView, AiUsageRow } from '@/data/contracts';
 import type { AgentInstance } from '@/domain/types';
 import { cn, formatCurrency, formatDateTime, formatNumber } from '@/lib/utils';
+import { clientBase } from '@/app/paths';
 
 const TABS = [
     { to: 'settings/ai-providers', label: 'Providers' },
@@ -27,7 +28,7 @@ function AiTabs() {
     return (
         <nav aria-label="AI settings" className="flex flex-wrap gap-1 border-b border-line">
             {TABS.map((t) => (
-                <NavLink key={t.to} to={`/b/${brand.slug}/${t.to}`} end={false}
+                <NavLink key={t.to} to={`${clientBase(brand)}/${t.to}`} end={false}
                     className={({ isActive }) => cn('rounded-t-md px-3 py-2 text-sm font-medium', isActive ? 'border-b-2 border-indigo-600 text-fg' : 'text-fg-muted hover:text-fg')}>
                     {t.label}
                 </NavLink>
@@ -62,7 +63,7 @@ export function AiProvidersPage() {
     const conns = useQuery((a) => a.ai.connections(brand.id), [brand.id]);
     return (
         <Page title="AI Providers" description="Connections the agents of this brand can use. Switching an agent's model needs no code change."
-            actions={access.data?.canManageConnections ? <Link to={`/b/${brand.slug}/settings/ai-providers/new`}><Button><PlugZap className="h-4 w-4" aria-hidden="true" /> Add connection</Button></Link> : null}>
+            actions={access.data?.canManageConnections ? <Link to={`${clientBase(brand)}/settings/ai-providers/new`}><Button><PlugZap className="h-4 w-4" aria-hidden="true" /> Add connection</Button></Link> : null}>
             <AiTabs />
             <BillingNotice />
             {access.data && !access.data.canManageConnections && <Alert tone="info">You can view connections and assign them to agents. Only agency administrators add, rotate or remove connections.</Alert>}
@@ -76,7 +77,7 @@ export function AiProvidersPage() {
                             {conns.data!.map((c) => (
                                 <tr key={c.id}>
                                     <Td>
-                                        <Link className="font-medium text-indigo-600 hover:underline" to={`/b/${brand.slug}/settings/ai-providers/${c.id}`}>{c.displayName}</Link>
+                                        <Link className="font-medium text-indigo-600 hover:underline" to={`${clientBase(brand)}/settings/ai-providers/${c.id}`}>{c.displayName}</Link>
                                         <span className="block text-xs text-fg-muted">{c.credentialReference ? <><KeyRound className="mr-1 inline h-3 w-3" aria-hidden="true" />slot {c.credentialReference}</> : c.provider === 'simulated' ? 'No credential' : 'No secret slot set'}</span>
                                     </Td>
                                     <Td>{providerInfo(c.provider).name}</Td>
@@ -215,13 +216,13 @@ export function AiConnectionNewPage() {
                     <form className="space-y-4" noValidate onSubmit={async (e) => {
                         e.preventDefault();
                         const c = await save.run();
-                        if (c) navigate(`/b/${brand.slug}/settings/ai-providers/${c.id}`);
+                        if (c) navigate(`${clientBase(brand)}/settings/ai-providers/${c.id}`);
                     }}>
                         {save.error && !Object.keys(errors).length ? <ErrorState error={save.error} /> : null}
                         <ConnectionFields form={form} setForm={setForm} errors={errors} isNew />
                         <div className="flex gap-2">
                             <Button type="submit" loading={save.pending}>Save connection</Button>
-                            <Link to={`/b/${brand.slug}/settings/ai-providers`}><Button type="button" variant="secondary">Cancel</Button></Link>
+                            <Link to={`${clientBase(brand)}/settings/ai-providers`}><Button type="button" variant="secondary">Cancel</Button></Link>
                         </div>
                     </form>
                 </CardContent>
@@ -345,9 +346,9 @@ export function AiConnectionDetailPage() {
                         <CardHeader><CardTitle>Assigned agents</CardTitle></CardHeader>
                         <CardContent>
                             {c.assignedAgents.filter((x) => x.brandId === brand.id).length ? (
-                                <ul className="space-y-1 text-sm">{c.assignedAgents.filter((x) => x.brandId === brand.id).map((x) => <li key={x.agentInstanceId}><Link className="text-indigo-600 hover:underline" to={`/b/${brand.slug}/agents/${x.agentInstanceId}`}>{x.name}</Link></li>)}</ul>
+                                <ul className="space-y-1 text-sm">{c.assignedAgents.filter((x) => x.brandId === brand.id).map((x) => <li key={x.agentInstanceId}><Link className="text-indigo-600 hover:underline" to={`${clientBase(brand)}/agents/${x.agentInstanceId}`}>{x.name}</Link></li>)}</ul>
                             ) : <p className="text-sm text-fg-muted">None in {brand.name}.</p>}
-                            <Link className="mt-3 inline-block text-sm text-indigo-600 hover:underline" to={`/b/${brand.slug}/settings/ai-routing`}>Assign agents</Link>
+                            <Link className="mt-3 inline-block text-sm text-indigo-600 hover:underline" to={`${clientBase(brand)}/settings/ai-routing`}>Assign agents</Link>
                         </CardContent>
                     </Card>
                     {manage && <Button variant="danger" onClick={() => setConfirmRemove(true)}>Remove connection</Button>}
@@ -365,7 +366,7 @@ export function AiConnectionDetailPage() {
                 </div>
             </Dialog>
             <Dialog open={confirmRemove} title="Remove connection" onClose={() => setConfirmRemove(false)}
-                footer={<><Button variant="secondary" onClick={() => setConfirmRemove(false)}>Cancel</Button><Button variant="danger" loading={remove.pending} onClick={async () => { if (await remove.run()) { setConfirmRemove(false); navigate(`/b/${brand.slug}/settings/ai-providers`); } else setConfirmRemove(false); }}>Remove</Button></>}>
+                footer={<><Button variant="secondary" onClick={() => setConfirmRemove(false)}>Cancel</Button><Button variant="danger" loading={remove.pending} onClick={async () => { if (await remove.run()) { setConfirmRemove(false); navigate(`${clientBase(brand)}/settings/ai-providers`); } else setConfirmRemove(false); }}>Remove</Button></>}>
                 <p className="text-sm">Agents must be reassigned first. Past usage and execution records keep their history. The server secret is not deleted; remove it with <code>supabase secrets unset</code> if no longer needed.</p>
             </Dialog>
         </Page>
@@ -478,7 +479,7 @@ export function AiRoutingPage() {
                             const a = byAgent.get(agent.id);
                             return (
                                 <tr key={agent.id}>
-                                    <Td><Link className="font-medium text-indigo-600 hover:underline" to={`/b/${brand.slug}/agents/${agent.id}`}>{agent.displayName}</Link></Td>
+                                    <Td><Link className="font-medium text-indigo-600 hover:underline" to={`${clientBase(brand)}/agents/${agent.id}`}>{agent.displayName}</Link></Td>
                                     <Td>{a ? <span className="flex flex-wrap items-center gap-2">{a.connectionName} <StatusBadge status={a.connectionStatus} /></span> : <span className="text-fg-muted">Brand / organization default</span>}</Td>
                                     <Td>{a ? <code className="text-xs">{a.modelId}</code> : <span className="text-xs text-fg-muted">—</span>}</Td>
                                     <Td className="hidden md:table-cell text-xs">{a ? FALLBACK_LABEL[a.fallbackPolicy] : '—'}</Td>

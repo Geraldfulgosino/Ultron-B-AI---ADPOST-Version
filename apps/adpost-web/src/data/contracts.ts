@@ -29,7 +29,7 @@ export interface AuthApi {
 
 export interface BrandAccess {
     brand: T.Brand;
-    role: T.BrandRole | 'agency';
+    role: import('./access').EffectiveRole;
     roleLabel: string;
     can: Record<Capability, boolean>;
     /** For client users: the only client they may see. */
@@ -49,8 +49,11 @@ export interface BrandInput {
 export interface WorkspaceApi {
     me(): T.User;
     listBrands(): Promise<BrandAccess[]>;
-    /** Throws AccessDeniedError for unknown or inaccessible slugs. */
-    brandBySlug(slug: string): Promise<BrandAccess>;
+    /**
+     * Throws AccessDeniedError for unknown or inaccessible slugs. Client slugs are unique per agency,
+     * so pass the agency slug; without it the slug must be unambiguous among accessible clients.
+     */
+    brandBySlug(slug: string, agencySlug?: string): Promise<BrandAccess>;
     /** Agency staff only: plan + metered usage for the agency. */
     agencyUsage(): Promise<AgencyUsage>;
     /** True for agency staff (may create brands). */
@@ -58,6 +61,96 @@ export interface WorkspaceApi {
     /** Agency staff only. */
     createBrand(input: BrandInput): Promise<T.Brand>;
     updateBrand(brandId: T.ID, input: Partial<BrandInput> & { status?: T.Brand['status'] }): Promise<T.Brand>;
+}
+
+// ── Agencies and their clients (migration 0008) ───────────────────────────
+
+export interface AgencyAccess {
+    /** Member of this agency (any role). */
+    isMember: boolean;
+    /** Agency owner/admin or platform admin: edit the agency profile. */
+    canEdit: boolean;
+    /** Platform admins only: archive / restore / deactivate. */
+    canChangeStatus: boolean;
+    /** Agency owners/admins: add clients. */
+    canAddClients: boolean;
+}
+
+export interface AgencyView extends T.Agency {
+    access: AgencyAccess;
+    /** Counts over clients the caller can read; null when the caller sees the directory only. */
+    counts: { clients: number; activeClients: number; archivedClients: number; websites: number } | null;
+}
+
+export interface AgencyInput {
+    name: string;
+    /** Defaults to a slug of the name. Immutable once created. */
+    slug?: string;
+    description?: string;
+    logoUrl?: string | null;
+    timezone?: string;
+    defaultCurrency?: string;
+    contactEmail?: string | null;
+}
+
+export interface AgencyClientInput {
+    name: string;
+    /** Unique within the agency. Defaults to a slug of the name. Immutable once created. */
+    slug?: string;
+    displayName?: string | null;
+    description?: string;
+    industry?: string | null;
+    logoUrl?: string | null;
+    primaryContactName?: string | null;
+    primaryContactEmail?: string | null;
+    status?: T.LifecycleStatus;
+}
+
+export interface ClientCard {
+    client: T.Brand;
+    roleLabel: string;
+    canAdmin: boolean;
+    /** Real counts from stored records only; nothing is estimated. */
+    counts: { websites: number; projects: number | null; openTasks: number | null; connectedIntegrations: number | null };
+    primaryWebsite: { id: T.ID; name: string; domain: string | null } | null;
+}
+
+export interface AgencyOverview {
+    agency: AgencyView;
+    clients: number;
+    websites: number;
+    websitesWithoutUrl: number;
+    activeProjects: number;
+    openTasks: number;
+    aiRunsThisMonth: number;
+    integrations: { connected: number; pending: number; error: number };
+}
+
+export interface PlatformOverview {
+    agencies: number;
+    clients: number;
+    websites: number;
+    activeUsers: number;
+    integrations: { connected: number; error: number };
+    aiRequestsThisMonth: number;
+}
+
+export interface AgenciesApi {
+    isPlatformAdmin(): Promise<boolean>;
+    list(filter?: { status?: T.LifecycleStatus | 'all'; query?: string }): Promise<AgencyView[]>;
+    bySlug(slug: string): Promise<AgencyView>;
+    /** Platform admins only; the creator becomes the agency owner. */
+    create(input: AgencyInput): Promise<AgencyView>;
+    /** Profile: agency owners/admins and platform admins. Status: platform admins only. */
+    update(agencyId: T.ID, patch: Partial<Omit<AgencyInput, 'slug'>> & { status?: T.LifecycleStatus }): Promise<AgencyView>;
+    clients(agencyId: T.ID, filter?: { status?: T.LifecycleStatus | 'all'; query?: string }): Promise<ClientCard[]>;
+    /** Agency owners/admins; the client gets its own six agents. */
+    createClient(agencyId: T.ID, input: AgencyClientInput): Promise<T.Brand>;
+    /** Client admins (and agency owners/admins). Archive/restore via status. */
+    updateClient(brandId: T.ID, patch: Partial<Omit<AgencyClientInput, 'slug'>>): Promise<T.Brand>;
+    overview(agencyId: T.ID): Promise<AgencyOverview>;
+    /** Platform admins only: directory totals. */
+    platformOverview(): Promise<PlatformOverview>;
 }
 
 export interface ClientInput {
@@ -77,18 +170,23 @@ export interface ClientsApi {
 }
 
 export interface WebsiteInput {
-    clientId: T.ID;
     name: string;
-    domain: string;
+    /** Full http(s) URL; omit or null for a draft whose address is not known yet. */
+    websiteUrl?: string | null;
+    environment?: T.WebsiteEnvironment;
     platform?: T.WebsitePlatform;
     status?: T.Website['status'];
+    isPrimary?: boolean;
+    description?: string;
+    /** Legacy inner client; optional. */
+    clientId?: T.ID | null;
     primaryConversion?: string | null;
     ga4PropertyId?: string | null;
     gscSiteUrl?: string | null;
 }
 
 export interface WebsitesApi {
-    list(brandId: T.ID, filter?: { clientId?: T.ID }): Promise<T.Website[]>;
+    list(brandId: T.ID, filter?: { clientId?: T.ID; includeArchived?: boolean }): Promise<T.Website[]>;
     get(brandId: T.ID, id: T.ID): Promise<T.Website>;
     create(brandId: T.ID, input: WebsiteInput): Promise<T.Website>;
     update(brandId: T.ID, id: T.ID, input: Partial<WebsiteInput>): Promise<T.Website>;
@@ -186,7 +284,7 @@ export interface InsightFilters {
 
 export interface InsightsApi {
     list(brandId: T.ID, filters?: InsightFilters): Promise<T.SeoInsight[]>;
-    get(brandId: T.ID, id: T.ID): Promise<T.SeoInsight & { websiteName: string; domain: string }>;
+    get(brandId: T.ID, id: T.ID): Promise<T.SeoInsight & { websiteName: string; domain: string | null }>;
     /** Runs the rule set over brand data; returns how many new insights were created. */
     generate(brandId: T.ID): Promise<{ created: number }>;
     setStatus(brandId: T.ID, id: T.ID, status: T.SeoInsightStatus, notes?: string | null): Promise<T.SeoInsight>;
@@ -540,6 +638,7 @@ export interface AiProvidersApi {
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
+    agencies: AgenciesApi;
     clients: ClientsApi;
     websites: WebsitesApi;
     members: MembersApi;
