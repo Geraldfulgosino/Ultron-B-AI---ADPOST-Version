@@ -1,12 +1,19 @@
 # Session Handoff
 
-**Updated:** 2026-11-02 (master prompt v5.0: AI provider connection manager)
+**Updated:** 2026-11-05 (multi-agency, client and website hierarchy; local commits NOT pushed)
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai` (pushed; `main` untouched at `13bc3d0`)
 **Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`; the CLI 2.121.0 is logged in and linked (`supabase/.temp/` is git-ignored).
 **Applied to staging:** migrations 0001–0005. **Local only, awaiting approval:** 0006_advisor_fixes, 0007_ai_providers.
 **Deployed Edge Functions:** none. `agent-execute` and `ai-connection-test` are implemented, not deployed.
 **Last synced commit:** see GITHUB_SYNC_LOG.md
+
+## 2026-11-05: multi-agency hierarchy (read first)
+- Mapping: **Client = Brand**. Routes: `/agencies`, `/a/:agency[/clients|/settings]`, `/a/:agency/c/:client/...`; legacy `/b/:slug` links redirect.
+- Migration `20261105000008_agency_client_website.sql` and the dev seed `supabase/seeds/dev/sample_hierarchy.sql` are validated on PGlite only. Neither is applied to staging.
+- The dev app runs on `src/data/local/sampleSeed.ts`: 3 agencies, 10 clients, no websites or metrics. Tests use `fixtures.ts`.
+- Local commits `0841ef1`, `606a78a`, `f0254cd` and the docs commit are **not pushed**: the owner requires approval before any GitHub push.
+- Details: MULTI_AGENCY_ARCHITECTURE.md (limitations and next milestones are in §10).
 
 ## Where things are
 - Settings UI: `apps/adpost-web/src/pages/settings/AiSettingsPages.tsx`. Routes `/b/:slug/settings/ai-providers[/new|/:id]`, `ai-models`, `ai-routing`, `ai-usage`.

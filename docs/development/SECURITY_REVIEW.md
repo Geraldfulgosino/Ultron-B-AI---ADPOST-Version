@@ -95,3 +95,18 @@ Scope: migration 0007, the shared AI runtime, the two Edge Functions (not deploy
 - PostgREST behaviour of the 0007 policies on staging.
 - Deployed function auth.
 - Any live provider response.
+
+# Security Review: agency/client/website hierarchy (2026-11-05, local)
+- Isolation reuses the brand-level RLS (client = brand). Migration 0008 adds only tighter or additive rules:
+  - per-agency client slugs;
+  - client creation by agency owners/admins through `create_client`;
+  - agency status changes by platform admins only (trigger);
+  - an `agency_manager` role that can write but not administer;
+  - website URL normalization that rejects credentials and non-http(s) schemes;
+  - conversation website scope guarded to the same client.
+- `is_agency_admin` was narrowed to owner/admin roles. This is behaviour-preserving, because those were the only agency roles before 0008.
+- AI credential and organization-policy management (0007, unapplied) is limited to agency owners/admins.
+- Platform admins get the directory and counts only, with no client data access by that role.
+- SEO fetches are limited to active websites that have a URL, and to the scoped website when set.
+- Verified locally by PGlite negative tests: cross-agency and cross-client reads and writes; manipulated brand, client and website ids; manager escalation; job-function escalation.
+- Not yet verified on staging (approval pending).

@@ -49,3 +49,14 @@
   - `data/local/ai.test.ts` (13) and `pages/settings/aiSettings.test.tsx` (7).
 - Mutation check: running the RLS matrix without migration 0007 (`PG_MIGRATION_SKIP=0007`) fails the table-coverage guard, as intended.
 - **Level:** all mock or local Postgres. **No staging test of the AI tables and no live provider call has been made.** The provider adapters are verified against recorded-shape responses only.
+
+## 2026-11-05: multi-agency hierarchy
+- Baseline before changes: 425 passed + 1 opt-in. One run of three had 1 failure; it was not reproduced in later runs and is flagged as possibly flaky.
+- After: **468 passed + 1 opt-in skipped** (45 files). `tsc --noEmit`: 0 errors. `vite build`: ok. No lint script exists in the repo.
+- New suites:
+  - `test/db/hierarchy.db.test.ts` (15, PGlite): exact seed counts 3 / 5 / 4 / 1 / 10, idempotency, opt-in guard, RLS isolation, URL rules;
+  - `data/local/agencies.test.ts` (11);
+  - `pages/agencies/agencies.test.tsx` (12, UI on the sample dataset);
+  - `data/local/chatScope.test.ts` (2);
+  - `handlers.test.ts` (+3).
+- **Level:** local only (mock adapter and PGlite). Nothing ran against staging; no real-browser QA this session.

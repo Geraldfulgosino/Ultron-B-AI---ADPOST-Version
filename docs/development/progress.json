@@ -1,7 +1,7 @@
 {
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
-  "updated": "2026-11-02",
+  "updated": "2026-11-05",
   "currentPhase": "17",
   "phases": [
     {
@@ -91,12 +91,12 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Owner decisions: (1) approve migrations 0006 + 0007 for staging and deploying agent-execute + ai-connection-test to staging; (2) create Anthropic and/or OpenAI API accounts with provider-side spend limits and set ANTHROPIC_API_KEY / OPENAI_API_KEY with `supabase secrets set` (never in chat); (3) staging test users. Claude next: Supabase auth adapter (17E) and chat adapter calling agent-execute (17F).",
+  "nextTask": "Owner: approve pushing commits 0841ef1..(docs) to GitHub; approve staging migrations 0006-0008 (+ optional dev seed). Claude next: agency membership management UI, agency-level AI team design, Supabase adapters.",
   "tests": {
-    "adpostWeb": "425/425 pass + 1 opt-in (59 real-Postgres DB tests via PGlite; AI runtime fully mocked)",
+    "adpostWeb": "468/468 pass + 1 opt-in (74 real-Postgres DB tests via PGlite)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
-    "sql": "7 migrations apply on PGlite; 0001-0005 applied to staging; 0006 + 0007 local only",
+    "sql": "8 migrations apply on PGlite; 0001-0005 applied to staging; 0006, 0007, 0008 local only",
     "browserQa": "headless Edge 2026-11-02: role nav, brand switch, chat/team chat, forms, mobile drawer, axe WCAG 2.1 AA 0 violations (both themes)"
   },
   "supabase": {
@@ -139,5 +139,13 @@
     "M11 usage/budgets": "implemented + tested; usage dashboard",
     "M12 staging": "awaiting approval",
     "M13 live smoke tests": "awaiting credentials, budget, approval"
+  },
+  "multiAgency": {
+    "mapping": "Client = Brand (owner-confirmed 2026-11-05)",
+    "migration 0008": "implemented + validated on PGlite; NOT applied to staging",
+    "dev seed": "supabase/seeds/dev/sample_hierarchy.sql + local sampleSeed.ts: 3 agencies, 10 clients, no websites; guarded, idempotent",
+    "UI": "agencies directory, agency overview/clients/settings, websites + detail, hierarchical selector (local adapter)",
+    "AI scope": "website-scoped conversations and tool hosts; agency-level cross-client AI team NOT implemented",
+    "commits": "0841ef1, 606a78a, f0254cd (local; NOT pushed, owner approval required)"
   }
 }

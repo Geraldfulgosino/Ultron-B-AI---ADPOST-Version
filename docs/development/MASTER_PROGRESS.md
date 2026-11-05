@@ -110,3 +110,13 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
 | M12 Staging integration | **Awaiting approval** (apply 0007, deploy two functions) | — |
 | M13 Real API smoke tests | **Awaiting credentials, budget and approval** | — |
 | M14 Production readiness | Not started (no deployment authorized) | — |
+
+## Multi-agency, client and website management (2026-11-05, local only, NOT pushed)
+| Milestone | Status | Commit |
+|---|---|---|
+| Phase 0 audit + mapping | Done; owner confirmed Client = Brand, synthetic analytics test-only | — |
+| M1 schema 0008 + dev seed | Validated on PGlite (15 new DB tests; all 74 DB tests pass). **Not applied to staging** | `0841ef1` |
+| M2 local multi-agency UI | Directory, agency overview, clients, settings, websites, selector, canonical URLs; dev app on the exact sample seed | `606a78a` |
+| M3 AI scope | Website-scoped conversations, context and server tool hosts | `f0254cd` |
+| Next | Agency-level AI team; agency membership UI; Supabase adapters; staging (approval) | — |
+See MULTI_AGENCY_ARCHITECTURE.md.
