@@ -4,7 +4,7 @@ import type { DailyMetric, Integration, Website } from './types';
 
 const site: Website = {
     id: 'w1', brandId: 'b', clientId: 'c1', name: 'Site', domain: 'site.test', websiteUrl: 'https://site.test', environment: 'production', platform: 'custom', status: 'active',
-    isPrimary: true, description: '', primaryConversion: 'Purchase', ga4PropertyId: null, gscSiteUrl: null, createdAt: '', archivedAt: null,
+    isPrimary: true, description: '', primaryConversion: 'Purchase', ga4PropertyId: null, gscSiteUrl: null, createdAt: '', archivedAt: null, isDemo: false,
 };
 
 function day(date: string, clicks: number, sessions = 100): DailyMetric {

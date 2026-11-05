@@ -110,7 +110,7 @@ const openaiStream = [
     oa({ id: 'c1', choices: [{ index: 0, delta: { content: 'there' } }] }),
     oa({ id: 'c1', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: 'call_1', type: 'function', function: { name: 'seo_', arguments: '' } }] } }] }),
     oa({ id: 'c1', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { name: 'robots_txt', arguments: '{"url":' } }] } }] }),
-    oa({ id: 'c1', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: '"https://pod.example"}' } }] } }] }),
+    oa({ id: 'c1', choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: '"https://pod.example.com"}' } }] } }] }),
     oa({ id: 'c1', choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] }),
     oa({ id: 'c1', choices: [], usage: { prompt_tokens: 30, completion_tokens: 9, total_tokens: 39 } }),
     'data: [DONE]',
@@ -121,7 +121,7 @@ describe('OpenAI adapter', () => {
         const { fetch, calls } = fakeFetch(() => sseResponse(openaiStream, { 'x-request-id': 'req_oa' }));
         const r = await collect(new OpenAIAdapter().stream(req(), { apiKey: FAKE_KEY, organization: 'org_1', project: 'proj_1', fetch }));
         expect(r.text).toBe('Hi there');
-        expect(r.toolCalls).toEqual([{ id: 'call_1', name: 'seo_robots_txt', input: { url: 'https://pod.example' } }]);
+        expect(r.toolCalls).toEqual([{ id: 'call_1', name: 'seo_robots_txt', input: { url: 'https://pod.example.com' } }]);
         expect(r.usage).toEqual({ inputTokens: 30, outputTokens: 9 });
         expect(r).toMatchObject({ stopReason: 'tool_use', providerRequestId: 'req_oa', model: 'gpt-x-2026' });
         const h = calls[0]!.init.headers as Record<string, string>;

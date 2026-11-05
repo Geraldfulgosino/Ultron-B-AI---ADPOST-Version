@@ -1,7 +1,7 @@
 import type { Client, Website } from '@/domain/types';
 import type { ClientsApi, WebsiteInput, WebsitesApi } from '../contracts';
 import { normalizeWebsiteUrl } from '@/domain/websites';
-import { assertValid } from '../errors';
+import { assertValid, ValidationError } from '../errors';
 import { newId, slugify } from '@/lib/utils';
 import { byClientId, type Scope } from './scope';
 
@@ -158,6 +158,8 @@ export function localWebsites(scope: Scope): WebsitesApi {
                 gscSiteUrl: input.gscSiteUrl?.trim() || null,
                 createdAt: db.nowIso(),
                 archivedAt: null,
+                // Only the development seed creates demo records.
+                isDemo: false,
             };
             applyLifecycle(brandId, site);
             db.insert('websites', site);
@@ -171,7 +173,12 @@ export function localWebsites(scope: Scope): WebsitesApi {
             const url = validate(brandId, input, id);
             const next: Website = { ...current };
             if (input.name !== undefined) next.name = input.name.trim();
-            if (url !== undefined) { next.websiteUrl = url?.url ?? null; next.domain = url?.domain ?? null; }
+            if (url !== undefined) {
+                // Mirrors websites_demo_reserved_domain: a demo record stays on a reserved .example domain.
+                if (current.isDemo && url && !/(^|.)example$/.test(url.domain)) throw new ValidationError({ websiteUrl: 'Demo websites must keep a reserved .example domain. Add a separate website for a real URL.' });
+                next.websiteUrl = url?.url ?? null;
+                next.domain = url?.domain ?? null;
+            }
             if (input.clientId !== undefined) next.clientId = input.clientId;
             for (const k of ['environment', 'platform', 'status', 'isPrimary'] as const) if (input[k] !== undefined) (next as unknown as Record<string, unknown>)[k] = input[k];
             if (input.description !== undefined) next.description = input.description.trim();

@@ -3,6 +3,7 @@ import { AccessDeniedError, ValidationError } from '../errors';
 import { apiFor } from './backend';
 import { LocalDatabase } from './db';
 import { applySampleSeed, buildSampleSeed, sampleClientId } from './sampleSeed';
+import { isAuditable } from '@/domain/websites';
 
 const sampleDb = () => {
     const { snapshot, credentials } = buildSampleSeed();
@@ -13,7 +14,7 @@ const POD = sampleClientId('adpost', 'pod');
 const DSP = sampleClientId('adpost', 'dsp');
 
 describe('dev sample seed', () => {
-    it('has exactly 3 agencies and 10 clients (5 / 4 / 1), each with six agents, and no websites or metrics', () => {
+    it('has exactly 3 agencies and 10 clients (5 / 4 / 1), each with six agents and two demo websites, and no metrics', () => {
         const db = sampleDb();
         expect(db.all('agencies').map((a) => a.name).sort()).toEqual(['ADPOST', 'Lugenix Digital Services', 'VCA']);
         const by = (slug: string) => db.all('brands').filter((b) => b.agencySlug === slug).map((b) => b.name).sort();
@@ -23,18 +24,46 @@ describe('dev sample seed', () => {
         expect(db.all('brands')).toHaveLength(10);
         expect(db.all('brands').every((b) => b.status === 'active')).toBe(true);
         expect(db.all('agentInstances')).toHaveLength(60);
-        for (const t of ['websites', 'dailyMetrics', 'searchQueries', 'seoInsights', 'integrations', 'knowledgeDocuments', 'invitations'] as const) {
+        for (const t of ['dailyMetrics', 'searchQueries', 'seoInsights', 'integrations', 'knowledgeDocuments', 'invitations'] as const) {
             expect(db.all(t), t).toHaveLength(0);
         }
         expect(db.all('aiConnections').every((c) => c.provider === 'simulated')).toBe(true);
     });
 
+    it('has 20 demo websites: production (primary) + staging per client, reserved .example domains, nothing connected', () => {
+        const db = sampleDb();
+        const sites = db.all('websites');
+        expect(sites).toHaveLength(20);
+        expect(sites.every((w) => w.isDemo && w.platform === 'unknown' && w.status === 'active' && !w.ga4PropertyId && !w.gscSiteUrl)).toBe(true);
+        for (const b of db.all('brands')) {
+            const own = sites.filter((w) => w.brandId === b.id).sort((x, y) => x.environment.localeCompare(y.environment));
+            expect(own.map((w) => [w.name, w.environment, w.domain, w.isPrimary]), b.name).toEqual([
+                [`${b.name} — Production`, 'production', `${b.slug}.example`, true],
+                [`${b.name} — Staging`, 'staging', `staging.${b.slug}.example`, false],
+            ]);
+        }
+        expect(sites.filter((w) => w.isPrimary)).toHaveLength(10);
+        expect(sites.every((w) => !isAuditable(w))).toBe(true);
+    });
+
     it('is idempotent', () => {
         const { snapshot } = buildSampleSeed();
         const again = applySampleSeed(applySampleSeed(structuredClone(snapshot)));
-        for (const t of ['agencies', 'brands', 'agentInstances', 'users', 'agencyMemberships', 'aiConnections'] as const) {
+        for (const t of ['agencies', 'brands', 'agentInstances', 'users', 'agencyMemberships', 'aiConnections', 'websites'] as const) {
             expect(again[t].length, t).toBe(snapshot[t].length);
         }
+    });
+
+    it('re-seeding preserves user websites and their primary flag and only restores missing demo records', () => {
+        const { snapshot } = buildSampleSeed();
+        const fmf = sampleClientId('adpost', 'fmf');
+        const s = structuredClone(snapshot);
+        s.websites = s.websites.filter((w) => w.brandId !== fmf);
+        s.websites.push({ ...snapshot.websites.find((w) => w.brandId === fmf)!, id: 'web_user', name: 'FMF user site', domain: 'fmf-user.example.com', websiteUrl: 'https://fmf-user.example.com', isDemo: false, isPrimary: true });
+        const again = applySampleSeed(s);
+        const own = again.websites.filter((w) => w.brandId === fmf).map((w) => [w.name, w.isPrimary]);
+        expect(own).toEqual([['FMF user site', true], ['FMF — Production', false], ['FMF — Staging', false]]);
+        expect(again.websites).toHaveLength(21);
     });
 });
 
@@ -45,7 +74,7 @@ describe('agencies', () => {
         expect(await p.agencies.isPlatformAdmin()).toBe(true);
         const list = await p.agencies.list();
         expect(list.map((a) => [a.name, a.counts])).toEqual([['ADPOST', null], ['Lugenix Digital Services', null], ['VCA', null]]);
-        expect(await p.agencies.platformOverview()).toMatchObject({ agencies: 3, clients: 10, websites: 0 });
+        expect(await p.agencies.platformOverview()).toMatchObject({ agencies: 3, clients: 10, websites: 20, demoWebsites: 20 });
         expect(await p.agencies.clients('agy_adpost')).toEqual([]);
         await expect(p.agencies.overview('agy_adpost')).rejects.toBeInstanceOf(AccessDeniedError);
         const north = await p.agencies.create({ name: 'North Agency' });
@@ -71,7 +100,7 @@ describe('agencies', () => {
     it('agency members see only their agency; counts reflect real records', async () => {
         const db = sampleDb();
         expect((await api(db, 'usr_adpost_admin').agencies.list()).map((a) => [a.slug, a.counts])).toEqual([
-            ['adpost', { clients: 5, activeClients: 5, archivedClients: 0, websites: 0 }],
+            ['adpost', { clients: 5, activeClients: 5, archivedClients: 0, websites: 10, demoWebsites: 10 }],
         ]);
         expect((await api(db, 'usr_vca_admin').agencies.list()).map((a) => a.slug)).toEqual(['vca']);
         await expect(api(db, 'usr_vca_admin').agencies.bySlug('adpost')).rejects.toBeInstanceOf(AccessDeniedError);
@@ -80,7 +109,7 @@ describe('agencies', () => {
         expect((await seo.agencies.list()).map((a) => [a.slug, a.counts?.clients])).toEqual([['adpost', 1]]);
         expect((await seo.agencies.clients('agy_adpost')).map((c) => c.client.name)).toEqual(['POD']);
         const overview = await api(db, 'usr_adpost_admin').agencies.overview('agy_adpost');
-        expect(overview).toMatchObject({ clients: 5, websites: 0, activeProjects: 0, openTasks: 0, integrations: { connected: 0, pending: 0, error: 0 } });
+        expect(overview).toMatchObject({ clients: 5, websites: 10, demoWebsites: 10, activeProjects: 0, openTasks: 0, integrations: { connected: 0, pending: 0, error: 0 } });
     });
 });
 
@@ -149,9 +178,22 @@ describe('websites', () => {
         const archived = await a.websites.update(POD, two.id, { status: 'archived' });
         expect(archived).toMatchObject({ isPrimary: false, status: 'archived' });
         expect(archived.archivedAt).not.toBeNull();
-        expect((await a.websites.list(POD)).map((w) => w.name)).toEqual(['One']);
-        expect((await a.websites.list(POD, { includeArchived: true })).map((w) => w.name).sort()).toEqual(['One', 'Two']);
+        const real = (l: Array<{ isDemo: boolean; name: string }>) => l.filter((w) => !w.isDemo).map((w) => w.name);
+        expect(real(await a.websites.list(POD))).toEqual(['One']);
+        expect(real(await a.websites.list(POD, { includeArchived: true })).sort()).toEqual(['One', 'Two']);
+        // Archiving the primary leaves no primary (demo or real) until one is chosen again.
+        expect((await a.websites.list(POD)).filter((w) => w.isPrimary)).toEqual([]);
         expect((await a.websites.update(POD, two.id, { status: 'active' })).archivedAt).toBeNull();
+    });
+
+    it('demo websites keep a reserved .example domain and are never auditable', async () => {
+        const db = sampleDb();
+        const a = api(db, 'usr_adpost_admin');
+        const demo = (await a.websites.list(POD)).find((w) => w.isDemo && w.environment === 'production')!;
+        await expect(a.websites.update(POD, demo.id, { websiteUrl: 'https://shop.example.com' })).rejects.toBeInstanceOf(ValidationError);
+        expect((await a.websites.update(POD, demo.id, { websiteUrl: 'https://www.pod.example' })).domain).toBe('www.pod.example');
+        expect(isAuditable(await a.websites.get(POD, demo.id))).toBe(false);
+        expect((await api(db, 'usr_vca_admin').websites.list(sampleClientId('vca', 'hamptons'))).map((w) => w.name)).toEqual(['HAMPTONS — Production', 'HAMPTONS — Staging']);
     });
 
     it('cross-client and cross-agency website access is refused', async () => {

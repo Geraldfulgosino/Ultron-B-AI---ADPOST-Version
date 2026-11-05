@@ -87,7 +87,7 @@ export function AgenciesPage() {
                     <section aria-label="Platform overview" className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
                         <StatCard label="Agencies" value={formatNumber(overview.data.agencies)} />
                         <StatCard label="Clients" value={formatNumber(overview.data.clients)} />
-                        <StatCard label="Websites" value={formatNumber(overview.data.websites)} />
+                        <StatCard label="Websites" value={formatNumber(overview.data.websites)} hint={overview.data.demoWebsites ? `${overview.data.demoWebsites} demo records (not live websites)` : undefined} />
                         <StatCard label="Users" value={formatNumber(overview.data.activeUsers)} />
                         <StatCard label="AI requests (month)" value={formatNumber(overview.data.aiRequestsThisMonth)} />
                         <StatCard label="Integrations" value={overview.data.integrations.connected ? formatNumber(overview.data.integrations.connected) : 'None connected'} hint={overview.data.integrations.error ? `${overview.data.integrations.error} with errors` : undefined} />
@@ -107,7 +107,7 @@ export function AgenciesPage() {
                                     <span className="min-w-0 flex-1">
                                         <span className="block font-medium text-fg truncate">{a.name}</span>
                                         <span className="block text-xs text-fg-muted">
-                                            {a.counts ? `${a.counts.clients} client${a.counts.clients === 1 ? '' : 's'} · ${a.counts.websites} website${a.counts.websites === 1 ? '' : 's'}` : 'Directory only'}
+                                            {a.counts ? `${a.counts.clients} client${a.counts.clients === 1 ? '' : 's'} · ${a.counts.websites} website${a.counts.websites === 1 ? '' : 's'}${a.counts.demoWebsites ? ` (${a.counts.demoWebsites} demo)` : ''}` : 'Directory only'}
                                         </span>
                                     </span>
                                     <StatusPill status={a.status} />
@@ -171,7 +171,7 @@ export function AgencyOverviewPage() {
             ) : overview.loading ? <LoadingState /> : overview.error ? <ErrorState error={overview.error} /> : overview.data && (
                 <section aria-label="Agency overview" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <StatCard label="Clients" value={formatNumber(overview.data.clients)} />
-                    <StatCard label="Websites" value={formatNumber(overview.data.websites)} hint={overview.data.websitesWithoutUrl ? `${overview.data.websitesWithoutUrl} without a URL yet` : undefined} />
+                    <StatCard label="Websites" value={formatNumber(overview.data.websites)} hint={[overview.data.demoWebsites ? `${overview.data.demoWebsites} demo records` : '', overview.data.websitesWithoutUrl ? `${overview.data.websitesWithoutUrl} without a URL yet` : ''].filter(Boolean).join(' · ') || undefined} />
                     <StatCard label="Active projects" value={formatNumber(overview.data.activeProjects)} />
                     <StatCard label="Open tasks" value={formatNumber(overview.data.openTasks)} />
                     <StatCard label="AI runs this month" value={formatNumber(overview.data.aiRunsThisMonth)} />

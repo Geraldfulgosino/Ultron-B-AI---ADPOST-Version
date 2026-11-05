@@ -66,6 +66,8 @@ export interface LocalDatabaseOptions {
     persistKey?: string;
     /** Fixed clock for deterministic tests. */
     now?: () => Date;
+    /** Applied to a snapshot restored from storage (e.g. the idempotent sample seed adding new records). */
+    upgrade?: (s: DbSnapshot) => DbSnapshot;
 }
 
 /**
@@ -86,7 +88,8 @@ export class LocalDatabase {
         private readonly options: LocalDatabaseOptions = {},
     ) {
         this.now = options.now ?? (() => new Date());
-        this.data = this.load() ?? structuredClone(seed);
+        const stored = this.load();
+        this.data = stored ? (options.upgrade ? options.upgrade(stored) : stored) : structuredClone(seed);
         this.credentials = { ...credentials, ...this.loadCredentials() };
     }
 

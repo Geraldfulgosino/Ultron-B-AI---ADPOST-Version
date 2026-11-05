@@ -101,6 +101,7 @@ export function localAgencies(scope: Scope): AgenciesApi {
                 activeClients: clients.filter((c) => c.status === 'active').length,
                 archivedClients: clients.filter((c) => c.status === 'archived').length,
                 websites: websites.length,
+                demoWebsites: websites.filter((w) => w.isDemo).length,
             } : null,
         };
     };
@@ -247,6 +248,7 @@ export function localAgencies(scope: Scope): AgenciesApi {
                 agency,
                 clients: clients.length,
                 websites: sites.length,
+                demoWebsites: sites.filter((w) => w.isDemo).length,
                 websitesWithoutUrl: sites.filter((w) => !w.websiteUrl).length,
                 activeProjects: db.all('projects').filter((p) => ids.has(p.brandId) && p.status === 'active').length,
                 openTasks: db.all('tasks').filter((t) => ids.has(t.brandId) && t.status !== 'done').length,
@@ -266,6 +268,7 @@ export function localAgencies(scope: Scope): AgenciesApi {
                 agencies: db.all('agencies').filter((a) => a.status !== 'archived').length,
                 clients: db.all('brands').filter((b) => b.status !== 'archived').length,
                 websites: db.all('websites').filter((w) => w.status !== 'archived').length,
+                demoWebsites: db.all('websites').filter((w) => w.status !== 'archived' && w.isDemo).length,
                 activeUsers: db.all('users').length,
                 integrations: { connected: db.all('integrations').filter((i) => i.status === 'connected').length, error: db.all('integrations').filter((i) => i.status === 'error').length },
                 aiRequestsThisMonth: db.all('aiUsage').filter((u) => u.createdAt.startsWith(month) && u.executionStatus !== 'limited').length,

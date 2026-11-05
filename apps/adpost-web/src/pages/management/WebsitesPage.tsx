@@ -45,7 +45,8 @@ export function WebsitesPage() {
                                 <Td>
                                     <Link className="font-medium text-indigo-600 hover:underline" to={`${base}/websites/${w.id}`}>{w.name}</Link>
                                     {w.isPrimary && <Badge variant="indigo" className="ml-2">Primary</Badge>}
-                                    <span className="block text-xs text-fg-muted">{w.websiteUrl ?? 'No URL yet (draft): not crawled or monitored'}</span>
+                                    {w.isDemo && <Badge variant="yellow" className="ml-2">Demo</Badge>}
+                                    <span className="block text-xs text-fg-muted">{w.isDemo ? `${w.websiteUrl} · demo record, not a verified live website` : w.websiteUrl ?? 'No URL yet (draft): not crawled or monitored'}</span>
                                 </Td>
                                 <Td><EnvBadge env={w.environment} /></Td>
                                 <Td className="hidden md:table-cell">{PLATFORM_LABELS[w.platform]}</Td>
@@ -135,8 +136,9 @@ export function WebsiteDetailPage() {
     return (
         <Page title={w.name} description={w.websiteUrl ?? 'Draft website: no URL yet'} actions={<Link to={`${base}/websites`} className="text-sm text-accent hover:text-accent-strong">All websites</Link>}>
             <div className="flex flex-wrap items-center gap-2">
-                <EnvBadge env={w.environment} /> <StatusPill status={w.status} /> {w.isPrimary && <Badge variant="indigo">Primary</Badge>}
+                <EnvBadge env={w.environment} /> <StatusPill status={w.status} /> {w.isPrimary && <Badge variant="indigo">Primary</Badge>} {w.isDemo && <Badge variant="yellow">Demo</Badge>}
             </div>
+            {w.isDemo && <Alert tone="warning">Demo record for local testing. {w.domain} is a reserved example domain, not a real or verified website: it is never crawled, verified, monitored or connected, and any analysis of it is a simulation.</Alert>}
             {!w.websiteUrl && <Alert tone="info">This website has no URL yet. It will not be crawled, audited or monitored until a valid URL is saved.</Alert>}
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
@@ -169,7 +171,9 @@ export function WebsiteDetailPage() {
                 <Card>
                     <CardHeader><CardTitle>Technical audit</CardTitle></CardHeader>
                     <CardContent className="text-sm text-fg-muted">
-                        {isAuditable(w)
+                        {w.isDemo
+                            ? 'Disabled: demo records are never crawled or audited.'
+                            : isAuditable(w)
                             ? 'No audits yet. Audits run through the server-side SEO tools (page metadata, robots.txt, sitemap, llms.txt) and only for this website’s URL. Ask the Technical SEO agent with this website selected.'
                             : 'Not available: an active website with a URL is required before any audit can run.'}
                     </CardContent>

@@ -88,7 +88,7 @@ function ThreadHeader({ conversationId }: { conversationId: string }) {
     return (
         <div className="space-y-2">
             <p className="text-xs text-fg-muted" aria-label="Conversation scope">
-                Scope: {brand.name}{c.data.websiteId ? ` · website ${scoped?.name ?? ''}${scoped?.domain ? ` (${scoped.domain})` : ''}` : ' · all websites'}. Agents use only this client’s data.
+                Scope: {brand.name}{c.data.websiteId ? ` · website ${scoped?.name ?? ''}${scoped?.domain ? ` (${scoped.domain})` : ''}${scoped?.isDemo ? ' · Demo record: any analysis is simulated' : ''}` : ' · all websites'}. Agents use only this client’s data.
             </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
                 {editing ? (

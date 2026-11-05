@@ -60,3 +60,15 @@
   - `data/local/chatScope.test.ts` (2);
   - `handlers.test.ts` (+3).
 - **Level:** local only (mock adapter and PGlite). Nothing ran against staging; no real-browser QA this session.
+
+## 2026-11-05: demo websites (20) and local browser QA
+- `npm test`: **483 passed + 1 opt-in skipped**. Two concurrent runs also passed 483/483 each. `tsc`: 0 errors; build ok.
+- New and updated tests:
+  - DB (PGlite): 20 demo websites, 2 per client, 1 primary per client, production/staging domains, no integrations, never auditable, reserved domain enforced, `is_demo` immutable, re-seed idempotent and preserving a user website and its primary flag, client isolation.
+  - Local adapter: the same checks, plus the upgrade of stored browser data.
+  - UI: the HAMPTONS selector shows exactly "All HAMPTONS websites / HAMPTONS — Production (Demo) / HAMPTONS — Staging (Demo)"; changing client resets the website.
+  - SSRF guard: rejects `.example`, `.test` and `.invalid`. The SEO tools make no request for demo hosts.
+- **Real browser (headless Edge over CDP, http://localhost:5173): 38/38 checks.**
+  - Covered: the POD, TRADE BAGS, HAMPTONS, LIPSKY and GoldStar ATM website screens, selector options, environment and primary labels, client-change reset, and a demo-scoped chat labelled simulated.
+  - The earlier login, agency, client, website and chat flows still pass, and isolation denials work.
+  - 0 console errors, 0 failed requests, 0 requests to `.example`/`.test` hosts.

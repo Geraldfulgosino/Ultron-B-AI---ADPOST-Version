@@ -19,7 +19,12 @@ export class UrlSafetyError extends Error {
 }
 
 const BLOCKED_HOSTS = new Set(['localhost', 'metadata.google.internal', 'metadata', 'instance-data', 'kubernetes.default']);
-const BLOCKED_SUFFIXES = ['.localhost', '.local', '.internal', '.lan', '.home', '.corp', '.intranet', '.svc', '.cluster.local'];
+/**
+ * Internal names, plus the reserved test TLDs of RFC 2606 / RFC 6761 (.example, .test, .invalid):
+ * demo and fixture websites use them and must never be sent to a crawler, verifier or API tool.
+ */
+const BLOCKED_SUFFIXES = ['.localhost', '.local', '.internal', '.lan', '.home', '.corp', '.intranet', '.svc', '.cluster.local', '.example', '.test', '.invalid'];
+const RESERVED_TLDS = new Set(['example', 'test', 'invalid']);
 const ALLOWED_PORTS = new Set(['', '80', '443']);
 
 /** [network, prefixLength] ranges that are not publicly routable. */
@@ -106,6 +111,7 @@ export function validatePublicUrl(input: string): URL {
     if (isIPv4(bare) || bare.includes(':')) {
         if (!isPublicIp(bare)) throw new UrlSafetyError('private_ip', 'Private, loopback and reserved addresses cannot be audited.');
     } else {
+        if (RESERVED_TLDS.has(host) || /.(example|test|invalid)$/.test(host)) throw new UrlSafetyError('reserved_domain', 'Reserved example/test domains (demo records) are never fetched.');
         if (BLOCKED_HOSTS.has(host) || BLOCKED_SUFFIXES.some((s) => host.endsWith(s))) throw new UrlSafetyError('blocked_host', 'Internal hostnames cannot be audited.');
         if (!host.includes('.')) throw new UrlSafetyError('host', 'Use a fully qualified public domain name.');
     }

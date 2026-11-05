@@ -21,7 +21,7 @@ const HTML = `<!doctype html><html lang="en"><head>
 <meta name="description" content="Custom prints.">
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="POD">
-<link rel="canonical" href="https://pod.example/">
+<link rel="canonical" href="https://pod.example.com/">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization"},{"@type":["WebSite","Thing"]}]}</script>
 <script type="application/ld+json">{ broken json </script>
 </head><body><h1>Prints</h1><h1>Posters</h1>
@@ -32,7 +32,7 @@ describe('page facts extraction', () => {
     it('extracts title, meta, canonical, headings, images and JSON-LD types without a DOM', () => {
         const f = extractPageFacts(HTML);
         expect(f).toMatchObject({
-            title: 'POD Prints & Posters', metaDescription: 'Custom prints.', robotsMeta: 'index,follow', canonical: 'https://pod.example/', lang: 'en',
+            title: 'POD Prints & Posters', metaDescription: 'Custom prints.', robotsMeta: 'index,follow', canonical: 'https://pod.example.com/', lang: 'en',
             h1: ['Prints', 'Posters'], images: { total: 2, missingAlt: 1 }, invalidJsonLdBlocks: 1, openGraph: { title: 'POD' },
         });
         expect(f.structuredDataTypes).toEqual(['Organization', 'WebSite', 'Thing']);
@@ -41,70 +41,80 @@ describe('page facts extraction', () => {
 
 describe('SEO skills', () => {
     it('page audit: findings carry evidence; page text is not part of the result instructions', async () => {
-        const deps = site({ 'https://pod.example/': { body: HTML, headers: { 'content-type': 'text/html', 'x-robots-tag': 'noindex' } } });
-        const r = await pageMetadataSkill('https://pod.example/', ['pod.example'], deps);
+        const deps = site({ 'https://pod.example.com/': { body: HTML, headers: { 'content-type': 'text/html', 'x-robots-tag': 'noindex' } } });
+        const r = await pageMetadataSkill('https://pod.example.com/', ['pod.example.com'], deps);
         const ids = r.findings.map((f) => f.id);
         expect(ids).toEqual(expect.arrayContaining(['title_length', 'noindex', 'h1_count', 'img_alt', 'jsonld_invalid']));
         expect(ids).not.toContain('title_missing');
         expect(r.findings.every((f) => f.evidence.length > 0)).toBe(true);
         expect(JSON.stringify(r)).not.toContain('Ignore previous instructions');
-        expect(r).toMatchObject({ skillId: 'tech.page_audit', status: 200, finalUrl: 'https://pod.example/' });
+        expect(r).toMatchObject({ skillId: 'tech.page_audit', status: 200, finalUrl: 'https://pod.example.com/' });
     });
 
     it('only the brand’s own hosts may be fetched (www/apex twins allowed)', async () => {
-        expect(() => assertAuthorizedHost('https://www.pod.example/x', ['pod.example'])).not.toThrow();
-        expect(() => assertAuthorizedHost('https://evil.example/', ['pod.example'])).toThrow(/not one of this brand/);
-        expect(() => assertAuthorizedHost('https://pod.example.evil.example/', ['pod.example'])).toThrow();
+        expect(() => assertAuthorizedHost('https://www.pod.example.com/x', ['pod.example.com'])).not.toThrow();
+        expect(() => assertAuthorizedHost('https://evil.example/', ['pod.example.com'])).toThrow(/not one of this brand/);
+        expect(() => assertAuthorizedHost('https://pod.example.evil.example/', ['pod.example.com'])).toThrow();
         const deps = site({});
-        await expect(pageMetadataSkill('https://competitor.example/', ['pod.example'], deps)).rejects.toMatchObject({ reason: 'not_authorized' });
+        await expect(pageMetadataSkill('https://competitor.example/', ['pod.example.com'], deps)).rejects.toMatchObject({ reason: 'not_authorized' });
         expect(deps.calls).toEqual([]);
     });
 
     it('a brand host resolving to a private address is refused before any request (SSRF)', async () => {
-        const deps = site({ 'https://pod.example/': { body: HTML } }, { 'pod.example': ['10.0.0.5'] });
-        await expect(pageMetadataSkill('https://pod.example/', ['pod.example'], deps)).rejects.toMatchObject({ reason: 'private_dns' });
+        const deps = site({ 'https://pod.example.com/': { body: HTML } }, { 'pod.example.com': ['10.0.0.5'] });
+        await expect(pageMetadataSkill('https://pod.example.com/', ['pod.example.com'], deps)).rejects.toMatchObject({ reason: 'private_dns' });
+        expect(deps.calls).toEqual([]);
+    });
+
+    it('demo websites on reserved .example domains are never fetched, even if listed as brand hosts', async () => {
+        const deps = site({ 'https://pod.example/': { body: HTML }, 'https://staging.pod.example/robots.txt': { body: 'User-agent: *' } });
+        await expect(pageMetadataSkill('https://pod.example/', ['pod.example'], deps)).rejects.toMatchObject({ reason: 'reserved_domain' });
+        await expect(robotsSkill('https://staging.pod.example/', ['staging.pod.example'], deps)).rejects.toMatchObject({ reason: 'reserved_domain' });
+        const refused = await new AIToolGateway().run({ id: 'd', name: 'seo_sitemap', input: { url: 'https://pod.example/' } }, ['audit_site'],
+            { brandId: 'b', allowedHosts: ['pod.example'], fetchDeps: deps, teammates: [] });
+        expect(refused).toMatchObject({ isError: true, content: expect.stringContaining('reserved_domain') });
         expect(deps.calls).toEqual([]);
     });
 
     it('robots.txt: groups, sitemaps, Googlebot and AI crawler access', async () => {
-        const robots = 'User-agent: *\nDisallow: /cart\n\nUser-agent: GPTBot\nUser-agent: CCBot\nDisallow: /\n\nSitemap: https://pod.example/sitemap.xml\n';
+        const robots = 'User-agent: *\nDisallow: /cart\n\nUser-agent: GPTBot\nUser-agent: CCBot\nDisallow: /\n\nSitemap: https://pod.example.com/sitemap.xml\n';
         const p = parseRobots(robots);
         expect(p.groups).toBe(2);
         expect(p.rootBlocked('GPTBot')).toBe(true);
         expect(p.rootBlocked('ClaudeBot')).toBe(false);
-        const deps = site({ 'https://pod.example/robots.txt': { body: robots, headers: { 'content-type': 'text/plain' } } });
-        const r = await robotsSkill('https://pod.example/some/page', ['pod.example'], deps);
-        expect(r.data).toMatchObject({ exists: true, sitemaps: ['https://pod.example/sitemap.xml'], aiCrawlers: { GPTBot: 'blocked', CCBot: 'blocked', ClaudeBot: 'allowed' } });
+        const deps = site({ 'https://pod.example.com/robots.txt': { body: robots, headers: { 'content-type': 'text/plain' } } });
+        const r = await robotsSkill('https://pod.example.com/some/page', ['pod.example.com'], deps);
+        expect(r.data).toMatchObject({ exists: true, sitemaps: ['https://pod.example.com/sitemap.xml'], aiCrawlers: { GPTBot: 'blocked', CCBot: 'blocked', ClaudeBot: 'allowed' } });
         expect(r.findings.map((f) => f.id)).toEqual(['ai_crawlers_blocked']);
-        const missing = await robotsSkill('https://pod.example/', ['pod.example'], site({}));
+        const missing = await robotsSkill('https://pod.example.com/', ['pod.example.com'], site({}));
         expect(missing.findings[0]!.id).toBe('robots_missing');
     });
 
     it('sitemap: counts, lastmod and off-host URLs', async () => {
-        const xml = '<?xml version="1.0"?><urlset><url><loc>https://pod.example/a</loc></url><url><loc>https://other.example/b</loc></url></urlset>';
-        const r = await sitemapSkill('https://pod.example/', ['pod.example'], site({ 'https://pod.example/sitemap.xml': { body: xml } }));
+        const xml = '<?xml version="1.0"?><urlset><url><loc>https://pod.example.com/a</loc></url><url><loc>https://other.example/b</loc></url></urlset>';
+        const r = await sitemapSkill('https://pod.example.com/', ['pod.example.com'], site({ 'https://pod.example.com/sitemap.xml': { body: xml } }));
         expect(r.data).toMatchObject({ exists: true, kind: 'urlset', urls: 2, withLastmod: 0 });
         expect(r.findings.map((f) => f.id)).toEqual(['no_lastmod', 'off_host_urls']);
-        const html = await sitemapSkill('https://pod.example/', ['pod.example'], site({ 'https://pod.example/sitemap.xml': { body: '<html>soft 404</html>' } }));
+        const html = await sitemapSkill('https://pod.example.com/', ['pod.example.com'], site({ 'https://pod.example.com/sitemap.xml': { body: '<html>soft 404</html>' } }));
         expect(html.findings[0]!.id).toBe('sitemap_format');
     });
 
     it('llms.txt: present with heading, or missing (an HTML soft-404 does not count)', async () => {
-        const ok = await llmsTxtSkill('https://pod.example/', ['pod.example'], site({ 'https://pod.example/llms.txt': { body: '# POD\n> Prints' } }));
+        const ok = await llmsTxtSkill('https://pod.example.com/', ['pod.example.com'], site({ 'https://pod.example.com/llms.txt': { body: '# POD\n> Prints' } }));
         expect(ok.data).toMatchObject({ exists: true, heading: 'POD' });
-        const soft = await llmsTxtSkill('https://pod.example/', ['pod.example'], site({ 'https://pod.example/llms.txt': { body: '<html>home</html>' } }));
+        const soft = await llmsTxtSkill('https://pod.example.com/', ['pod.example.com'], site({ 'https://pod.example.com/llms.txt': { body: '<html>home</html>' } }));
         expect(soft.data).toMatchObject({ exists: false });
     });
 
     it('through the gateway: results are wrapped as untrusted data and failures are tool errors', async () => {
         const gw = new AIToolGateway();
-        const ctx = { brandId: 'b', allowedHosts: ['pod.example'], fetchDeps: site({ 'https://pod.example/': { body: HTML } }), teammates: [] };
-        const ok = await gw.run({ id: '1', name: 'seo_page_audit', input: { url: 'https://pod.example/' } }, ['audit_site'], ctx);
+        const ctx = { brandId: 'b', allowedHosts: ['pod.example.com'], fetchDeps: site({ 'https://pod.example.com/': { body: HTML } }), teammates: [] };
+        const ok = await gw.run({ id: '1', name: 'seo_page_audit', input: { url: 'https://pod.example.com/' } }, ['audit_site'], ctx);
         expect(ok.isError).toBe(false);
-        expect(ok.content.startsWith('<untrusted_data source="https://pod.example/">')).toBe(true);
+        expect(ok.content.startsWith('<untrusted_data source="https://pod.example.com/">')).toBe(true);
         const refused = await gw.run({ id: '2', name: 'seo_page_audit', input: { url: 'http://127.0.0.1/' } }, ['audit_site'], ctx);
         expect(refused).toMatchObject({ isError: true, content: expect.stringContaining('Fetch refused') });
-        const noPerm = await gw.run({ id: '3', name: 'seo_page_audit', input: { url: 'https://pod.example/' } }, ['read_knowledge'], ctx);
+        const noPerm = await gw.run({ id: '3', name: 'seo_page_audit', input: { url: 'https://pod.example.com/' } }, ['read_knowledge'], ctx);
         expect(noPerm).toMatchObject({ isError: true, content: expect.stringContaining('not permitted') });
         const none = await gw.run({ id: '4', name: 'read_search_console', input: {} }, ['read_search_console'], ctx);
         expect(none.content).toMatch(/not connected.*do not estimate/);

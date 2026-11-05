@@ -79,7 +79,7 @@ export interface AgencyAccess {
 export interface AgencyView extends T.Agency {
     access: AgencyAccess;
     /** Counts over clients the caller can read; null when the caller sees the directory only. */
-    counts: { clients: number; activeClients: number; archivedClients: number; websites: number } | null;
+    counts: { clients: number; activeClients: number; archivedClients: number; websites: number; demoWebsites: number } | null;
 }
 
 export interface AgencyInput {
@@ -119,6 +119,8 @@ export interface AgencyOverview {
     agency: AgencyView;
     clients: number;
     websites: number;
+    /** Demonstration records (sample seed), included in `websites`. */
+    demoWebsites: number;
     websitesWithoutUrl: number;
     activeProjects: number;
     openTasks: number;
@@ -130,6 +132,7 @@ export interface PlatformOverview {
     agencies: number;
     clients: number;
     websites: number;
+    demoWebsites: number;
     activeUsers: number;
     integrations: { connected: number; error: number };
     aiRequestsThisMonth: number;

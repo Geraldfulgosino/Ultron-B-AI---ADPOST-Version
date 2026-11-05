@@ -22,15 +22,15 @@ import type { ChatMessage } from './types.ts';
 
 export interface CallerMessage { id: string; conversationId: string; brandId: string; authorUserId: string | null; body: string; mentions: string[] }
 export interface CallerConversation { id: string; brandId: string; kind: 'direct' | 'group'; teamKey: 'seo' | 'web' | 'all' | null; agentInstanceIds: string[]; archived: boolean; websiteId: string | null }
-export interface CallerWebsite { id: string; name: string; domain: string | null; websiteUrl: string | null; status: string }
+export interface CallerWebsite { id: string; name: string; domain: string | null; websiteUrl: string | null; status: string; isDemo: boolean }
 export interface CallerBrand { brandId: string; agencyId: string; brandName: string; canWrite: boolean; websites: CallerWebsite[] }
 
 /**
- * Hosts the SEO tools may fetch: only ACTIVE websites WITH a URL (drafts are never crawled),
+ * Hosts the SEO tools may fetch: only ACTIVE, non-demo websites WITH a URL (drafts and demo records are never crawled),
  * and only the conversation's website when the conversation is website-scoped.
  */
 export function allowedHostsFor(brand: CallerBrand, websiteId: string | null): string[] {
-    const auditable = brand.websites.filter((w) => w.websiteUrl && w.domain && w.status === 'active');
+    const auditable = brand.websites.filter((w) => w.websiteUrl && w.domain && w.status === 'active' && !w.isDemo);
     return (websiteId ? auditable.filter((w) => w.id === websiteId) : auditable).map((w) => w.domain!);
 }
 export interface AgentRow extends AgentProfile { templateKey: string; team: 'seo' | 'web' }
@@ -127,7 +127,7 @@ export async function handleAgentExecute(input: ExecuteInput, deps: HandlerDeps,
         return executeAgentTurn({ registry: deps.registry, gateway: deps.gateway, env: deps.env, fetch: deps.fetch, store: d.store, now: deps.now, sleep: deps.sleep }, {
             idempotencyKey: key, agencyId: brand.agencyId, brandId: brand.brandId, brandName: brand.brandName, userId: d.userId!, conversationId: conv.id,
             triggerMessageId: msg.id, parentExecutionId, handoffDepth: depth, agent, history,
-            websiteScope: scopedSite ? { name: scopedSite.name, url: scopedSite.websiteUrl } : null,
+            websiteScope: scopedSite ? { name: scopedSite.name, url: scopedSite.websiteUrl, isDemo: scopedSite.isDemo } : null,
             routing: { assignment, connections: routing.connections, models: routing.models, brandPolicy: routing.brandPolicy, orgPolicy: routing.orgPolicy },
             toolContext: { brandId: brand.brandId, allowedHosts, fetchDeps, teammates: teammates.filter((t) => t.handle !== agent.handle), searchKnowledge: (q) => d.searchKnowledge(brand.brandId, q), metrics: async () => null },
             usage: await d.usage(brand.brandId, brand.agencyId, d.userId!, agentId, conn?.id ?? null),

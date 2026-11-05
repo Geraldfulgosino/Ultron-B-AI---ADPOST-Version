@@ -17,6 +17,8 @@ describe('agency directory (sample dataset)', () => {
         const totals = await screen.findByRole('region', { name: 'Platform overview' });
         expect(within(totals).getByText('3')).toBeInTheDocument();
         expect(within(totals).getByText('10')).toBeInTheDocument();
+        expect(within(totals).getByText('20')).toBeInTheDocument();
+        expect(within(totals).getByText('20 demo records (not live websites)')).toBeInTheDocument();
         expect(within(totals).getByText('None connected')).toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', { name: /Add agency/ }));
@@ -30,7 +32,7 @@ describe('agency directory (sample dataset)', () => {
         await renderSampleApp('/agencies', ADPOST);
         const list = await screen.findByRole('list', { name: 'Agencies' });
         expect(within(list).getAllByRole('listitem')).toHaveLength(1);
-        expect(within(list).getByText('5 clients · 0 websites')).toBeInTheDocument();
+        expect(within(list).getByText('5 clients · 10 websites (10 demo)')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Add agency/ })).toBeNull();
         expect(screen.queryByRole('region', { name: 'Platform overview' })).toBeNull();
     });
@@ -42,12 +44,13 @@ describe('agency directory (sample dataset)', () => {
 });
 
 describe('agency clients (sample dataset)', () => {
-    it('lists exactly ADPOST’s five clients with empty website and integration states', async () => {
+    it('lists exactly ADPOST’s five clients, each with two demo websites and no integrations', async () => {
         await renderSampleApp('/a/adpost/clients', ADPOST);
         const table = await screen.findByRole('table', { name: 'ADPOST clients' });
         const names = within(table).getAllByRole('link').filter((a) => a.getAttribute('href')?.endsWith('/dashboard')).map((a) => a.textContent);
         expect(names).toEqual(['DSP', 'FMF', 'POD', 'STUDIO PILATES', 'TRADE BAGS']);
-        expect(within(table).getAllByRole('link', { name: 'Add website' })).toHaveLength(5);
+        expect(within(table).queryAllByRole('link', { name: 'Add website' })).toHaveLength(0);
+        for (const slug of ['dsp', 'fmf', 'pod', 'studio-pilates', 'trade-bags']) expect(within(table).getByText(`${slug}.example`)).toBeInTheDocument();
         expect(within(table).getAllByText('Not connected')).toHaveLength(5);
     });
 
@@ -105,17 +108,35 @@ describe('workspace selector and website management (sample dataset)', () => {
         const client = (await screen.findAllByLabelText('Client'))[0]! as HTMLSelectElement;
         expect([...client.options].map((o) => o.textContent)).toEqual(['DSP', 'FMF', 'POD', 'STUDIO PILATES', 'TRADE BAGS']);
         const site = screen.getAllByLabelText('Website scope')[0]! as HTMLSelectElement;
-        expect(site).toBeDisabled();
-        expect(site.options[0]!.textContent).toBe('No websites yet');
+        await waitFor(() => expect(site.options.length).toBe(3));
+        expect([...site.options].map((o) => o.textContent)).toEqual(['All POD websites', 'POD — Production (Demo)', 'POD — Staging (Demo)']);
+        await userEvent.selectOptions(site, 'web_demo_adpost_pod_stg');
+        await waitFor(() => expect(router.state.location.search).toBe('?website=web_demo_adpost_pod_stg'));
         expect(await screen.findByText('No analytics data yet')).toBeInTheDocument();
         await userEvent.selectOptions(client, 'dsp');
         await waitFor(() => expect(router.state.location.pathname).toBe('/a/adpost/c/dsp/dashboard'));
         await waitFor(() => expect((screen.getAllByLabelText('Client')[0] as HTMLSelectElement).value).toBe('dsp'));
+        // The POD website selection does not follow to DSP.
+        expect(router.state.location.search).toBe('');
+        await waitFor(() => expect([...(screen.getAllByLabelText('Website scope')[0] as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['All DSP websites', 'DSP — Production (Demo)', 'DSP — Staging (Demo)']));
+        expect((screen.getAllByLabelText('Website scope')[0] as HTMLSelectElement).value).toBe('');
+    });
+
+    it('VCA → HAMPTONS shows exactly its two demo websites in the selector', async () => {
+        await renderSampleApp('/a/vca/c/hamptons/websites', VCA);
+        const site = (await screen.findAllByLabelText('Website scope'))[0]! as HTMLSelectElement;
+        await waitFor(() => expect([...site.options].map((o) => o.textContent)).toEqual(['All HAMPTONS websites', 'HAMPTONS — Production (Demo)', 'HAMPTONS — Staging (Demo)']));
+        const table = await screen.findByRole('table', { name: 'HAMPTONS websites' });
+        expect(within(table).getAllByText('Demo')).toHaveLength(2);
+        expect(within(table).getAllByText('Primary')).toHaveLength(1);
+        expect(within(table).getByText('Production')).toBeInTheDocument();
+        expect(within(table).getByText('Staging')).toBeInTheDocument();
+        expect(within(table).getAllByText(/demo record, not a verified live website/)).toHaveLength(2);
     });
 
     it('adds websites (draft and production), sets primary, and scopes the selector to one website', async () => {
         const { router, db } = await renderSampleApp('/a/adpost/c/pod/websites', ADPOST);
-        expect(await screen.findByText(/Add POD's first website/)).toBeInTheDocument();
+        await screen.findByRole('table', { name: 'POD websites' });
         await userEvent.click(await screen.findByRole('button', { name: /Add website/ }));
         const dialog = screen.getByRole('dialog', { name: 'Add website to POD' });
         await userEvent.type(within(dialog).getByLabelText(/^Website name/), 'POD staging');
@@ -123,13 +144,17 @@ describe('workspace selector and website management (sample dataset)', () => {
         await userEvent.click(within(dialog).getByRole('button', { name: 'Add website' }));
         const table = await screen.findByRole('table', { name: 'POD websites' });
         expect(within(table).getByText(/No URL yet \(draft\)/)).toBeInTheDocument();
+        const mine = () => db.all('websites').find((w) => w.name === 'POD staging')!;
+        expect(mine().isDemo).toBe(false);
         await userEvent.click(within(table).getByRole('button', { name: 'Make POD staging primary' }));
-        await waitFor(() => expect(db.all('websites')[0]!.isPrimary).toBe(true));
+        await waitFor(() => expect(mine().isPrimary).toBe(true));
+        // The demo production record gave up the primary flag: one primary per client.
+        expect(db.all('websites').filter((w) => w.brandId === 'brd_adpost_pod' && w.isPrimary).map((w) => w.name)).toEqual(['POD staging']);
 
         const site = screen.getAllByLabelText('Website scope')[0]! as HTMLSelectElement;
-        await waitFor(() => expect(site).not.toBeDisabled());
-        await userEvent.selectOptions(site, db.all('websites')[0]!.id);
-        await waitFor(() => expect(router.state.location.search).toBe(`?website=${db.all('websites')[0]!.id}`));
+        await waitFor(() => expect([...site.options].some((o) => o.value === mine().id)).toBe(true));
+        await userEvent.selectOptions(site, mine().id);
+        await waitFor(() => expect(router.state.location.search).toBe(`?website=${mine().id}`));
     });
 
     it('website detail shows honest empty states and refuses audits without a URL', async () => {
@@ -139,6 +164,13 @@ describe('workspace selector and website management (sample dataset)', () => {
         expect(await screen.findByText(/will not be crawled, audited or monitored/)).toBeInTheDocument();
         expect(screen.getByText(/Not connected\. Analytics and Search Console data appear here only after a real integration syncs\./)).toBeInTheDocument();
         expect(screen.getByText(/an active website with a URL is required before any audit can run/)).toBeInTheDocument();
+    });
+
+    it('a demo website detail page says it is a demo and disables audits', async () => {
+        await renderSampleApp('/a/lugenix-digital-services/c/goldstar-atm/websites/web_demo_lugenix_goldstar_atm_prod', 'admin@lugenix.example.test');
+        expect(await screen.findByText(/goldstar-atm\.example is a reserved example domain, not a real or verified website/)).toBeInTheDocument();
+        expect(screen.getByText('Disabled: demo records are never crawled or audited.')).toBeInTheDocument();
+        expect(screen.getByText(/Not connected\./)).toBeInTheDocument();
     });
 
     it('legacy /b/ links redirect to the canonical agency path', async () => {

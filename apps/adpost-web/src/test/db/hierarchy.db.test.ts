@@ -60,11 +60,11 @@ describe('dev sample seed', () => {
     const counts = async () => (await db.query<{ slug: string; n: number }>(`select a.slug, count(b.id)::int as n from public.agencies a
         left join public.brands b on b.agency_id = a.id group by a.slug order by a.slug`)).rows;
 
-    it('creates exactly 3 agencies and 10 clients (5 ADPOST, 4 VCA, 1 Lugenix), no websites, six agents each', async () => {
+    it('creates exactly 3 agencies and 10 clients (5 ADPOST, 4 VCA, 1 Lugenix), 20 demo websites, six agents each', async () => {
         expect(await counts()).toEqual([{ slug: 'adpost', n: 5 }, { slug: 'lugenix-digital-services', n: 1 }, { slug: 'vca', n: 4 }]);
         const names = (await db.query<{ name: string }>(`select b.name from public.brands b join public.agencies a on a.id = b.agency_id where a.slug = 'adpost' order by b.name`)).rows.map((r) => r.name);
         expect(names).toEqual(['DSP', 'FMF', 'POD', 'STUDIO PILATES', 'TRADE BAGS']);
-        expect((await db.query<{ n: number }>('select count(*)::int as n from public.websites')).rows[0]!.n).toBe(0);
+        expect((await db.query<{ n: number }>('select count(*)::int as n from public.websites where is_demo')).rows[0]!.n).toBe(20);
         expect((await db.query<{ n: number }>("select count(*)::int as n from public.brands where status = 'active'")).rows[0]!.n).toBe(10);
         expect((await db.query<{ n: number }>('select count(*)::int as n from public.agent_instances')).rows[0]!.n).toBe(60);
         const v = await db.query<{ instructions: string }>(`select v.instructions from public.agent_instances i join public.agent_instruction_versions v on v.id = i.active_instruction_version_id where i.brand_id = '${C['goldstar-atm']}' and i.template_key = 'seo_manager'`);
@@ -85,6 +85,61 @@ describe('dev sample seed', () => {
     });
 });
 
+describe('demo websites (dev seed)', () => {
+    type Row = { client: string; agency: string; name: string; domain: string; environment: string; is_primary: boolean; platform: string; status: string };
+    const rows = async () => (await db.query<Row>(`select b.slug as client, a.slug as agency, w.name, w.domain, w.environment, w.is_primary, w.platform, w.status
+        from public.websites w join public.brands b on b.id = w.brand_id join public.agencies a on a.id = b.agency_id where w.is_demo order by b.slug, w.environment`)).rows;
+
+    it('two per client: production (primary) and staging on reserved .example domains, nothing connected', async () => {
+        const r = await rows();
+        expect(r).toHaveLength(20);
+        const byClient = new Map<string, Row[]>();
+        for (const x of r) byClient.set(x.client, [...(byClient.get(x.client) ?? []), x]);
+        expect(byClient.size).toBe(10);
+        for (const [client, list] of byClient) {
+            expect(list.map((x) => [x.environment, x.domain, x.is_primary]), client).toEqual([
+                ['production', `${client}.example`, true],
+                ['staging', `staging.${client}.example`, false],
+            ]);
+            expect(list.every((x) => x.platform === 'unknown' && x.status === 'active')).toBe(true);
+        }
+        expect(r.find((x) => x.client === 'hamptons')!.name).toBe('HAMPTONS — Production');
+        const connected = await db.query<{ n: number }>(`select count(*)::int as n from public.integrations i join public.websites w on w.id = i.website_id where w.is_demo`);
+        expect(connected.rows[0]!.n).toBe(0);
+    });
+
+    it('demo records are never auditable, keep a reserved domain, and cannot be flipped to real', async () => {
+        const demo = (await db.query<{ id: string }>(`select id from public.websites where domain = 'pod.example'`)).rows[0]!.id;
+        expect((await as<{ ok: boolean }>(db, U.podAdmin, `select app.website_is_auditable('${demo}') as ok`))[0]!.ok).toBe(false);
+        expect(await attempt(db, U.podAdmin, `update public.websites set website_url = 'https://shop.example.com' where id = '${demo}'`)).toBe(CHECK);
+        expect(await attempt(db, U.podAdmin, `update public.websites set is_demo = false where id = '${demo}'`)).toBe(DENIED);
+        expect(await attempt(db, U.podAdmin, `insert into public.websites (brand_id, name, website_url, is_demo) values ('${C.pod}', 'Fake demo', 'https://pod.real-domain.com', true)`)).toBe(CHECK);
+    });
+
+    it('re-running the seed keeps exactly two per client and preserves user websites and their primary flag', async () => {
+        const user = (await as<{ id: string }>(db, U.adpostOwner, `insert into public.websites (brand_id, name, website_url, is_primary) values ('${C.fmf}', 'FMF user site', 'https://fmf-user.example.com', true) returning id`))[0]!.id;
+        await db.exec(`delete from public.websites where domain = 'staging.fmf.example'`); // simulate a partially seeded client
+        await runSeed(db);
+        await runSeed(db);
+        expect(await rows()).toHaveLength(20);
+        const fmf = (await db.query<{ name: string; is_primary: boolean }>(`select name, is_primary from public.websites where brand_id = '${C.fmf}' order by name`)).rows;
+        expect(fmf).toEqual([
+            { name: 'FMF user site', is_primary: true },
+            { name: 'FMF — Production', is_primary: false },
+            { name: 'FMF — Staging', is_primary: false },
+        ]);
+        expect((await db.query<{ id: string }>(`select id from public.websites where id = '${user}'`)).rows).toHaveLength(1);
+    });
+
+    it('demo websites follow client isolation', async () => {
+        expect(await count(U.vcaAdmin, 'websites', `brand_id = '${C.pod}'`)).toBe(0);
+        expect(await count(U.vcaAdmin, 'websites', `brand_id = '${C.hamptons}' and is_demo`)).toBe(2);
+        expect(await count(U.podAdmin, 'websites', `brand_id <> '${C.pod}'`)).toBe(0);
+        expect(await count(U.dspViewer, 'websites', `brand_id = '${C.pod}'`)).toBe(0);
+        expect(await as(db, U.vcaAdmin, `update public.websites set name = 'x' where domain = 'pod.example' returning 1`)).toHaveLength(0);
+    });
+});
+
 describe('agencies', () => {
     it('only platform admins create agencies (creator becomes owner); slugs are validated', async () => {
         for (const u of [U.adpostOwner, U.vcaAdmin, U.podAdmin, U.stranger]) {
@@ -101,7 +156,8 @@ describe('agencies', () => {
         expect(await count(U.platform, 'agencies', `slug in ('adpost', 'vca', 'lugenix-digital-services')`)).toBe(3);
         expect(await count(U.platform, 'brands', `agency_id = '${A.adpost}'`)).toBe(0);
         const o = (await as<{ platform_overview: Record<string, number> }>(db, U.platform, 'select public.platform_overview()'))[0]!.platform_overview;
-        expect(o).toMatchObject({ agencies: 4, clients: 10, websites: 0 });
+        // 20 demo websites + the user website added by the demo-seed test above.
+        expect(o).toMatchObject({ agencies: 4, clients: 10, websites: 21, demo_websites: 20 });
         for (const u of [U.adpostOwner, U.podAdmin, U.stranger]) expect(await attempt(db, u, 'select public.platform_overview()'), u.email).toBe(DENIED);
     });
 

@@ -11,6 +11,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useBrand, useQuery } from '@/app/backend';
 import { agencyBase, clientBase } from '@/app/paths';
 import type { Website } from '@/domain/types';
+import { websiteOptionLabel } from '@/domain/websites';
 
 const storeKey = (brandId: string) => `ultron.website.${brandId}`;
 const read = (k: string) => { try { return sessionStorage.getItem(k); } catch { return null; } };
@@ -82,7 +83,7 @@ export function WorkspaceSelector() {
                 <label htmlFor="website-switcher" className={labelClass}>Website scope</label>
                 <select id="website-switcher" className={selectClass} value={websiteId ?? ''} onChange={(e) => setWebsite(e.target.value || null)} disabled={!websites.length}>
                     <option value="">{websites.length ? `All ${brand.name} websites` : 'No websites yet'}</option>
-                    {websites.map((w) => <option key={w.id} value={w.id}>{w.name}{w.domain ? ` (${w.domain})` : ' (no URL)'}</option>)}
+                    {websites.map((w) => <option key={w.id} value={w.id}>{websiteOptionLabel(w)}</option>)}
                 </select>
             </div>
         </div>

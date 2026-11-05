@@ -46,7 +46,7 @@ export interface TurnRequest {
     agent: AgentProfile;
     history: ChatMessage[];
     /** Website-scoped conversation: agents work on this website only. */
-    websiteScope?: { name: string; url: string | null } | null;
+    websiteScope?: { name: string; url: string | null; isDemo?: boolean } | null;
     routing: Omit<RouteInput, 'agencyId' | 'brandId' | 'adapterCapabilities' | 'required' | 'optional'>;
     toolContext: ToolContext;
     usage: UsageSnapshot;
@@ -114,6 +114,7 @@ export function buildSystemPrompt(agent: AgentProfile, brandName: string, teamma
         '',
         `You are ${agent.name} (@${agent.handle}) working for the client "${brandName}" inside ULTRON-B AI. Use only this client's data; never information from other clients or agencies.`,
         websiteScope ? `This conversation is scoped to the website "${websiteScope.name}"${websiteScope.url ? ` (${websiteScope.url})` : ' (no URL yet: it cannot be fetched or audited)'}. Work on this website only.` : '',
+        websiteScope?.isDemo ? 'This website is a DEMO record on a reserved .example domain: it is not a real or verified website and cannot be fetched. Label any analysis as a simulation and never present it as real performance.' : '',
         'Rules that always apply:',
         '- Answer the user\'s actual question. If you need information you do not have (for example which website to review), ask for it.',
         '- Never invent analytics, rankings, search volumes, crawl results or prices. Use only data returned by tools or given by the user, and say where it came from.',

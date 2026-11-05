@@ -18,7 +18,7 @@ import { localKnowledge } from './knowledge';
 import { localAgencies } from './agencies';
 import { localAi } from './ai';
 import { buildFixtures } from './fixtures';
-import { buildSampleSeed } from './sampleSeed';
+import { applySampleSeed, buildSampleSeed } from './sampleSeed';
 
 /** Assemble the full API for one user. Exported for tests (no auth round-trip needed). */
 export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
@@ -139,5 +139,8 @@ export class LocalBackend implements Backend {
  */
 export function createLocalBackend(options: LocalDatabaseOptions & { persistSession?: boolean; dataset?: 'sample' | 'test' } = {}): LocalBackend {
     const { snapshot, credentials } = options.dataset === 'test' ? buildFixtures() : buildSampleSeed();
+    // Sample dataset: re-apply the idempotent seed to stored data so new sample records appear
+    // without discarding anything the user created locally.
+    if (options.dataset !== 'test' && !options.upgrade) options = { ...options, upgrade: applySampleSeed };
     return new LocalBackend(new LocalDatabase(snapshot, credentials, options), options.persistSession);
 }

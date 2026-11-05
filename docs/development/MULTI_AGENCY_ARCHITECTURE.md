@@ -23,6 +23,7 @@ Status (2026-11-05):
 | `brands` (clients) | display_name, industry, logo_url, primary contact name and email, `inactive` status, archived_at; slug format; **unique (agency_id, slug)** instead of global; a client cannot move agency |
 | `brand_memberships` | `job_function` (client_manager, seo_specialist, web_developer, employee, other); grants **nothing** |
 | `websites` | website_url (normalized http(s), no credentials), nullable domain (derived from the URL), environment (production/staging/development), platform `unknown` (default), is_primary (one per client, enforced by a partial unique index and a trigger), description, `inactive` status, archived_at; client_id nullable |
+| `websites.is_demo` | Demonstration record. Set at creation only (a trigger blocks changes). Must use a reserved `.example` domain or none (check constraint). Never auditable (`website_is_auditable`) |
 | `conversations` | `website_id`; a trigger requires it to be the same client's website |
 | RPCs | `create_agency` (platform admins; creator becomes owner), `create_client` (agency owners and admins; provisions the six agents), `platform_overview` (counts only) |
 | Helpers | `is_platform_admin`, `is_agency_manager`, `is_agency_admin_for_agency` (in 0007), `website_is_auditable`, `provision_brand_agents` |
@@ -52,7 +53,13 @@ Users can belong to several agencies and have different roles per client. No age
   - **VCA:** LIPSKY, HAMPTONS, CMS, LOOP19.
   - **Lugenix Digital Services:** GoldStar ATM.
   - All active, each with its six agents on the simulated model.
-- **No** websites, domains, contacts, analytics, insights, knowledge, integrations or credentials.
+- **20 demo websites (added 2026-11-05):** two per client.
+  - `<CLIENT> — Production` at `https://<slug>.example` is the primary.
+  - `<CLIENT> — Staging` at `https://staging.<slug>.example`.
+  - All are platform `unknown`, status active, `is_demo`, with no integrations, no GA4/GSC properties, unverified and unmonitored.
+  - The seed adds a missing record by (client, domain) and sets the production one primary only if the client has no primary. User websites are never touched.
+  - The local app re-applies the idempotent seed to stored browser data on load, so they appear without losing local changes.
+- **No** contacts, analytics, insights, knowledge, integrations or credentials.
 - The local app has synthetic sign-in accounts for exploring roles (example.test addresses; local mode only; nothing is sent to them). They are listed on the login page.
 - The synthetic 90-day analytics remain **only** in the test fixtures (`fixtures.ts`), per the owner's decision.
 
@@ -110,6 +117,30 @@ All numbers are counts of stored records. Analytics show "Not connected" or "No 
 5. WordPress and other platform integrations do not exist; only GA4 and GSC are modelled.
 6. Archived agencies and clients are read-write for admins, so they can restore them. A read-only archive mode would need an extra policy.
 7. One test failed once during the baseline run and was not reproduced in later runs. It is under observation.
+
+## 10a. Demo websites: never fetched
+Three independent layers stop a demo website from being crawled, verified or sent to a tool:
+1. The SSRF guard (`supabase/functions/_shared/urlSafety.ts`) refuses the reserved TLDs `.example`, `.test` and `.invalid` (reason `reserved_domain`).
+2. `allowedHostsFor` excludes `isDemo` websites from the hosts an agent's tools may fetch.
+3. `website_is_auditable` and `isAuditable` return false for demo records.
+
+The UI shows a **Demo** badge, "(Demo)" in the selector, and a warning on the detail page saying it is not a verified live website. A website-scoped chat on a demo record says that any analysis is simulated, and the server system prompt says the same.
+
+## 10b. Follow-up plan: labelled demonstration metrics (Step 6, not implemented)
+Adding synthetic traffic, impressions, clicks, CTR, position, indexed pages, issues, audit findings, tasks and reports touches every analytics surface. It is planned rather than added to the seed:
+1. **Separate storage.** Add a `demo` boolean to `analytics_daily_metrics`, `analytics_search_queries`, `analytics_landing_pages` and `seo_insights`, defaulting to false. A check constraint allows `demo` rows only for `is_demo` websites, so synthetic rows cannot attach to a real website.
+2. **Separate generation.** A seed function generates rows only for `is_demo` websites, reusing the deterministic generator from the test fixtures. Re-running adds nothing.
+3. **Labelling.** Every KPI tile, chart, table, insight, report preview and export shows a "Demo data" badge when any row is synthetic. Dashboards keep "No analytics data yet" for real websites.
+4. **Containment.**
+   - Report exports (CSV/PDF), n8n deliveries and any client-facing communication exclude or refuse demo rows, with a server-side check, not only the UI.
+   - Agents receive demo metrics only for demo websites, marked as synthetic in their context.
+5. **Tests.**
+   - RLS: demo rows follow the client's isolation.
+   - Demo rows never appear for real websites.
+   - Exports and n8n refuse demo data.
+   - The UI labels every demo metric.
+
+Estimate: one migration, about 8 UI surfaces and their tests. It needs your go-ahead.
 
 ## 11. Subscription readiness (not enforced)
 - `agencies.plan_key` and `src/domain/plans.ts` already model per-agency plans: client limit (`maxBrands`), members, agent runs, knowledge bytes and features.

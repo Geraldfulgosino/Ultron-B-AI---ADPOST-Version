@@ -1,5 +1,5 @@
--- DEVELOPMENT-ONLY sample hierarchy: 3 agencies, 10 clients, NO websites.
--- These are sample records, not verified client data: no domains, contacts, users,
+-- DEVELOPMENT-ONLY sample hierarchy: 3 agencies, 10 clients, 20 DEMO websites (2 per client).
+-- These are sample records, not verified client data: only reserved .example domains; no contacts, users,
 -- integrations or credentials are created. Each client gets its six agents (simulated model).
 --
 -- Idempotent: keyed by agency slug and (agency, client slug); re-running inserts nothing new
@@ -49,5 +49,19 @@ begin
         on conflict (agency_id, slug) do nothing;
         select id into v_brand from public.brands where agency_id = v_agency and slug = c.slug;
         perform app.provision_brand_agents(v_brand);
+
+        -- Two DEMO websites per client on reserved RFC 2606 .example domains: never crawled,
+        -- verified, monitored or connected (is_demo; blocked by the SSRF guard and website_is_auditable).
+        -- Keyed by (client, domain): re-running adds nothing; user-created websites are untouched,
+        -- and the demo production site becomes primary only if the client has no primary yet.
+        insert into public.websites (brand_id, name, website_url, environment, platform, status, is_primary, description, is_demo)
+        select v_brand, c.name || ' — Production', 'https://' || c.slug || '.example', 'production', 'unknown', 'active',
+               not exists (select 1 from public.websites w where w.brand_id = v_brand and w.is_primary and w.archived_at is null),
+               'Demo record (reserved .example domain). Not a verified live website.', true
+        where not exists (select 1 from public.websites w where w.brand_id = v_brand and w.domain = c.slug || '.example');
+        insert into public.websites (brand_id, name, website_url, environment, platform, status, is_primary, description, is_demo)
+        select v_brand, c.name || ' — Staging', 'https://staging.' || c.slug || '.example', 'staging', 'unknown', 'active', false,
+               'Demo record (reserved .example domain). Not a verified live website.', true
+        where not exists (select 1 from public.websites w where w.brand_id = v_brand and w.domain = 'staging.' || c.slug || '.example');
     end loop;
 end $$;

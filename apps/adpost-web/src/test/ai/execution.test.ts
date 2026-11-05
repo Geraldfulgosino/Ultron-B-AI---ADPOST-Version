@@ -38,7 +38,7 @@ function setup(anthropicSteps: Step[], openaiSteps: Step[] = [], opts: { connect
             models: [model(), model({ provider: 'openai', modelId: 'gpt-a' })],
             brandPolicy: policy({ brandId: BRAND, allowCrossProviderFallback: true }), orgPolicy: policy({ allowCrossProviderFallback: true }),
         },
-        toolContext: { brandId: BRAND, allowedHosts: ['pod.example'], fetchDeps: null, teammates: [{ handle: 'technical-seo', name: 'Technical SEO Agent' }], searchKnowledge: async () => [{ title: 'POD guide', excerpt: 'Friendly tone.' }] },
+        toolContext: { brandId: BRAND, allowedHosts: ['pod.example.com'], fetchDeps: null, teammates: [{ handle: 'technical-seo', name: 'Technical SEO Agent' }], searchKnowledge: async () => [{ title: 'POD guide', excerpt: 'Friendly tone.' }] },
         usage: EMPTY_USAGE, ...over,
     });
     return { anthropic, openai, store, deps, request };
@@ -77,7 +77,7 @@ describe('executeAgentTurn', () => {
             { text: 'Let me check.', toolCalls: [
                 { id: 't1', name: 'search_knowledge', input: { query: 'tone' } },
                 { id: 't2', name: 'propose_task', input: { title: 'Fix titles', description: 'x', priority: 'high' } },
-                { id: 't3', name: 'seo_page_audit', input: { url: 'https://pod.example/' } }, // agent has no audit_site
+                { id: 't3', name: 'seo_page_audit', input: { url: 'https://pod.example.com/' } }, // agent has no audit_site
                 { id: 't4', name: 'delegate', input: { handle: 'technical-seo', brief: 'Audit robots.txt' } },
             ] },
             { text: 'Done: proposed a task and handed the audit to @technical-seo.' },

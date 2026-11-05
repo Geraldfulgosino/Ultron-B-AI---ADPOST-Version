@@ -31,9 +31,14 @@ export function isValidDomain(domain: string): boolean {
     return HOST.test(domain.trim().toLowerCase());
 }
 
-/** Only an active website with a validated URL may be crawled, audited or treated as connected. */
-export function isAuditable(w: Pick<Website, 'websiteUrl' | 'status'>): boolean {
-    return !!w.websiteUrl && w.status === 'active';
+/** Only an active, non-demo website with a validated URL may be crawled, audited or treated as connected. */
+export function isAuditable(w: Pick<Website, 'websiteUrl' | 'status' | 'isDemo'>): boolean {
+    return !!w.websiteUrl && w.status === 'active' && !w.isDemo;
+}
+
+/** Selector / list label, with a Demo marker for demonstration records. */
+export function websiteOptionLabel(w: Pick<Website, 'name' | 'domain' | 'isDemo'>): string {
+    return `${w.name}${w.isDemo ? ' (Demo)' : w.domain ? ` (${w.domain})` : ' (no URL)'}`;
 }
 
 export const ENVIRONMENT_LABELS: Record<WebsiteEnvironment, string> = { production: 'Production', staging: 'Staging', development: 'Development' };

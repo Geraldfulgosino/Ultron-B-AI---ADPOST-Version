@@ -21,6 +21,9 @@ describe('validatePublicUrl (no network)', () => {
         ['https://user:pw@example.com/', 'credentials'], ['https://example.com:8080/', 'port'], ['http://example.com:22/', 'port'],
         ['http://localhost/', 'blocked_host'], ['http://foo.localhost/', 'blocked_host'], ['http://metadata.google.internal/', 'blocked_host'],
         ['http://printer.local/', 'blocked_host'], ['http://intranet/', 'host'],
+        // Reserved test TLDs (RFC 2606/6761): demo and fixture websites are never fetched.
+        ['https://pod.example/', 'reserved_domain'], ['https://staging.pod.example/', 'reserved_domain'], ['https://shop.pod.example.test/', 'reserved_domain'],
+        ['https://x.invalid/', 'reserved_domain'],
         ['http://127.0.0.1/', 'private_ip'], ['http://10.1.2.3/', 'private_ip'], ['http://172.16.0.1/', 'private_ip'], ['http://192.168.1.1/', 'private_ip'],
         ['http://169.254.169.254/latest/meta-data/', 'private_ip'], ['http://100.64.0.1/', 'private_ip'], ['http://0.0.0.0/', 'private_ip'],
         // Obfuscated IPv4 forms normalised by the URL parser.

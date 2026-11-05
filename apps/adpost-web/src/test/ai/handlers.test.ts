@@ -8,10 +8,11 @@ import { AGENCY, BRAND, conn, fakeFetch, jsonResponse, MemoryStore, model, polic
 
 const USER = 'user-priya';
 const SITES = [
-    { id: 'site-prod', name: 'POD production', domain: 'pod.example', websiteUrl: 'https://pod.example', status: 'active' },
-    { id: 'site-stage', name: 'POD staging', domain: 'staging.pod.example', websiteUrl: 'https://staging.pod.example', status: 'active' },
-    { id: 'site-draft', name: 'POD campaign', domain: null, websiteUrl: null, status: 'active' },
-    { id: 'site-old', name: 'POD old', domain: 'old.pod.example', websiteUrl: 'https://old.pod.example', status: 'archived' },
+    { id: 'site-prod', name: 'POD production', domain: 'pod.example.com', websiteUrl: 'https://pod.example.com', status: 'active', isDemo: false },
+    { id: 'site-stage', name: 'POD staging', domain: 'staging.pod.example.com', websiteUrl: 'https://staging.pod.example.com', status: 'active', isDemo: false },
+    { id: 'site-draft', name: 'POD campaign', domain: null, websiteUrl: null, status: 'active', isDemo: false },
+    { id: 'site-old', name: 'POD old', domain: 'old.pod.example.com', websiteUrl: 'https://old.pod.example.com', status: 'archived', isDemo: false },
+    { id: 'site-demo', name: 'POD — Production', domain: 'pod.example', websiteUrl: 'https://pod.example', status: 'active', isDemo: true },
 ];
 const agentRow = (id: string, handle: string, name: string, templateKey: string, tools: string[] = ['create_task']): AgentRow => ({
     id, handle, name, templateKey, team: 'seo', active: true, instructions: `You are ${name}.`, tools, limits: { maxOutputTokens: 800, maxRunsPerDay: 50, monthlyBudgetUsd: 25 },
@@ -119,10 +120,12 @@ describe('website and client scope', () => {
     const brand = { brandId: BRAND, agencyId: AGENCY, brandName: 'POD', canWrite: true, websites: SITES };
 
     it('tools may fetch only active websites with a URL, and only the scoped website when set', () => {
-        expect(allowedHostsFor(brand, null)).toEqual(['pod.example', 'staging.pod.example']);
-        expect(allowedHostsFor(brand, 'site-stage')).toEqual(['staging.pod.example']);
+        expect(allowedHostsFor(brand, null)).toEqual(['pod.example.com', 'staging.pod.example.com']);
+        expect(allowedHostsFor(brand, 'site-stage')).toEqual(['staging.pod.example.com']);
         expect(allowedHostsFor(brand, 'site-draft')).toEqual([]);
         expect(allowedHostsFor(brand, 'site-old')).toEqual([]);
+        // Demo records on reserved .example domains are never fetchable, scoped or not.
+        expect(allowedHostsFor(brand, 'site-demo')).toEqual([]);
     });
 
     it('a website-scoped conversation tells the agent its scope and the client boundary', async () => {

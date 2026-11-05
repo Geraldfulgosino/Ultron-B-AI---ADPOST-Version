@@ -124,7 +124,7 @@ export function buildFixtures(): { snapshot: DbSnapshot; credentials: Credential
             s.websites.push({
                 id: websiteId, brandId, clientId, name: c.name, domain: c.domain, websiteUrl: `https://${c.domain}`, environment: 'production', platform: c.platform,
                 status: 'active', isPrimary: i === 0, description: '', primaryConversion: c.conversion, ga4PropertyId: `properties/${100000 + s.websites.length}`,
-                gscSiteUrl: `sc-domain:${c.domain}`, createdAt: CREATED, archivedAt: null,
+                gscSiteUrl: `sc-domain:${c.domain}`, createdAt: CREATED, archivedAt: null, isDemo: false,
             });
             addAnalytics(s, brandId, clientId, websiteId, c.domain);
         });

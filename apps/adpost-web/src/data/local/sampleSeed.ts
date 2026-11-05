@@ -1,7 +1,9 @@
 /**
  * Development sample hierarchy for the local app (mirrors supabase/seeds/dev/sample_hierarchy.sql):
- * exactly 3 agencies and 10 clients, each with its six agents. NO websites, analytics, insights,
- * knowledge, integrations or credentials: these are sample records, not verified client data.
+ * exactly 3 agencies and 10 clients, each with its six agents and two DEMO websites (production +
+ * staging) on reserved RFC 2606 .example domains. NO analytics, insights, knowledge, integrations or
+ * credentials: these are sample records, not verified client data. Demo websites are never crawled,
+ * verified, monitored or connected (isDemo; the SSRF guard also refuses .example hosts).
  *
  * Sign-in accounts are synthetic local-only identities (example.test addresses) so the app can be
  * explored per role. They are not real employees and nothing is sent to them.
@@ -54,6 +56,25 @@ export function applySampleSeed(s: DbSnapshot): DbSnapshot {
         const id = sampleClientId(c.agency, c.slug);
         s.brands.push(brandRow({ id, agencyId: agency.id, agencySlug: agency.slug, name: c.name, slug: c.slug, description: 'Sample development client.' }, AT));
         seedAgents(s, id, c.name, 'usr_platform', AT);
+    }
+    // Two demo websites per client, keyed by (client, domain). User-created websites are never touched,
+    // and the demo production site is primary only when the client has no primary website yet.
+    for (const c of SAMPLE_CLIENTS) {
+        const brandId = sampleClientId(c.agency, c.slug);
+        if (!s.brands.some((b) => b.id === brandId)) continue;
+        const client = s.brands.find((b) => b.id === brandId)!;
+        for (const env of ['production', 'staging'] as const) {
+            const domain = env === 'production' ? `${c.slug}.example` : `staging.${c.slug}.example`;
+            if (s.websites.some((w) => w.brandId === brandId && w.domain === domain)) continue;
+            const hasPrimary = s.websites.some((w) => w.brandId === brandId && w.isPrimary && w.status !== 'archived');
+            s.websites.push({
+                id: `web_demo_${brandId.slice(4)}_${env === 'production' ? 'prod' : 'stg'}`, brandId, clientId: null,
+                name: `${client.name} — ${env === 'production' ? 'Production' : 'Staging'}`, domain, websiteUrl: `https://${domain}`, environment: env,
+                platform: 'unknown', status: 'active', isPrimary: env === 'production' && !hasPrimary,
+                description: 'Demo record (reserved .example domain). Not a verified live website.', primaryConversion: null,
+                ga4PropertyId: null, gscSiteUrl: null, createdAt: AT, archivedAt: null, isDemo: true,
+            });
+        }
     }
     for (const u of SAMPLE_USERS) if (!s.users.some((x) => x.id === u.id)) s.users.push({ id: u.id, name: u.name, email: u.email });
     const addAgencyRole = (id: string, agencyId: string, userId: string, role: T.AgencyRole, jobFunction: T.JobFunction | null = null) => {

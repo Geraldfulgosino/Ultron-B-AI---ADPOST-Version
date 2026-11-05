@@ -133,6 +133,11 @@ export interface Website {
     gscSiteUrl: string | null;
     createdAt: ISODate;
     archivedAt: ISODate | null;
+    /**
+     * Development demonstration record (sample seed) on a reserved .example domain. Never crawled,
+     * verified, monitored or connected; always labelled "Demo". Set at creation only.
+     */
+    isDemo: boolean;
 }
 
 export type IntegrationProvider = 'google_analytics' | 'google_search_console';

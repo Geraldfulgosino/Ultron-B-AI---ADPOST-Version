@@ -162,12 +162,16 @@ alter table public.websites
     add column is_primary boolean not null default false,
     add column description text not null default '' check (length(description) <= 2000),
     add column archived_at timestamptz,
+    -- Development demonstration record (sample seed). Demo websites are never crawled, verified,
+    -- monitored or connected, and must use a reserved RFC 2606 .example domain (or no domain).
+    add column is_demo boolean not null default false,
     add constraint websites_platform_check check (platform in ('wordpress', 'shopify', 'custom', 'other', 'unknown')),
     add constraint websites_status_check check (status in ('active', 'inactive', 'archived')),
     add constraint websites_name_len check (length(trim(name)) between 1 and 120),
     -- Stored normalized: lowercase scheme and host, no credentials, http(s) only.
     add constraint websites_url_format check (website_url ~ '^https?://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(:[0-9]{1,5})?(/[^\s]*)?$' and length(website_url) <= 2048),
     add constraint websites_domain_format check (domain ~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$');
+alter table public.websites add constraint websites_demo_reserved_domain check (not is_demo or domain is null or domain ~ '(^|[.])example$');
 update public.websites set archived_at = updated_at where status = 'archived' and archived_at is null;
 alter table public.websites add constraint websites_archived_consistent check ((status = 'archived') = (archived_at is not null));
 -- At most one primary, non-archived website per client.
@@ -179,6 +183,10 @@ create or replace function app.website_normalize() returns trigger
 language plpgsql set search_path = '' as $$
 declare v_host text;
 begin
+    -- The demo flag is set at creation only; users cannot turn a demo record into a "real" one or back.
+    if tg_op = 'UPDATE' and new.is_demo is distinct from old.is_demo and current_user <> 'service_role' then
+        raise exception 'is_demo cannot be changed' using errcode = '42501';
+    end if;
     if new.website_url is not null then
         new.website_url := trim(new.website_url);
         -- Lowercase scheme and host only; the path keeps its case. Input without a scheme is left
@@ -226,11 +234,11 @@ alter table public.analytics_search_queries alter column client_id drop not null
 alter table public.analytics_landing_pages alter column client_id drop not null;
 alter table public.seo_insights alter column client_id drop not null;
 
-/** A website may be crawled or audited only with a verified-format URL and active status. */
+/** A website may be crawled or audited only with a verified-format URL, active status, and not a demo record. */
 create or replace function app.website_is_auditable(p_website_id uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
     select exists (select 1 from public.websites w where w.id = p_website_id and w.website_url is not null and w.status = 'active'
-        and app.can_write_brand(w.brand_id));
+        and not w.is_demo and app.can_write_brand(w.brand_id));
 $$;
 
 -- ── Conversations may be scoped to one website ─────────────────────────────
@@ -303,6 +311,7 @@ begin
         'agencies', (select count(*) from public.agencies where status <> 'archived'),
         'clients', (select count(*) from public.brands where status <> 'archived'),
         'websites', (select count(*) from public.websites where status <> 'archived'),
+        'demo_websites', (select count(*) from public.websites where status <> 'archived' and is_demo),
         'active_users', (select count(*) from public.profiles where deactivated_at is null),
         'connected_integrations', (select count(*) from public.integrations where status = 'connected'),
         'integration_errors', (select count(*) from public.integrations where status = 'error')

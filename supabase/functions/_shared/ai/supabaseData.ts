@@ -115,10 +115,10 @@ export function createSupabaseData(user: Db, service: Db, userId: string | null,
             if (!b || !userId) return null;
             const bm = must(await user.from('brand_memberships').select('role').eq('brand_id', brandId).eq('user_id', userId).maybeSingle(), 'membership') as { role: string } | null;
             const am = must(await user.from('agency_memberships').select('role').eq('agency_id', b.agency_id).eq('user_id', userId).maybeSingle(), 'agency membership');
-            const sites = must(await user.from('websites').select('id, name, domain, website_url, status').eq('brand_id', brandId), 'websites') as Array<Record<string, any>>;
+            const sites = must(await user.from('websites').select('id, name, domain, website_url, status, is_demo').eq('brand_id', brandId), 'websites') as Array<Record<string, any>>;
             return {
                 brandId, agencyId: b.agency_id, brandName: b.name, canWrite: !!am || WRITE_ROLES.includes(bm?.role ?? ''),
-                websites: sites.map((s) => ({ id: s.id, name: s.name, domain: s.domain, websiteUrl: s.website_url, status: s.status })),
+                websites: sites.map((s) => ({ id: s.id, name: s.name, domain: s.domain, websiteUrl: s.website_url, status: s.status, isDemo: !!s.is_demo })),
             };
         },
         async agents(brandId, ids): Promise<AgentRow[]> {
