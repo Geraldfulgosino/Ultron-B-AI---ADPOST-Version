@@ -46,15 +46,20 @@ export function agentSpend(db: LocalDatabase, agentId: ID) {
 }
 
 /** Brand facts the agent may ground its answer in. Read-only and brand-scoped. */
-export function brandContext(scope: Scope, brandId: ID, query: string, tools: readonly ToolKey[] = ALL_TOOLS): BrandContext {
+/**
+ * Brand facts the agent may ground its answer in. Read-only and brand-scoped; with `websiteId`
+ * (a website-scoped conversation) analytics, queries and insights are limited to that website.
+ */
+export function brandContext(scope: Scope, brandId: ID, query: string, tools: readonly ToolKey[] = ALL_TOOLS, websiteId: ID | null = null): BrandContext {
     const { db } = scope;
-    const metrics = db.all('dailyMetrics').filter((m) => m.brandId === brandId);
+    const onSite = (r: { websiteId: ID }) => !websiteId || r.websiteId === websiteId;
+    const metrics = db.all('dailyMetrics').filter((m) => m.brandId === brandId && onSite(m));
     const end = latestDate(metrics);
     const from = end ? addDays(end, -27) : null;
     const t = totals(end ? metrics.filter((m) => m.date >= from! && m.date <= end) : []);
     const qAgg = new Map<string, { clicks: number; impressions: number }>();
     for (const q of db.all('searchQueries')) {
-        if (q.brandId !== brandId || !from || q.date < addDays(from, -6)) continue;
+        if (q.brandId !== brandId || !onSite(q) || !from || q.date < addDays(from, -6)) continue;
         const a = qAgg.get(q.query) ?? { clicks: 0, impressions: 0 };
         a.clicks += q.clicks;
         a.impressions += q.impressions;
@@ -75,7 +80,7 @@ export function brandContext(scope: Scope, brandId: ID, query: string, tools: re
             : { sessions: 0, clicks: 0, impressions: 0, conversions: 0, window: null },
         insights: !(canAnalytics || canGsc) ? [] : db
             .all('seoInsights')
-            .filter((i) => i.brandId === brandId && (i.status === 'pending' || i.status === 'reviewed'))
+            .filter((i) => i.brandId === brandId && onSite(i) && (i.status === 'pending' || i.status === 'reviewed'))
             .sort((a, b) => sev[a.severity] - sev[b.severity])
             .slice(0, 6)
             .map((i) => ({ title: i.title, type: i.type, severity: i.severity })),
@@ -147,7 +152,7 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
             agent: { templateKey: agent.templateKey, displayName: agent.displayName, handle: agent.handle },
             brandName: brand.name,
             instructions: version?.instructions ?? '',
-            context: brandContext(scope, brandId, last, agent.tools),
+            context: brandContext(scope, brandId, last, agent.tools, (input.conversationId && db.find('conversations', input.conversationId)?.websiteId) || null),
             messages: input.messages,
             maxOutputTokens: agent.limits.maxOutputTokens,
             allowedTools: agent.tools,

@@ -1,12 +1,18 @@
 // @vitest-environment node
 /** Edge Function handlers with an in-memory ServerData fake (no Supabase, no provider). */
-import { handleAgentExecute, handleConnectionTest, HttpError, publicOutcome, USER_REQUESTS_PER_MINUTE, type AgentRow, type HandlerDeps, type ServerData } from '../../../../../supabase/functions/_shared/ai/handlers.ts';
+import { allowedHostsFor, handleAgentExecute, handleConnectionTest, HttpError, publicOutcome, USER_REQUESTS_PER_MINUTE, type AgentRow, type HandlerDeps, type ServerData } from '../../../../../supabase/functions/_shared/ai/handlers.ts';
 import { AIProviderRegistry, SimulatedAdapter } from '../../../../../supabase/functions/_shared/ai/registry.ts';
 import { AIToolGateway } from '../../../../../supabase/functions/_shared/ai/tools.ts';
 import { EMPTY_USAGE } from '../../../../../supabase/functions/_shared/ai/budget.ts';
 import { AGENCY, BRAND, conn, fakeFetch, jsonResponse, MemoryStore, model, policy, ScriptedAdapter, type Step } from './fakes';
 
 const USER = 'user-priya';
+const SITES = [
+    { id: 'site-prod', name: 'POD production', domain: 'pod.example', websiteUrl: 'https://pod.example', status: 'active' },
+    { id: 'site-stage', name: 'POD staging', domain: 'staging.pod.example', websiteUrl: 'https://staging.pod.example', status: 'active' },
+    { id: 'site-draft', name: 'POD campaign', domain: null, websiteUrl: null, status: 'active' },
+    { id: 'site-old', name: 'POD old', domain: 'old.pod.example', websiteUrl: 'https://old.pod.example', status: 'archived' },
+];
 const agentRow = (id: string, handle: string, name: string, templateKey: string, tools: string[] = ['create_task']): AgentRow => ({
     id, handle, name, templateKey, team: 'seo', active: true, instructions: `You are ${name}.`, tools, limits: { maxOutputTokens: 800, maxRunsPerDay: 50, monthlyBudgetUsd: 25 },
 });
@@ -18,8 +24,8 @@ function fixture(steps: Step[], over: Partial<ServerData> = {}) {
     const data: ServerData = {
         userId: USER,
         message: async (id) => (id === 'msg-1' ? { id, conversationId: 'conv-1', brandId: BRAND, authorUserId: USER, body: 'What is good for my website?', mentions: [] } : id === 'msg-other' ? { id, conversationId: 'conv-1', brandId: BRAND, authorUserId: 'someone-else', body: 'x', mentions: [] } : null),
-        conversation: async (id) => (id === 'conv-1' ? { id, brandId: BRAND, kind: 'direct', teamKey: null, agentInstanceIds: ['agent-mgr'], archived: false } : null),
-        brand: async (id) => (id === BRAND ? { brandId: BRAND, agencyId: AGENCY, brandName: 'POD', canWrite: true, websiteHosts: ['pod.example'] } : null),
+        conversation: async (id) => (id === 'conv-1' ? { id, brandId: BRAND, kind: 'direct', teamKey: null, agentInstanceIds: ['agent-mgr'], archived: false, websiteId: null } : null),
+        brand: async (id) => (id === BRAND ? { brandId: BRAND, agencyId: AGENCY, brandName: 'POD', canWrite: true, websites: SITES } : null),
         agents: async () => [agentRow('agent-mgr', 'seo-manager', 'SEO Manager', 'seo_manager', ['create_task', 'delegate']), agentRow('agent-tech', 'technical-seo', 'Technical SEO Agent', 'technical_seo')],
         history: async () => [
             { authorType: 'user', authorName: 'Priya', body: 'Earlier question', agentInstanceId: null },
@@ -62,9 +68,9 @@ describe('agent-execute handler', () => {
         ['unauthenticated', { userId: null }, 'msg-1', 401],
         ['unknown message (or hidden by RLS)', {}, 'msg-missing', 404],
         ['someone else’s message', {}, 'msg-other', 403],
-        ['read-only role', { brand: async () => ({ brandId: BRAND, agencyId: AGENCY, brandName: 'POD', canWrite: false, websiteHosts: [] }) }, 'msg-1', 403],
-        ['archived conversation', { conversation: async () => ({ id: 'conv-1', brandId: BRAND, kind: 'direct' as const, teamKey: null, agentInstanceIds: ['agent-mgr'], archived: true }) }, 'msg-1', 409],
-        ['conversation of another brand', { conversation: async () => ({ id: 'conv-1', brandId: 'brand-dmd', kind: 'direct' as const, teamKey: null, agentInstanceIds: [], archived: false }) }, 'msg-1', 404],
+        ['read-only role', { brand: async () => ({ brandId: BRAND, agencyId: AGENCY, brandName: 'POD', canWrite: false, websites: [] }) }, 'msg-1', 403],
+        ['archived conversation', { conversation: async () => ({ id: 'conv-1', brandId: BRAND, kind: 'direct' as const, teamKey: null, agentInstanceIds: ['agent-mgr'], archived: true, websiteId: null }) }, 'msg-1', 409],
+        ['conversation of another brand', { conversation: async () => ({ id: 'conv-1', brandId: 'brand-dmd', kind: 'direct' as const, teamKey: null, agentInstanceIds: [], archived: false, websiteId: null }) }, 'msg-1', 404],
         ['rate limit', { requestsInLastMinute: async () => USER_REQUESTS_PER_MINUTE }, 'msg-1', 429],
     ])('refuses: %s', async (_label, over, messageId, status) => {
         const { deps, adapter } = fixture([{ text: 'no' }], over as Partial<ServerData>);
@@ -88,7 +94,7 @@ describe('agent-execute handler', () => {
             { text: 'Plan.', toolCalls: [{ id: 'd', name: 'delegate', input: { handle: 'technical-seo', brief: 'Audit robots.txt' } }] },
             { text: 'Delegated.' },
         ], {
-            conversation: async () => ({ id: 'conv-1', brandId: BRAND, kind: 'group', teamKey: 'seo', agentInstanceIds: ['agent-mgr', 'agent-tech'], archived: false }),
+            conversation: async () => ({ id: 'conv-1', brandId: BRAND, kind: 'group', teamKey: 'seo', agentInstanceIds: ['agent-mgr', 'agent-tech'], archived: false, websiteId: null }),
         });
         const r = await handleAgentExecute({ messageId: 'msg-1', idempotencyKey: 'team-key-1' }, deps);
         // The specialist has no assignment and no defaults: it fails visibly; the lead's turn is unaffected.
@@ -106,6 +112,35 @@ describe('agent-execute handler', () => {
         const pub = JSON.stringify(publicOutcome(r.steps[0]!.outcome));
         expect(pub).not.toContain('fake-a-val');
         expect(pub).not.toContain('You are SEO Manager');
+    });
+});
+
+describe('website and client scope', () => {
+    const brand = { brandId: BRAND, agencyId: AGENCY, brandName: 'POD', canWrite: true, websites: SITES };
+
+    it('tools may fetch only active websites with a URL, and only the scoped website when set', () => {
+        expect(allowedHostsFor(brand, null)).toEqual(['pod.example', 'staging.pod.example']);
+        expect(allowedHostsFor(brand, 'site-stage')).toEqual(['staging.pod.example']);
+        expect(allowedHostsFor(brand, 'site-draft')).toEqual([]);
+        expect(allowedHostsFor(brand, 'site-old')).toEqual([]);
+    });
+
+    it('a website-scoped conversation tells the agent its scope and the client boundary', async () => {
+        const { deps, adapter } = fixture([{ text: 'ok' }], {
+            conversation: async () => ({ id: 'conv-1', brandId: BRAND, kind: 'direct', teamKey: null, agentInstanceIds: ['agent-mgr'], archived: false, websiteId: 'site-draft' }),
+        });
+        await handleAgentExecute({ messageId: 'msg-1', idempotencyKey: 'scoped-key-1' }, deps);
+        const system = adapter.requests[0]!.system;
+        expect(system).toContain('scoped to the website "POD campaign" (no URL yet: it cannot be fetched or audited)');
+        expect(system).toContain("Use only this client's data; never information from other clients or agencies.");
+    });
+
+    it('a conversation scoped to a website the caller cannot see is refused', async () => {
+        const { deps, adapter } = fixture([{ text: 'no' }], {
+            conversation: async () => ({ id: 'conv-1', brandId: BRAND, kind: 'direct', teamKey: null, agentInstanceIds: ['agent-mgr'], archived: false, websiteId: 'site-of-another-client' }),
+        });
+        await expect(handleAgentExecute({ messageId: 'msg-1', idempotencyKey: 'scoped-key-2' }, deps)).rejects.toMatchObject({ status: 404 });
+        expect(adapter.requests).toHaveLength(0);
     });
 });
 

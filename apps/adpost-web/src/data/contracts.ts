@@ -386,8 +386,9 @@ export interface ChatSearchHit {
 export interface ChatApi {
     list(brandId: T.ID, filter?: { kind?: T.ConversationKind; includeArchived?: boolean }): Promise<ConversationSummary[]>;
     get(brandId: T.ID, id: T.ID): Promise<T.Conversation>;
-    createDirect(brandId: T.ID, agentInstanceId: T.ID, title?: string): Promise<T.Conversation>;
-    createGroup(brandId: T.ID, input: { team: T.TeamKey; title?: string }): Promise<T.Conversation>;
+    /** opts.websiteId scopes the conversation to one of the client's websites (agents then use only that website). */
+    createDirect(brandId: T.ID, agentInstanceId: T.ID, title?: string, opts?: { websiteId?: T.ID | null }): Promise<T.Conversation>;
+    createGroup(brandId: T.ID, input: { team: T.TeamKey; title?: string; websiteId?: T.ID | null }): Promise<T.Conversation>;
     messages(brandId: T.ID, conversationId: T.ID): Promise<T.Message[]>;
     send(brandId: T.ID, conversationId: T.ID, input: { body: string; attachments?: AttachmentInput[] }): Promise<SendResult>;
     /** Re-run the agent(s) for the user message a failed reply answered. */

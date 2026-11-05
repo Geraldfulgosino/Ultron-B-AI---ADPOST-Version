@@ -45,6 +45,8 @@ export interface TurnRequest {
     handoffDepth?: number;
     agent: AgentProfile;
     history: ChatMessage[];
+    /** Website-scoped conversation: agents work on this website only. */
+    websiteScope?: { name: string; url: string | null } | null;
     routing: Omit<RouteInput, 'agencyId' | 'brandId' | 'adapterCapabilities' | 'required' | 'optional'>;
     toolContext: ToolContext;
     usage: UsageSnapshot;
@@ -106,11 +108,12 @@ export interface ExecutionDeps {
 export const MAX_TOOL_ROUNDS = 4;
 
 /** Platform policy appended after the admin instructions. User messages cannot change it. */
-export function buildSystemPrompt(agent: AgentProfile, brandName: string, teammates: Array<{ handle: string; name: string }>, toolsEnabled: boolean): string {
+export function buildSystemPrompt(agent: AgentProfile, brandName: string, teammates: Array<{ handle: string; name: string }>, toolsEnabled: boolean, websiteScope: TurnRequest['websiteScope'] = null): string {
     return [
         agent.instructions.trim(),
         '',
-        `You are ${agent.name} (@${agent.handle}) working for the brand "${brandName}" inside ULTRON-B AI.`,
+        `You are ${agent.name} (@${agent.handle}) working for the client "${brandName}" inside ULTRON-B AI. Use only this client's data; never information from other clients or agencies.`,
+        websiteScope ? `This conversation is scoped to the website "${websiteScope.name}"${websiteScope.url ? ` (${websiteScope.url})` : ' (no URL yet: it cannot be fetched or audited)'}. Work on this website only.` : '',
         'Rules that always apply:',
         '- Answer the user\'s actual question. If you need information you do not have (for example which website to review), ask for it.',
         '- Never invent analytics, rankings, search volumes, crawl results or prices. Use only data returned by tools or given by the user, and say where it came from.',
@@ -171,7 +174,7 @@ export async function executeAgentTurn(deps: ExecutionDeps, req: TurnRequest): P
         const adapter = deps.registry.get(target.connection.provider);
         const toolsEnabled = target.enabledCapabilities.includes('tools');
         const tools = toolsEnabled ? deps.gateway.toolsFor(req.agent.tools) : [];
-        const system = buildSystemPrompt(req.agent, req.brandName, req.toolContext.teammates, tools.length > 0);
+        const system = buildSystemPrompt(req.agent, req.brandName, req.toolContext.teammates, tools.length > 0, req.websiteScope ?? null);
         const estimatedInput = estimateInputTokens(system + req.history.map((m) => m.content).join('\n') + JSON.stringify(tools));
         const budget = checkBudget({
             live: adapter.live, agent: req.agent.limits, connection: target.connection, model: target.model,

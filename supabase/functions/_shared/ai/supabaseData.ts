@@ -107,16 +107,19 @@ export function createSupabaseData(user: Db, service: Db, userId: string | null,
             return m ? { id: m.id, conversationId: m.conversation_id, brandId: m.brand_id, authorUserId: m.author_user_id, body: m.body, mentions: m.mentions ?? [] } : null;
         },
         async conversation(id): Promise<CallerConversation | null> {
-            const c = must(await user.from('conversations').select('id, brand_id, kind, team_key, agent_instance_ids, archived').eq('id', id).maybeSingle(), 'conversation') as Record<string, any> | null;
-            return c ? { id: c.id, brandId: c.brand_id, kind: c.kind, teamKey: c.team_key, agentInstanceIds: c.agent_instance_ids ?? [], archived: c.archived } : null;
+            const c = must(await user.from('conversations').select('id, brand_id, kind, team_key, agent_instance_ids, archived, website_id').eq('id', id).maybeSingle(), 'conversation') as Record<string, any> | null;
+            return c ? { id: c.id, brandId: c.brand_id, kind: c.kind, teamKey: c.team_key, agentInstanceIds: c.agent_instance_ids ?? [], archived: c.archived, websiteId: c.website_id ?? null } : null;
         },
         async brand(brandId): Promise<CallerBrand | null> {
             const b = must(await user.from('brands').select('id, agency_id, name').eq('id', brandId).maybeSingle(), 'brand') as Record<string, any> | null;
             if (!b || !userId) return null;
             const bm = must(await user.from('brand_memberships').select('role').eq('brand_id', brandId).eq('user_id', userId).maybeSingle(), 'membership') as { role: string } | null;
             const am = must(await user.from('agency_memberships').select('role').eq('agency_id', b.agency_id).eq('user_id', userId).maybeSingle(), 'agency membership');
-            const sites = must(await user.from('websites').select('domain').eq('brand_id', brandId), 'websites') as Array<{ domain: string }>;
-            return { brandId, agencyId: b.agency_id, brandName: b.name, canWrite: !!am || WRITE_ROLES.includes(bm?.role ?? ''), websiteHosts: sites.map((s) => s.domain) };
+            const sites = must(await user.from('websites').select('id, name, domain, website_url, status').eq('brand_id', brandId), 'websites') as Array<Record<string, any>>;
+            return {
+                brandId, agencyId: b.agency_id, brandName: b.name, canWrite: !!am || WRITE_ROLES.includes(bm?.role ?? ''),
+                websites: sites.map((s) => ({ id: s.id, name: s.name, domain: s.domain, websiteUrl: s.website_url, status: s.status })),
+            };
         },
         async agents(brandId, ids): Promise<AgentRow[]> {
             if (!ids.length) return [];

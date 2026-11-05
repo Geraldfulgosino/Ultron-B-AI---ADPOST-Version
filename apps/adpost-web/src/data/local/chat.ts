@@ -79,6 +79,13 @@ export function recordRun(scope: Scope, brandId: ID, conversationId: ID, replyTo
 
 export function localChat(scope: Scope): ChatApi {
     const { db } = scope;
+    /** A website scope must be a non-archived website of this client (mirrors conversations_website_guard). */
+    const scopedWebsite = (brandId: ID, websiteId: ID | null | undefined): ID | null => {
+        if (!websiteId) return null;
+        const w = db.find('websites', websiteId);
+        if (!w || w.brandId !== brandId || w.status === 'archived') throw new ValidationError({ websiteId: 'Choose a website of this client.' });
+        return w.id;
+    };
     const conv = (brandId: ID, id: ID) => scope.row('conversations', brandId, id, { label: 'Conversation' });
     const touch = (id: ID) => db.patch('conversations', id, { updatedAt: db.nowIso() });
 
@@ -108,26 +115,28 @@ export function localChat(scope: Scope): ChatApi {
             return conv(brandId, id);
         },
 
-        async createDirect(brandId, agentInstanceId, title) {
+        async createDirect(brandId, agentInstanceId, title, opts) {
             scope.require(brandId, 'write');
             const agent = db.find('agentInstances', agentInstanceId);
             if (!agent || agent.brandId !== brandId) throw new ValidationError({ agentInstanceId: 'Choose an agent from this brand.' });
+            const websiteId = scopedWebsite(brandId, opts?.websiteId);
             const c: Conversation = {
-                id: newId('cnv'), brandId, kind: 'direct', title: title?.trim() || `Chat with ${agent.displayName}`, agentInstanceIds: [agent.id], teamKey: null,
+                id: newId('cnv'), brandId, kind: 'direct', title: title?.trim() || `Chat with ${agent.displayName}`, agentInstanceIds: [agent.id], teamKey: null, websiteId,
                 createdBy: scope.userId, archived: false, summary: null, createdAt: db.nowIso(), updatedAt: db.nowIso(),
             };
             db.insert('conversations', c);
             return structuredClone(c);
         },
 
-        async createGroup(brandId, { team, title }) {
+        async createGroup(brandId, { team, title, websiteId: requestedWebsite }) {
             scope.require(brandId, 'write');
             assertFeature(db, brandId, 'team_chat');
             if (!(team in TEAM_TITLES)) throw new ValidationError({ team: 'Unknown team.' });
             const members = teamAgents(db, brandId, team);
             if (!members.length) throw new ValidationError({ team: 'This team has no agents in this brand.' });
+            const websiteId = scopedWebsite(brandId, requestedWebsite);
             const c: Conversation = {
-                id: newId('cnv'), brandId, kind: 'group', title: title?.trim() || TEAM_TITLES[team], agentInstanceIds: members.map((a) => a.id), teamKey: team,
+                id: newId('cnv'), brandId, kind: 'group', title: title?.trim() || TEAM_TITLES[team], agentInstanceIds: members.map((a) => a.id), teamKey: team, websiteId,
                 createdBy: scope.userId, archived: false, summary: null, createdAt: db.nowIso(), updatedAt: db.nowIso(),
             };
             db.insert('conversations', c);

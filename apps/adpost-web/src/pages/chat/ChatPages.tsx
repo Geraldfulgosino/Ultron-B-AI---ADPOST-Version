@@ -8,6 +8,7 @@ import { useAction, useBrand, useQuery } from '@/app/backend';
 import type { ConversationKind, TeamKey } from '@/domain/types';
 import { cn, formatDateTime } from '@/lib/utils';
 import { clientBase } from '@/app/paths';
+import { useWebsiteScope } from '@/components/workspace/WorkspaceSelector';
 
 const TEAMS: Array<{ key: TeamKey; label: string; description: string }> = [
     { key: 'seo', label: 'SEO Team', description: 'SEO Manager with the Technical, Content and Statistics specialists' },
@@ -81,9 +82,14 @@ function ThreadHeader({ conversationId }: { conversationId: string }) {
     const rename = useAction((api) => api.chat.rename(brand.id, conversationId, title));
     const archive = useAction((api, archived: boolean) => api.chat.archive(brand.id, conversationId, archived));
     const summarize = useAction((api) => api.chat.summarize(brand.id, conversationId));
+    const sites = useQuery((api) => api.websites.list(brand.id, { includeArchived: true }), [brand.id]);
     if (!c.data) return null;
+    const scoped = c.data.websiteId ? sites.data?.find((w) => w.id === c.data!.websiteId) : null;
     return (
         <div className="space-y-2">
+            <p className="text-xs text-fg-muted" aria-label="Conversation scope">
+                Scope: {brand.name}{c.data.websiteId ? ` · website ${scoped?.name ?? ''}${scoped?.domain ? ` (${scoped.domain})` : ''}` : ' · all websites'}. Agents use only this client’s data.
+            </p>
             <div className="flex flex-wrap items-center justify-between gap-2">
                 {editing ? (
                     <form
@@ -142,7 +148,8 @@ export function AgentChatPage() {
     const agents = useQuery((api) => api.agents.list(brand.id), [brand.id]);
     const conv = useQuery((api) => (conversationId ? api.chat.get(brand.id, conversationId) : Promise.resolve(null)), [brand.id, conversationId]);
     const [agentId, setAgentId] = useState('');
-    const create = useAction((api) => api.chat.createDirect(brand.id, agentId || agents.data![0]!.id));
+    const { websiteId } = useWebsiteScope();
+    const create = useAction((api) => api.chat.createDirect(brand.id, agentId || agents.data![0]!.id, undefined, { websiteId }));
     const apply = useProposalApply();
     const base = `${clientBase(brand)}/chat`;
 
@@ -197,7 +204,8 @@ export function TeamChatPage() {
     const navigate = useNavigate();
     const agents = useQuery((api) => api.agents.list(brand.id), [brand.id]);
     const conv = useQuery((api) => (conversationId ? api.chat.get(brand.id, conversationId) : Promise.resolve(null)), [brand.id, conversationId]);
-    const create = useAction((api, team: TeamKey) => api.chat.createGroup(brand.id, { team }));
+    const { websiteId } = useWebsiteScope();
+    const create = useAction((api, team: TeamKey) => api.chat.createGroup(brand.id, { team, websiteId }));
     const apply = useProposalApply();
     const base = `${clientBase(brand)}/team`;
 
