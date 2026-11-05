@@ -2,9 +2,9 @@
 
 **Updated:** 2026-11-05 (multi-agency, client and website hierarchy; local commits NOT pushed)
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
-**Branch:** `feature/adpost-react-supabase-ai` (pushed; `main` untouched at `13bc3d0`)
+**Branch:** `feature/adpost-react-supabase-ai` (remote at `239a5d5`; 4 newer local commits NOT pushed; `main` untouched at `13bc3d0`)
 **Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`; the CLI 2.121.0 is logged in and linked (`supabase/.temp/` is git-ignored).
-**Applied to staging:** migrations 0001–0005. **Local only, awaiting approval:** 0006_advisor_fixes, 0007_ai_providers.
+**Applied to staging:** migrations 0001–0005. **Local only, awaiting approval:** 0006_advisor_fixes, 0007_ai_providers, 0008_agency_client_website (+ dev seed).
 **Deployed Edge Functions:** none. `agent-execute` and `ai-connection-test` are implemented, not deployed.
 **Last synced commit:** see GITHUB_SYNC_LOG.md
 
