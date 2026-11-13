@@ -159,13 +159,18 @@ function ProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
     const { brand } = useBrand();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const create = useAction((api) => api.work.createProject(brand.id, { name, description }));
+    const [clientVisible, setClientVisible] = useState(false);
+    const create = useAction((api) => api.work.createProject(brand.id, { name, description, clientVisible }));
     const errors = fieldErrors(create.error);
     return (
         <Dialog open title="New project" onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={create.pending} onClick={async () => { const p = await create.run(); if (p) { onCreated(p.id); onClose(); } }}>Create project</Button></>}>
             <div className="space-y-4">
                 <Field id="project-name" label="Name" required><Input id="project-name" value={name} error={errors.name} onChange={(e) => setName(e.target.value)} /></Field>
                 <Field id="project-description" label="Description"><Textarea id="project-description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
+                <label className="flex items-center gap-2 text-sm text-fg-secondary">
+                    <input type="checkbox" className="h-4 w-4 rounded border-line-strong" checked={clientVisible} onChange={(e) => setClientVisible(e.target.checked)} />
+                    Share with the client’s users (read-only; comments only with permission)
+                </label>
             </div>
         </Dialog>
     );

@@ -1,7 +1,8 @@
 import type { AgentInstance, AgentTemplateKey, ID, InstructionVersion, ToolKey } from '@/domain/types';
 import type { AgentsApi } from '../contracts';
 import { AGENT_TEMPLATES, ALL_TOOLS, DEFAULT_LIMITS, DEFAULT_MODEL, modelOption, renderInstructions, templateByKey } from '@/domain/agents';
-import { assertValid, NotFoundError, ValidationError } from '../errors';
+import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
+import { can, hasClientPermission } from '../access';
 import { newId } from '@/lib/utils';
 import type { DbSnapshot, LocalDatabase } from './db';
 import type { Scope } from './scope';
@@ -48,6 +49,11 @@ export function localAgents(scope: Scope): AgentsApi {
 
         async list(brandId) {
             const order = AGENT_TEMPLATES.map((t) => t.key);
+            const f = scope.facts(brandId);
+            if (!can(f, 'staff')) {
+                if (!hasClientPermission(f, 'ai_chat')) throw new AccessDeniedError();
+                return structuredClone(db.all('agentInstances').filter((a) => a.brandId === brandId && a.clientFacing)).sort((a, b) => order.indexOf(a.templateKey) - order.indexOf(b.templateKey));
+            }
             return scope.rows('agentInstances', brandId).sort((a, b) => order.indexOf(a.templateKey) - order.indexOf(b.templateKey));
         },
 
@@ -83,6 +89,7 @@ export function localAgents(scope: Scope): AgentsApi {
             const updated = touch(id, {
                 ...(patch.displayName !== undefined && { displayName: patch.displayName.trim() }),
                 ...(patch.active !== undefined && { active: patch.active }),
+                ...(patch.clientFacing !== undefined && { clientFacing: patch.clientFacing }),
                 ...(patch.model && { model: { ...patch.model } }),
                 ...(patch.tools && { tools: [...new Set(patch.tools)] }),
                 limits,

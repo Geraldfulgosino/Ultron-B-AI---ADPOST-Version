@@ -5,7 +5,7 @@
  *  - client admins edit and archive/restore their client; client slugs are unique per agency.
  * Counts come from stored records only; nothing is estimated.
  */
-import type { Agency, Brand, ID, LifecycleStatus } from '@/domain/types';
+import type { Agency, AgencyStatus, Brand, ID, LifecycleStatus } from '@/domain/types';
 import type { AgenciesApi, AgencyClientInput, AgencyInput, AgencyView, ClientCard } from '../contracts';
 import { can, isAgencyAdminRole, ROLE_LABELS, effectiveRole } from '../access';
 import { AccessDeniedError, assertValid } from '../errors';
@@ -22,6 +22,7 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const HTTPS = /^https:\/\/\S{1,2000}$/;
 const CURRENCY = /^[A-Z]{3}$/;
 const STATUSES: LifecycleStatus[] = ['active', 'inactive', 'archived'];
+const AGENCY_STATUSES: AgencyStatus[] = ['active', 'inactive', 'suspended', 'archived'];
 
 export const isPlatformAdmin = (db: LocalDatabase, userId: ID) => db.all('platformAdmins').some((p) => p.userId === userId);
 
@@ -33,7 +34,8 @@ export function createClientRecord(scope: Scope, agencyId: ID, input: AgencyClie
     const { db } = scope;
     const agency = db.find('agencies', agencyId);
     const m = db.all('agencyMemberships').find((x) => x.agencyId === agencyId && x.userId === scope.userId);
-    if (!agency || !isAgencyAdminRole(m?.role)) throw new AccessDeniedError('Only agency administrators can add clients.');
+    const superAdmin = isPlatformAdmin(db, scope.userId);
+    if (!agency || (!superAdmin && (!isAgencyAdminRole(m?.role) || agency.status === 'suspended'))) throw new AccessDeniedError('Only agency administrators can add clients.');
     if (agency.status === 'archived') throw new AccessDeniedError('This agency is archived. Restore it before adding clients.');
     assertCanAddBrand(db, agencyId);
     const name = input.name?.trim() ?? '';
@@ -91,7 +93,8 @@ export function localAgencies(scope: Scope): AgenciesApi {
         const clients = readableClients(a.id);
         const isPlatform = platform();
         if (!m && !clients.length && !isPlatform) return null;
-        const ids = new Set(clients.map((c) => c.id));
+        // Websites of archived clients are not counted (they are preserved, not active work).
+        const ids = new Set(clients.filter((c) => c.status !== 'archived').map((c) => c.id));
         const websites = db.all('websites').filter((w) => ids.has(w.brandId) && w.status !== 'archived');
         return {
             ...structuredClone(a),
@@ -169,7 +172,7 @@ export function localAgencies(scope: Scope): AgenciesApi {
                 throw new AccessDeniedError('Only platform administrators can archive, deactivate or restore an agency.');
             }
             validateAgency(patch);
-            assertValid({ status: bad(patch.status !== undefined && !STATUSES.includes(patch.status), 'Choose a status.') });
+            assertValid({ status: bad(patch.status !== undefined && !AGENCY_STATUSES.includes(patch.status), 'Choose a status.') });
             const next: Partial<Agency> = { updatedAt: db.nowIso() };
             if (patch.name !== undefined) next.name = patch.name.trim();
             if (patch.description !== undefined) next.description = patch.description.trim();
@@ -266,10 +269,15 @@ export function localAgencies(scope: Scope): AgenciesApi {
             const month = db.nowIso().slice(0, 7);
             return {
                 agencies: db.all('agencies').filter((a) => a.status !== 'archived').length,
+                suspendedAgencies: db.all('agencies').filter((a) => a.status === 'suspended').length,
+                suspendedUsers: db.all('users').filter((u) => u.deactivatedAt).length,
+                pendingInvitations: db.all('invitations').filter((i) => i.status === 'pending' && i.expiresAt >= db.nowIso()).length
+                    + db.all('agencyInvitations').filter((i) => (i.status === 'pending' || i.status === 'sent') && i.expiresAt >= db.nowIso()).length,
+                enabledAgents: db.all('agentInstances').filter((a) => a.active && db.find('brands', a.brandId)?.status === 'active').length,
                 clients: db.all('brands').filter((b) => b.status !== 'archived').length,
                 websites: db.all('websites').filter((w) => w.status !== 'archived').length,
                 demoWebsites: db.all('websites').filter((w) => w.status !== 'archived' && w.isDemo).length,
-                activeUsers: db.all('users').length,
+                activeUsers: db.all('users').filter((u) => !u.deactivatedAt).length,
                 integrations: { connected: db.all('integrations').filter((i) => i.status === 'connected').length, error: db.all('integrations').filter((i) => i.status === 'error').length },
                 aiRequestsThisMonth: db.all('aiUsage').filter((u) => u.createdAt.startsWith(month) && u.executionStatus !== 'limited').length,
             };

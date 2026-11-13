@@ -39,6 +39,13 @@ export interface Tables {
     aiAudit: AI.AiAuditEvent;
     /** Platform administrators (create/archive agencies; no tenant data access by itself). */
     platformAdmins: { id: T.ID; userId: T.ID; createdAt: T.ISODate };
+    taskComments: T.TaskComment;
+    /** Platform audit trail (mirrors platform_audit_events). */
+    platformAudit: { id: T.ID; actorId: T.ID | null; action: string; targetType: string; targetId: T.ID | null; agencyId: T.ID | null; brandId: T.ID | null; details: Record<string, string>; createdAt: T.ISODate };
+    /** Agency-admin invitations (mirrors agency_invitations; the plain token exists only in local mode). */
+    agencyInvitations: { id: T.ID; agencyId: T.ID; email: string; role: 'agency_admin' | 'agency_manager'; token: string; invitedBy: T.ID; status: 'pending' | 'sent' | 'accepted' | 'expired' | 'revoked' | 'failed'; expiresAt: T.ISODate; acceptedAt: T.ISODate | null; createdAt: T.ISODate };
+    /** One-time dev seed steps already applied (reconciliation). */
+    seedSteps: { id: string; appliedAt: T.ISODate };
 }
 
 export type TableName = keyof Tables;
@@ -56,7 +63,7 @@ export const EMPTY_SNAPSHOT = (): DbSnapshot => ({
     seoInsights: [], n8nConnections: [], n8nDeliveries: [], auditLogs: [], agentInstances: [],
     instructionVersions: [], conversations: [], messages: [], executions: [], projects: [], tasks: [],
     approvals: [], knowledgeDocuments: [], knowledgeChunks: [], webChanges: [],
-    aiConnections: [], aiModels: [], aiPolicies: [], aiAssignments: [], aiUsage: [], aiHealthChecks: [], aiAudit: [], platformAdmins: [],
+    aiConnections: [], aiModels: [], aiPolicies: [], aiAssignments: [], aiUsage: [], aiHealthChecks: [], aiAudit: [], platformAdmins: [], taskComments: [], platformAudit: [], agencyInvitations: [], seedSteps: [],
 });
 
 type Listener = (table: TableName) => void;

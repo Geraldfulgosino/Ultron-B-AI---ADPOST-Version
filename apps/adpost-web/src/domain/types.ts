@@ -14,6 +14,13 @@ export type AgencyRole = 'agency_owner' | 'agency_admin' | 'agency_manager';
 /** Labels for assignment and filtering. They grant no permissions (mirrors migration 0008). */
 export type JobFunction = 'client_manager' | 'seo_specialist' | 'web_developer' | 'employee' | 'other';
 export type LifecycleStatus = 'active' | 'inactive' | 'archived';
+/** Agencies can also be suspended by a Super Admin: then nobody but Super Admins can access them. */
+export type AgencyStatus = LifecycleStatus | 'suspended';
+/** Explicit collaboration permissions of a Client User (read-only without them). Mirrors migration 0009. */
+export type ClientPermission = 'ai_chat' | 'comment_tasks' | 'download_reports';
+export const CLIENT_PERMISSIONS: ClientPermission[] = ['ai_chat', 'comment_tasks', 'download_reports'];
+/** Explicit conversation scopes, enforced by the data layer (not cosmetic labels). */
+export type ConversationVisibility = 'agency_internal' | 'client_shared' | 'user_private';
 
 export interface Agency {
     id: ID;
@@ -23,7 +30,7 @@ export interface Agency {
     planKey: import('./plans').PlanKey;
     description: string;
     logoUrl: string | null;
-    status: LifecycleStatus;
+    status: AgencyStatus;
     timezone: string;
     defaultCurrency: string;
     contactEmail: string | null;
@@ -59,6 +66,8 @@ export interface User {
     id: ID;
     name: string;
     email: string;
+    /** Suspended accounts lose all access immediately (profiles.deactivated_at). */
+    deactivatedAt?: ISODate | null;
 }
 
 export interface AgencyMembership {
@@ -78,6 +87,8 @@ export interface BrandMembership {
     clientId: ID | null;
     department: string | null;
     jobFunction?: JobFunction | null;
+    /** Client Users only: explicit collaboration permissions (read-only by default). */
+    permissions?: ClientPermission[];
     joinedAt: ISODate;
 }
 
@@ -91,6 +102,8 @@ export interface Invitation {
     clientId: ID | null;
     invitedBy: ID;
     status: InvitationStatus;
+    /** Client Users only: permissions granted on acceptance. */
+    permissions?: ClientPermission[];
     token: string;
     expiresAt: ISODate;
     createdAt: ISODate;
@@ -299,6 +312,8 @@ export interface AgentInstance {
     activeInstructionVersionId: ID;
     tools: ToolKey[];
     limits: AgentLimits;
+    /** Usable by the client's users who hold the ai_chat permission. Instructions stay staff-only. */
+    clientFacing?: boolean;
     createdAt: ISODate;
     updatedAt: ISODate;
 }
@@ -352,6 +367,8 @@ export interface Conversation {
     teamKey: TeamKey | null;
     /** Optional website scope: agents then use only this website and its tools. */
     websiteId?: ID | null;
+    /** Default agency_internal. client_shared: visible to the client's users with ai_chat; user_private: creator only. */
+    visibility?: ConversationVisibility;
     createdBy: ID;
     archived: boolean;
     summary: string | null;
@@ -412,6 +429,8 @@ export interface Project {
     description: string;
     status: 'active' | 'on_hold' | 'completed';
     websiteId: ID | null;
+    /** Shared with the client's users (read-only; comments need the comment_tasks permission). */
+    clientVisible?: boolean;
     createdAt: ISODate;
 }
 
@@ -433,6 +452,15 @@ export interface Task {
     dueDate: string | null;
     createdAt: ISODate;
     updatedAt: ISODate;
+}
+
+export interface TaskComment {
+    id: ID;
+    brandId: ID;
+    taskId: ID;
+    authorId: ID;
+    body: string;
+    createdAt: ISODate;
 }
 
 export type ApprovalKind = 'publish_content' | 'deploy_change' | 'run_webhook' | 'external_action' | 'budget_increase';

@@ -7,6 +7,8 @@ interface BackendState {
     signIn(email: string, password: string): Promise<void>;
     register(input: { name: string; email: string; password: string }): Promise<void>;
     signOut(): Promise<void>;
+    /** Re-read the session after a profile change. */
+    refreshSession(): void;
 }
 
 const BackendContext = createContext<BackendState | null>(null);
@@ -24,6 +26,7 @@ export function BackendProvider({ backend, children }: { backend: Backend; child
                 await backend.auth.signOut();
                 setSession(null);
             },
+            refreshSession: () => setSession(backend.auth.currentSession()),
         }),
         [backend, session],
     );

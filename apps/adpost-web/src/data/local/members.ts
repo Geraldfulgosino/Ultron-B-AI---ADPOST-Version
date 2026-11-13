@@ -94,10 +94,12 @@ export function localInvitations(scope: Scope): InvitationsApi {
                     : (existingUser && db.all('brandMemberships').some((m) => m.brandId === brandId && m.userId === existingUser.id) && 'This person is already a member.') ||
                       (db.all('invitations').some((i) => i.brandId === brandId && i.email === email && i.status === 'pending') && 'An invitation is already pending for this email.'),
                 role: !assignableRoles(f).includes(input.role) && `You cannot invite someone as ${input.role}.`,
+                // A Client User covers the whole client unless a legacy inner client is named.
                 clientId:
-                    input.role === 'client' &&
-                    !db.all('clients').some((c) => c.id === input.clientId && c.brandId === brandId) &&
-                    'Client invitations must be linked to a client of this brand.',
+                    !!input.clientId && (input.role !== 'client'
+                        ? 'Only client users are linked to a client.'
+                        : !db.all('clients').some((c) => c.id === input.clientId && c.brandId === brandId) && 'Choose a client of this brand.'),
+                permissions: !!input.permissions?.length && input.role !== 'client' && 'Permissions apply to client users only.',
             });
             assertCanAddMember(db, brandId);
             const expires = new Date(db.now());
@@ -108,6 +110,7 @@ export function localInvitations(scope: Scope): InvitationsApi {
                 email,
                 role: input.role,
                 clientId: input.role === 'client' ? (input.clientId ?? null) : null,
+                permissions: input.role === 'client' ? [...new Set(input.permissions ?? [])] : [],
                 invitedBy: scope.userId,
                 status: 'pending',
                 token: newId('tok'),
@@ -155,6 +158,7 @@ export function localInvitations(scope: Scope): InvitationsApi {
                     role: inv.role,
                     clientId: inv.clientId,
                     department: null,
+                    permissions: inv.role === 'client' ? inv.permissions ?? [] : [],
                     joinedAt: db.nowIso(),
                 });
             }

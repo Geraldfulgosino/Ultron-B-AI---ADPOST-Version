@@ -1,7 +1,7 @@
 import type { ApprovalRequest, Assignee, ID, Project, Task, TaskPriority, TaskStatus } from '@/domain/types';
 import type { WorkApi } from '../contracts';
 import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
-import { can } from '../access';
+import { can, effectiveRole, hasClientPermission } from '../access';
 import { newId } from '@/lib/utils';
 import type { Scope } from './scope';
 import { emitAutomationEvent } from './automation';
@@ -16,6 +16,18 @@ export const AGENT_INBOX = 'Agent requests';
 
 export function localWork(scope: Scope): WorkApi {
     const { db } = scope;
+    /** Staff see everything; Client Users see only client-visible projects and their tasks (mirrors 0009). */
+    const visibleProjects = (brandId: ID) => {
+        const f = scope.facts(brandId);
+        if (can(f, 'staff')) return { staff: true, projects: scope.rows('projects', brandId), f };
+        if (effectiveRole(f) !== 'client') throw new AccessDeniedError();
+        return { staff: false, projects: structuredClone(db.all('projects').filter((p) => p.brandId === brandId && p.clientVisible)), f };
+    };
+    const visibleTasks = (brandId: ID) => {
+        const v = visibleProjects(brandId);
+        const ids = new Set(v.projects.map((p) => p.id));
+        return { ...v, tasks: v.staff ? scope.rows('tasks', brandId) : structuredClone(db.all('tasks').filter((t) => t.brandId === brandId && ids.has(t.projectId))) };
+    };
 
     const validAssignee = (brandId: ID, a: Assignee | undefined): string | false => {
         if (!a) return false;
@@ -43,9 +55,8 @@ export function localWork(scope: Scope): WorkApi {
 
     return {
         async projects(brandId) {
-            const tasks = scope.rows('tasks', brandId);
-            return scope
-                .rows('projects', brandId)
+            const { projects, tasks } = visibleTasks(brandId);
+            return projects
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((p) => {
                     const counts = Object.fromEntries(TASK_STATUSES.map((s) => [s, 0])) as Record<TaskStatus, number>;
@@ -61,7 +72,7 @@ export function localWork(scope: Scope): WorkApi {
                 name: !name ? 'Project name is required.' : db.all('projects').some((p) => p.brandId === brandId && p.name.toLowerCase() === name.toLowerCase()) && 'A project with this name already exists.',
                 websiteId: input.websiteId && !db.all('websites').some((w) => w.id === input.websiteId && w.brandId === brandId) && 'Choose a website from this brand.',
             });
-            const p: Project = { id: newId('prj'), brandId, name, description: input.description?.trim() ?? '', status: input.status ?? 'active', websiteId: input.websiteId ?? null, createdAt: db.nowIso() };
+            const p: Project = { id: newId('prj'), brandId, name, description: input.description?.trim() ?? '', status: input.status ?? 'active', websiteId: input.websiteId ?? null, clientVisible: input.clientVisible ?? false, createdAt: db.nowIso() };
             db.insert('projects', p);
             scope.audit(brandId, 'project.created', 'project', p.id);
             return structuredClone(p);
@@ -79,6 +90,7 @@ export function localWork(scope: Scope): WorkApi {
             if (input.description !== undefined) patch.description = input.description.trim();
             if (input.status !== undefined) patch.status = input.status;
             if (input.websiteId !== undefined) patch.websiteId = input.websiteId;
+            if (input.clientVisible !== undefined) patch.clientVisible = input.clientVisible;
             return structuredClone(db.patch('projects', id, patch));
         },
 
@@ -94,8 +106,7 @@ export function localWork(scope: Scope): WorkApi {
 
         async tasks(brandId, f = {}) {
             const rank = { urgent: 0, high: 1, medium: 2, low: 3 } as const;
-            return scope
-                .rows('tasks', brandId)
+            return visibleTasks(brandId).tasks
                 .filter((t) =>
                     (!f.projectId || t.projectId === f.projectId) &&
                     (!f.status || t.status === f.status) &&
@@ -200,6 +211,23 @@ export function localWork(scope: Scope): WorkApi {
             if (!own && !can(f, 'admin')) throw new AccessDeniedError('Only the requester or an admin can cancel this request.');
             if (req.status !== 'pending') throw new ValidationError({ status: `This request is already ${req.status}.` });
             return structuredClone(db.patch('approvals', id, { status: 'cancelled', decidedBy: scope.userId, decidedAt: db.nowIso() }));
+        },
+
+        async comments(brandId, taskId) {
+            const { tasks } = visibleTasks(brandId);
+            if (!tasks.some((t) => t.id === taskId)) throw new NotFoundError('Task');
+            return db.all('taskComments').filter((c) => c.taskId === taskId).map((c) => ({ ...structuredClone(c), authorName: db.find('users', c.authorId)?.name ?? 'User' }));
+        },
+
+        async addComment(brandId, taskId, body) {
+            const { tasks, f } = visibleTasks(brandId);
+            if (!tasks.some((t) => t.id === taskId)) throw new NotFoundError('Task');
+            if (!can(f, 'write') && !hasClientPermission(f, 'comment_tasks')) throw new AccessDeniedError('You cannot comment on tasks.');
+            const text = body.trim();
+            assertValid({ body: (!text && 'Write a comment.') || (text.length > 4000 && 'Comments are limited to 4,000 characters.') });
+            const c = { id: newId('tcm'), brandId, taskId, authorId: scope.userId, body: text, createdAt: db.nowIso() };
+            db.insert('taskComments', c);
+            return structuredClone(c);
         },
 
         async applyProposal(brandId, messageId, proposalId) {

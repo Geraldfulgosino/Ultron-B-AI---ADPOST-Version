@@ -25,6 +25,9 @@ export interface AuthApi {
     register(input: { name: string; email: string; password: string }): Promise<Session>;
     signOut(): Promise<void>;
     currentSession(): Session | null;
+    /** Personal profile only. Roles and memberships are never editable here. */
+    updateProfile(input: { name: string }): Promise<Session>;
+    changePassword(currentPassword: string, newPassword: string): Promise<void>;
 }
 
 export interface BrandAccess {
@@ -36,6 +39,9 @@ export interface BrandAccess {
     clientId: T.ID | null;
     /** Roles this user may grant in the brand (empty = cannot manage members). */
     assignableRoles: T.BrandRole[];
+    /** Client Users only: explicit permissions (empty for everyone else). */
+    clientPermissions: T.ClientPermission[];
+    isSuperAdmin: boolean;
 }
 
 export interface BrandInput {
@@ -130,9 +136,13 @@ export interface AgencyOverview {
 
 export interface PlatformOverview {
     agencies: number;
+    suspendedAgencies: number;
     clients: number;
     websites: number;
     demoWebsites: number;
+    suspendedUsers: number;
+    pendingInvitations: number;
+    enabledAgents: number;
     activeUsers: number;
     integrations: { connected: number; error: number };
     aiRequestsThisMonth: number;
@@ -140,12 +150,12 @@ export interface PlatformOverview {
 
 export interface AgenciesApi {
     isPlatformAdmin(): Promise<boolean>;
-    list(filter?: { status?: T.LifecycleStatus | 'all'; query?: string }): Promise<AgencyView[]>;
+    list(filter?: { status?: T.AgencyStatus | 'all'; query?: string }): Promise<AgencyView[]>;
     bySlug(slug: string): Promise<AgencyView>;
     /** Platform admins only; the creator becomes the agency owner. */
     create(input: AgencyInput): Promise<AgencyView>;
     /** Profile: agency owners/admins and platform admins. Status: platform admins only. */
-    update(agencyId: T.ID, patch: Partial<Omit<AgencyInput, 'slug'>> & { status?: T.LifecycleStatus }): Promise<AgencyView>;
+    update(agencyId: T.ID, patch: Partial<Omit<AgencyInput, 'slug'>> & { status?: T.AgencyStatus }): Promise<AgencyView>;
     clients(agencyId: T.ID, filter?: { status?: T.LifecycleStatus | 'all'; query?: string }): Promise<ClientCard[]>;
     /** Agency owners/admins; the client gets its own six agents. */
     createClient(agencyId: T.ID, input: AgencyClientInput): Promise<T.Brand>;
@@ -224,7 +234,7 @@ export interface InvitationsApi {
     list(brandId: T.ID): Promise<InvitationView[]>;
     send(
         brandId: T.ID,
-        input: { email: string; role: T.BrandRole; clientId?: T.ID | null },
+        input: { email: string; role: T.BrandRole; clientId?: T.ID | null; permissions?: T.ClientPermission[] },
     ): Promise<{ invitation: InvitationView; devAcceptPath?: string }>;
     cancel(brandId: T.ID, id: T.ID): Promise<void>;
     preview(token: string): Promise<InvitationPreview>;
@@ -331,6 +341,8 @@ export interface AgentUsage {
 export interface AgentUpdate {
     displayName?: string;
     active?: boolean;
+    /** Admin: allow Client Users with the ai_chat permission to use this agent. */
+    clientFacing?: boolean;
     model?: T.ModelRef;
     tools?: T.ToolKey[];
     limits?: Partial<T.AgentLimits>;
@@ -390,8 +402,14 @@ export interface ChatApi {
     list(brandId: T.ID, filter?: { kind?: T.ConversationKind; includeArchived?: boolean }): Promise<ConversationSummary[]>;
     get(brandId: T.ID, id: T.ID): Promise<T.Conversation>;
     /** opts.websiteId scopes the conversation to one of the client's websites (agents then use only that website). */
-    createDirect(brandId: T.ID, agentInstanceId: T.ID, title?: string, opts?: { websiteId?: T.ID | null }): Promise<T.Conversation>;
-    createGroup(brandId: T.ID, input: { team: T.TeamKey; title?: string; websiteId?: T.ID | null }): Promise<T.Conversation>;
+    /**
+     * opts.websiteId scopes the conversation to one website; opts.visibility (staff only) sets who may read it.
+     * Client Users (ai_chat permission) can only open client_shared conversations with client-facing agents.
+     */
+    createDirect(brandId: T.ID, agentInstanceId: T.ID, title?: string, opts?: { websiteId?: T.ID | null; visibility?: T.ConversationVisibility }): Promise<T.Conversation>;
+    createGroup(brandId: T.ID, input: { team: T.TeamKey; title?: string; websiteId?: T.ID | null; visibility?: T.ConversationVisibility }): Promise<T.Conversation>;
+    /** Staff: change who may read a conversation (private ones only by their creator). */
+    setVisibility(brandId: T.ID, id: T.ID, visibility: T.ConversationVisibility): Promise<T.Conversation>;
     messages(brandId: T.ID, conversationId: T.ID): Promise<T.Message[]>;
     send(brandId: T.ID, conversationId: T.ID, input: { body: string; attachments?: AttachmentInput[] }): Promise<SendResult>;
     /** Re-run the agent(s) for the user message a failed reply answered. */
@@ -411,6 +429,8 @@ export interface ProjectInput {
     description?: string;
     status?: T.Project['status'];
     websiteId?: T.ID | null;
+    /** Share the project and its tasks (read-only) with the client's users. */
+    clientVisible?: boolean;
 }
 
 export interface ProjectSummary extends T.Project {
@@ -451,6 +471,10 @@ export interface WorkApi {
     cancelApproval(brandId: T.ID, id: T.ID): Promise<T.ApprovalRequest>;
     /** Turn an agent proposal into a task or approval request (human action). */
     applyProposal(brandId: T.ID, messageId: T.ID, proposalId: T.ID): Promise<{ kind: 'task' | 'approval'; id: T.ID }>;
+    /** Comments on a task: staff, or Client Users on client-visible projects. */
+    comments(brandId: T.ID, taskId: T.ID): Promise<Array<T.TaskComment & { authorName: string }>>;
+    /** Staff with write access, or Client Users holding comment_tasks on a client-visible project. */
+    addComment(brandId: T.ID, taskId: T.ID, body: string): Promise<T.TaskComment>;
 }
 
 // ── SEO intelligence ─────────────────────────────────────────────────────
@@ -639,10 +663,82 @@ export interface AiProvidersApi {
     audit(brandId: T.ID): Promise<AI.AiAuditEvent[]>;
 }
 
+// ── Users, roles and invitations (migration 0009) ─────────────────────────
+
+export type PlatformRoleKey = 'super_admin' | 'admin' | 'client_user' | 'staff';
+
+export interface UserMembershipView {
+    kind: 'agency' | 'client';
+    agencyId: T.ID;
+    agencyName: string;
+    brandId: T.ID | null;
+    brandName: string | null;
+    membershipId: T.ID;
+    role: string;
+    roleLabel: string;
+    permissions: T.ClientPermission[];
+}
+
+export interface UserView {
+    id: T.ID;
+    name: string;
+    email: string;
+    status: 'active' | 'suspended';
+    isSuperAdmin: boolean;
+    /** Only memberships inside the caller's authority. */
+    memberships: UserMembershipView[];
+}
+
+export interface AgencyInvitationView {
+    id: T.ID;
+    agencyId: T.ID;
+    email: string;
+    role: 'agency_admin' | 'agency_manager';
+    status: 'pending' | 'sent' | 'accepted' | 'expired' | 'revoked' | 'failed';
+    expiresAt: T.ISODate;
+    createdAt: T.ISODate;
+}
+
+export interface PlatformAuditView {
+    id: T.ID;
+    actorName: string;
+    action: string;
+    targetType: string;
+    targetName: string | null;
+    agencyName: string | null;
+    createdAt: T.ISODate;
+}
+
+export interface UsersApi {
+    /** Super Admin: all users (optionally one agency). Admin: users of an agency they administer. */
+    list(filter: { agencyId?: T.ID; query?: string; role?: PlatformRoleKey; status?: 'active' | 'suspended'; page?: number; pageSize?: number }): Promise<{ users: UserView[]; total: number }>;
+    /** Super Admin only; never yourself; revoke Super Admin first. */
+    setSuspended(userId: T.ID, suspended: boolean): Promise<UserView>;
+    /** Super Admin only. */
+    grantSuperAdmin(userId: T.ID): Promise<void>;
+    /** Super Admin only; never the last Super Admin. */
+    revokeSuperAdmin(userId: T.ID): Promise<void>;
+    /** Super Admin only: Admins cannot create Admins. */
+    assignAgencyRole(agencyId: T.ID, userId: T.ID, role: T.AgencyRole): Promise<void>;
+    revokeAgencyRole(agencyId: T.ID, userId: T.ID): Promise<void>;
+    /** Super Admin only. Local mode returns a dev accept link instead of sending email. */
+    inviteAgencyUser(agencyId: T.ID, input: { email: string; role: 'agency_admin' | 'agency_manager' }): Promise<{ invitation: AgencyInvitationView; devAcceptPath?: string }>;
+    agencyInvitations(agencyId: T.ID): Promise<AgencyInvitationView[]>;
+    revokeAgencyInvitation(invitationId: T.ID): Promise<void>;
+    acceptAgencyInvitation(token: string): Promise<{ agencySlug: string }>;
+    /** Client admins: set a Client User's explicit permissions. */
+    setClientPermissions(brandId: T.ID, membershipId: T.ID, permissions: T.ClientPermission[]): Promise<void>;
+    /** Super Admin: all events; Admin: events of agencies they administer. */
+    audit(filter?: { agencyId?: T.ID }): Promise<PlatformAuditView[]>;
+    /** Where this user should land after sign-in. */
+    home(): Promise<{ path: string; reason: 'super_admin' | 'admin' | 'client_user' | 'member' | 'none' }>;
+}
+
 /** The full API bound to one signed-in user. Extended phase by phase. */
 export interface BrandApi {
     workspace: WorkspaceApi;
     agencies: AgenciesApi;
+    users: UsersApi;
     clients: ClientsApi;
     websites: WebsitesApi;
     members: MembersApi;

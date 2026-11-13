@@ -11,18 +11,20 @@ import { agencyBase, clientBase } from '@/app/paths';
 import { useAgency } from '@/layouts/AgencyLayout';
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog, EmptyState, ErrorState, Field, Input, LoadingState, Select, StatCard, Table, TBody, Td, Textarea, Th, THead } from '@/components/ui';
 import type { AgencyClientInput, AgencyView, ClientCard } from '@/data/contracts';
-import type { LifecycleStatus } from '@/domain/types';
+import type { AgencyStatus, LifecycleStatus } from '@/domain/types';
 import { ThemeToggle } from '@/theme/ThemeToggle';
+import { UsersManager } from '@/pages/users/UsersManager';
 import { formatNumber, slugify } from '@/lib/utils';
 
-const STATUS: Record<LifecycleStatus, { label: string; variant: 'green' | 'gray' | 'yellow' }> = {
+const STATUS: Record<AgencyStatus, { label: string; variant: 'green' | 'gray' | 'yellow' | 'red' }> = {
     active: { label: 'Active', variant: 'green' },
+    suspended: { label: 'Suspended', variant: 'red' },
     inactive: { label: 'Inactive', variant: 'yellow' },
     archived: { label: 'Archived', variant: 'gray' },
 };
-export const StatusPill = ({ status }: { status: LifecycleStatus }) => <Badge variant={STATUS[status].variant}>{STATUS[status].label}</Badge>;
+export const StatusPill = ({ status }: { status: AgencyStatus }) => <Badge variant={STATUS[status].variant}>{STATUS[status].label}</Badge>;
 
-function Filters({ query, setQuery, status, setStatus, label }: { query: string; setQuery: (q: string) => void; status: LifecycleStatus | 'all'; setStatus: (s: LifecycleStatus | 'all') => void; label: string }) {
+function Filters({ query, setQuery, status, setStatus, label, withSuspended = false }: { query: string; setQuery: (q: string) => void; status: AgencyStatus | 'all'; setStatus: (s: AgencyStatus | 'all') => void; label: string; withSuspended?: boolean }) {
     return (
         <div className="flex flex-wrap items-end gap-3">
             <Field id={`${label}-search`} label={`Search ${label}`}>
@@ -32,10 +34,11 @@ function Filters({ query, setQuery, status, setStatus, label }: { query: string;
                 </div>
             </Field>
             <Field id={`${label}-status`} label="Status">
-                <Select id={`${label}-status`} value={status} onChange={(e) => setStatus(e.target.value as LifecycleStatus | 'all')}>
+                <Select id={`${label}-status`} value={status} onChange={(e) => setStatus(e.target.value as AgencyStatus | 'all')}>
                     <option value="all">All</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
+                    {withSuspended && <option value="suspended">Suspended</option>}
                     <option value="archived">Archived</option>
                 </Select>
             </Field>
@@ -48,14 +51,6 @@ function Filters({ query, setQuery, status, setStatus, label }: { query: string;
 export function AgenciesPage() {
     const { session, signOut } = useBackend();
     const navigate = useNavigate();
-    const [query, setQuery] = useState('');
-    const [status, setStatus] = useState<LifecycleStatus | 'all'>('active');
-    const isPlatform = useQuery((api) => api.agencies.isPlatformAdmin(), []);
-    const agencies = useQuery((api) => api.agencies.list({ status, query }), [status, query]);
-    const overview = useQuery((api) => (isPlatform.data ? api.agencies.platformOverview() : Promise.resolve(null)), [isPlatform.data]);
-    const [creating, setCreating] = useState(false);
-    const toggle = useAction((api, a: AgencyView) => api.agencies.update(a.id, { status: a.status === 'archived' ? 'active' : 'archived' }));
-
     return (
         <div className="min-h-screen bg-canvas">
             <header className="border-b border-line bg-surface">
@@ -68,6 +63,7 @@ export function AgenciesPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        <Link to="/me" className="text-sm text-fg-soft hover:text-fg">My profile</Link>
                         <ThemeToggle />
                         <button type="button" className="flex items-center gap-1 text-sm text-fg-soft hover:text-fg" onClick={async () => { await signOut(); navigate('/login', { replace: true }); }}>
                             <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
@@ -76,57 +72,80 @@ export function AgenciesPage() {
                 </div>
             </header>
             <main id="main" tabIndex={-1} className="mx-auto max-w-6xl space-y-6 px-4 py-8 focus:outline-none">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-lg font-semibold text-fg">Agencies</h1>
-                        <p className="text-sm text-fg-muted">Choose an agency, then a client.</p>
-                    </div>
-                    {isPlatform.data && <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" aria-hidden="true" /> Add agency</Button>}
-                </div>
-                {overview.data && (
-                    <section aria-label="Platform overview" className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                        <StatCard label="Agencies" value={formatNumber(overview.data.agencies)} />
-                        <StatCard label="Clients" value={formatNumber(overview.data.clients)} />
-                        <StatCard label="Websites" value={formatNumber(overview.data.websites)} hint={overview.data.demoWebsites ? `${overview.data.demoWebsites} demo records (not live websites)` : undefined} />
-                        <StatCard label="Users" value={formatNumber(overview.data.activeUsers)} />
-                        <StatCard label="AI requests (month)" value={formatNumber(overview.data.aiRequestsThisMonth)} />
-                        <StatCard label="Integrations" value={overview.data.integrations.connected ? formatNumber(overview.data.integrations.connected) : 'None connected'} hint={overview.data.integrations.error ? `${overview.data.integrations.error} with errors` : undefined} />
-                    </section>
-                )}
-                {isPlatform.data && <Alert tone="info">Platform administrators manage the agency directory. Client data is visible only to members of each agency.</Alert>}
-                <Filters query={query} setQuery={setQuery} status={status} setStatus={setStatus} label="agencies" />
-                {toggle.error ? <ErrorState error={toggle.error} /> : null}
-                {agencies.loading ? <LoadingState /> : agencies.error ? <ErrorState error={agencies.error} onRetry={agencies.reload} /> : !agencies.data!.length ? (
-                    <EmptyState title={query || status !== 'all' ? 'No agencies match these filters' : 'You do not belong to any agency yet'} description="Ask an administrator to invite you." />
-                ) : (
-                    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Agencies">
-                        {agencies.data!.map((a) => (
-                            <li key={a.id} className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-                                <Link to={agencyBase(a.slug)} className="flex items-start gap-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg">
-                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft"><Building2 className="h-5 w-5 text-accent" aria-hidden="true" /></span>
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block font-medium text-fg truncate">{a.name}</span>
-                                        <span className="block text-xs text-fg-muted">
-                                            {a.counts ? `${a.counts.clients} client${a.counts.clients === 1 ? '' : 's'} · ${a.counts.websites} website${a.counts.websites === 1 ? '' : 's'}${a.counts.demoWebsites ? ` (${a.counts.demoWebsites} demo)` : ''}` : 'Directory only'}
-                                        </span>
-                                    </span>
-                                    <StatusPill status={a.status} />
-                                    <ChevronRight className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
-                                </Link>
-                                {a.access.canChangeStatus && (
-                                    <div className="mt-3 border-t border-line pt-3">
-                                        <Button size="sm" variant="secondary" onClick={async () => { if (await toggle.run(a)) agencies.reload(); }}>
-                                            {a.status === 'archived' ? 'Restore' : 'Archive'} {a.name}
-                                        </Button>
-                                    </div>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                )}
+                <AgencyDirectory showOverview />
             </main>
-            {creating && <AgencyDialog onClose={() => setCreating(false)} onSaved={(a) => { setCreating(false); navigate(agencyBase(a.slug)); }} />}
         </div>
+    );
+}
+
+/** Agency directory: search, status filter, counts; Super Admins add, suspend, archive and restore agencies. */
+export function AgencyDirectory({ showOverview = false }: { showOverview?: boolean }) {
+    const navigate = useNavigate();
+    const [query, setQuery] = useState('');
+    const [status, setStatus] = useState<AgencyStatus | 'all'>('active');
+    const isPlatform = useQuery((api) => api.agencies.isPlatformAdmin(), []);
+    const agencies = useQuery((api) => api.agencies.list({ status, query }), [status, query]);
+    const overview = useQuery((api) => (showOverview && isPlatform.data ? api.agencies.platformOverview() : Promise.resolve(null)), [isPlatform.data, showOverview]);
+    const [creating, setCreating] = useState(false);
+    const setAgencyStatus = useAction((api, a: AgencyView, next: AgencyStatus) => api.agencies.update(a.id, { status: next }));
+
+    return (
+        <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-lg font-semibold text-fg">Agencies</h1>
+                    <p className="text-sm text-fg-muted">Choose an agency, then a client.</p>
+                </div>
+                {isPlatform.data && <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" aria-hidden="true" /> Add agency</Button>}
+            </div>
+            {overview.data && (
+                <section aria-label="Platform overview" className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                    <StatCard label="Agencies" value={formatNumber(overview.data.agencies)} />
+                    <StatCard label="Clients" value={formatNumber(overview.data.clients)} />
+                    <StatCard label="Websites" value={formatNumber(overview.data.websites)} hint={overview.data.demoWebsites ? `${overview.data.demoWebsites} demo records (not live websites)` : undefined} />
+                    <StatCard label="Users" value={formatNumber(overview.data.activeUsers)} />
+                    <StatCard label="AI requests (month)" value={formatNumber(overview.data.aiRequestsThisMonth)} />
+                    <StatCard label="Integrations" value={overview.data.integrations.connected ? formatNumber(overview.data.integrations.connected) : 'None connected'} hint={overview.data.integrations.error ? `${overview.data.integrations.error} with errors` : undefined} />
+                </section>
+            )}
+            {isPlatform.data && <Alert tone="info">Super Admin: you can open every agency and client. Your access is audited and never opens private conversations or AI credentials.</Alert>}
+            <Filters query={query} setQuery={setQuery} status={status} setStatus={setStatus} label="agencies" withSuspended />
+            {setAgencyStatus.error ? <ErrorState error={setAgencyStatus.error} /> : null}
+            {agencies.loading ? <LoadingState /> : agencies.error ? <ErrorState error={agencies.error} onRetry={agencies.reload} /> : !agencies.data!.length ? (
+                <EmptyState title={query || status !== 'all' ? 'No agencies match these filters' : 'You do not belong to any agency yet'} description="Ask an administrator to invite you." />
+            ) : (
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Agencies">
+                    {agencies.data!.map((a) => (
+                        <li key={a.id} className="rounded-xl border border-line bg-surface p-4 shadow-sm">
+                            <Link to={agencyBase(a.slug)} className="flex items-start gap-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg">
+                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft"><Building2 className="h-5 w-5 text-accent" aria-hidden="true" /></span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block font-medium text-fg truncate">{a.name}</span>
+                                    <span className="block text-xs text-fg-muted">
+                                        {a.counts ? `${a.counts.clients} client${a.counts.clients === 1 ? '' : 's'} · ${a.counts.websites} website${a.counts.websites === 1 ? '' : 's'}${a.counts.demoWebsites ? ` (${a.counts.demoWebsites} demo)` : ''}` : 'Directory only'}
+                                    </span>
+                                </span>
+                                <StatusPill status={a.status} />
+                                <ChevronRight className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
+                            </Link>
+                            {a.access.canChangeStatus && (
+                                <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
+                                    {a.status === 'archived' || a.status === 'suspended' ? (
+                                        <Button size="sm" variant="secondary" onClick={async () => { if (await setAgencyStatus.run(a, 'active')) agencies.reload(); }}>Restore {a.name}</Button>
+                                    ) : (
+                                        <>
+                                            <Button size="sm" variant="secondary" onClick={async () => { if (confirm(`Suspend ${a.name}? Its admins and client users lose access until it is restored.`) && (await setAgencyStatus.run(a, 'suspended'))) agencies.reload(); }}>Suspend {a.name}</Button>
+                                            <Button size="sm" variant="ghost" onClick={async () => { if (await setAgencyStatus.run(a, 'archived')) agencies.reload(); }}>Archive {a.name}</Button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {creating && <AgencyDialog onClose={() => setCreating(false)} onSaved={(a) => { setCreating(false); navigate(agencyBase(a.slug)); }} />}
+        </>
     );
 }
 
@@ -226,7 +245,7 @@ export function AgencyClientsPage() {
                 </div>
                 {agency.access.canAddClients && <Button onClick={() => setEditing('new')}><Plus className="h-4 w-4" aria-hidden="true" /> Add client</Button>}
             </div>
-            <Filters query={query} setQuery={setQuery} status={status} setStatus={setStatus} label="clients" />
+            <Filters query={query} setQuery={setQuery} status={status} setStatus={(v) => setStatus(v === 'suspended' ? 'all' : v)} label="clients" />
             {toggle.error ? <ErrorState error={toggle.error} /> : null}
             {clients.loading ? <LoadingState /> : clients.error ? <ErrorState error={clients.error} onRetry={clients.reload} /> : !clients.data!.length ? (
                 <EmptyState title="No clients match these filters" description={agency.access.canAddClients ? 'Add a client to get started.' : undefined} />
@@ -364,6 +383,19 @@ export function AgencySettingsPage() {
                     ) : <p className="text-xs text-fg-muted">Only platform administrators archive or restore agencies. Agencies are never permanently deleted here.</p>}
                 </CardContent>
             </Card>
+        </>
+    );
+}
+
+/** Agency users: Admins manage Client Users; Super Admins also manage agency admins. */
+export function AgencyUsersPage() {
+    const { agency } = useAgency();
+    if (!agency.access.canEdit) return <Alert tone="info">Only agency admins and Super Admins manage users.</Alert>;
+    return (
+        <>
+            <h1 className="text-lg font-semibold text-fg">{agency.name} users</h1>
+            <p className="text-sm text-fg-muted">Invite client users into this agency’s clients and choose what they may do. Client users are read-only unless you grant permissions.</p>
+            <UsersManager agencyId={agency.id} />
         </>
     );
 }

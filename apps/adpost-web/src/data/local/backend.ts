@@ -1,6 +1,6 @@
 import type { ID } from '@/domain/types';
 import type { AuthApi, Backend, BrandApi, Session } from '../contracts';
-import { assertValid, AuthError } from '../errors';
+import { assertValid, AuthError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import { LocalDatabase, type LocalDatabaseOptions } from './db';
 import { Scope } from './scope';
@@ -16,6 +16,7 @@ import { localIntelligence } from './intelligence';
 import { localStudio } from './studio';
 import { localKnowledge } from './knowledge';
 import { localAgencies } from './agencies';
+import { localUsers } from './users';
 import { localAi } from './ai';
 import { buildFixtures } from './fixtures';
 import { applySampleSeed, buildSampleSeed } from './sampleSeed';
@@ -26,6 +27,7 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
     return {
         workspace: localWorkspace(scope),
         agencies: localAgencies(scope),
+        users: localUsers(scope),
         clients: localClients(scope),
         websites: localWebsites(scope),
         members: localMembers(scope),
@@ -72,7 +74,8 @@ export class LocalBackend implements Backend {
                 const user = db.all('users').find((u) => u.email.toLowerCase() === normalized);
                 // Same message for unknown email and wrong password (no account enumeration).
                 if (!user || !(await verifyPassword(db.credentials[normalized], normalized, password))) throw new AuthError('These credentials do not match our records.');
-                this.session = { user: structuredClone(user) };
+                if (user.deactivatedAt) throw new AuthError('This account is suspended. Contact your administrator.');
+                this.session = { user: { id: user.id, name: user.name, email: user.email } };
                 this.store();
                 return structuredClone(this.session);
             },
@@ -97,6 +100,23 @@ export class LocalBackend implements Backend {
                 this.store();
             },
             currentSession: () => (this.session ? structuredClone(this.session) : null),
+            updateProfile: async ({ name }) => {
+                if (!this.session) throw new AuthError('Not signed in.');
+                const clean = name.trim();
+                assertValid({ name: (!clean && 'Name is required.') || (clean.length > 120 && 'At most 120 characters.') });
+                // Only the display name is personal data here; roles and memberships are never editable from the profile.
+                const user = db.patch('users', this.session.user.id, { name: clean });
+                this.session = { user: { id: user.id, name: user.name, email: user.email } };
+                this.store();
+                return structuredClone(this.session);
+            },
+            changePassword: async (currentPassword, newPassword) => {
+                if (!this.session) throw new AuthError('Not signed in.');
+                const email = this.session.user.email.toLowerCase();
+                if (!(await verifyPassword(db.credentials[email], email, currentPassword))) throw new ValidationError({ currentPassword: 'Your current password is incorrect.' });
+                assertValid({ newPassword: (newPassword.length < 8 && 'Use at least 8 characters.') || (newPassword === currentPassword && 'Choose a different password.') });
+                db.setCredential(email, await hashPassword(email, newPassword));
+            },
         };
     }
 

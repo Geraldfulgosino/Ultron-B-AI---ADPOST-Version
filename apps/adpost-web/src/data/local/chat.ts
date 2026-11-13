@@ -1,7 +1,8 @@
 import type { Attachment, Conversation, ID, Message, Proposal } from '@/domain/types';
 import type { AttachmentInput, ChatApi, SendResult } from '../contracts';
 import type { ChatTurn, ProposedAction } from '@/ai/provider';
-import { assertValid, NotFoundError, ValidationError } from '../errors';
+import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
+import { can, hasClientPermission, type AccessFacts } from '../access';
 import { newId } from '@/lib/utils';
 import type { Scope } from './scope';
 import { runAgent, type RunResult } from './engine';
@@ -86,7 +87,25 @@ export function localChat(scope: Scope): ChatApi {
         if (!w || w.brandId !== brandId || w.status === 'archived') throw new ValidationError({ websiteId: 'Choose a website of this client.' });
         return w.id;
     };
-    const conv = (brandId: ID, id: ID) => scope.row('conversations', brandId, id, { label: 'Conversation' });
+    /** Mirrors app.can_read_conversation: private = creator only; internal = staff; shared = staff + clients with ai_chat. */
+    const canRead = (f: AccessFacts, c: Conversation) => {
+        const vis = c.visibility ?? 'agency_internal';
+        if (vis === 'user_private') return c.createdBy === scope.userId;
+        if (can(f, 'staff')) return true;
+        return vis === 'client_shared' && hasClientPermission(f, 'ai_chat');
+    };
+    /** Mirrors app.can_post_in_conversation. */
+    const canPost = (f: AccessFacts, c: Conversation) =>
+        canRead(f, c) && !c.archived && (can(f, 'write') || ((c.visibility ?? 'agency_internal') === 'client_shared' && hasClientPermission(f, 'ai_chat')));
+    const conv = (brandId: ID, id: ID) => {
+        const f = scope.facts(brandId);
+        const c = db.find('conversations', id);
+        if (!c || c.brandId !== brandId || !canRead(f, c)) throw new NotFoundError('Conversation');
+        return structuredClone(c);
+    };
+    const requirePost = (brandId: ID, c: Conversation) => {
+        if (!canPost(scope.facts(brandId), c)) throw new AccessDeniedError('You cannot post in this conversation.');
+    };
     const touch = (id: ID) => db.patch('conversations', id, { updatedAt: db.nowIso() });
 
     async function respond(brandId: ID, c: Conversation, userMessage: Message): Promise<Message[]> {
@@ -100,9 +119,10 @@ export function localChat(scope: Scope): ChatApi {
 
     return {
         async list(brandId, filter = {}) {
+            const f = scope.facts(brandId);
+            if (!can(f, 'staff') && !hasClientPermission(f, 'ai_chat')) throw new AccessDeniedError();
             const msgs = db.all('messages').filter((m) => m.brandId === brandId);
-            return scope
-                .rows('conversations', brandId)
+            return structuredClone(db.all('conversations').filter((c) => c.brandId === brandId && canRead(f, c)))
                 .filter((c) => (!filter.kind || c.kind === filter.kind) && (filter.includeArchived || !c.archived))
                 .map((c) => {
                     const own = msgs.filter((m) => m.conversationId === c.id);
@@ -116,19 +136,23 @@ export function localChat(scope: Scope): ChatApi {
         },
 
         async createDirect(brandId, agentInstanceId, title, opts) {
-            scope.require(brandId, 'write');
+            const f = scope.facts(brandId);
+            const clientUser = !can(f, 'write') && hasClientPermission(f, 'ai_chat');
+            if (!can(f, 'write') && !clientUser) throw new AccessDeniedError();
             const agent = db.find('agentInstances', agentInstanceId);
-            if (!agent || agent.brandId !== brandId) throw new ValidationError({ agentInstanceId: 'Choose an agent from this brand.' });
+            if (!agent || agent.brandId !== brandId || (clientUser && !agent.clientFacing)) throw new ValidationError({ agentInstanceId: 'Choose an agent from this brand.' });
+            // Client Users can only open client-shared conversations; staff choose the scope.
+            const visibility = clientUser ? 'client_shared' : opts?.visibility ?? 'agency_internal';
             const websiteId = scopedWebsite(brandId, opts?.websiteId);
             const c: Conversation = {
-                id: newId('cnv'), brandId, kind: 'direct', title: title?.trim() || `Chat with ${agent.displayName}`, agentInstanceIds: [agent.id], teamKey: null, websiteId,
+                id: newId('cnv'), brandId, kind: 'direct', title: title?.trim() || `Chat with ${agent.displayName}`, agentInstanceIds: [agent.id], teamKey: null, websiteId, visibility,
                 createdBy: scope.userId, archived: false, summary: null, createdAt: db.nowIso(), updatedAt: db.nowIso(),
             };
             db.insert('conversations', c);
             return structuredClone(c);
         },
 
-        async createGroup(brandId, { team, title, websiteId: requestedWebsite }) {
+        async createGroup(brandId, { team, title, websiteId: requestedWebsite, visibility = 'agency_internal' }) {
             scope.require(brandId, 'write');
             assertFeature(db, brandId, 'team_chat');
             if (!(team in TEAM_TITLES)) throw new ValidationError({ team: 'Unknown team.' });
@@ -136,7 +160,7 @@ export function localChat(scope: Scope): ChatApi {
             if (!members.length) throw new ValidationError({ team: 'This team has no agents in this brand.' });
             const websiteId = scopedWebsite(brandId, requestedWebsite);
             const c: Conversation = {
-                id: newId('cnv'), brandId, kind: 'group', title: title?.trim() || TEAM_TITLES[team], agentInstanceIds: members.map((a) => a.id), teamKey: team, websiteId,
+                id: newId('cnv'), brandId, kind: 'group', title: title?.trim() || TEAM_TITLES[team], agentInstanceIds: members.map((a) => a.id), teamKey: team, websiteId, visibility,
                 createdBy: scope.userId, archived: false, summary: null, createdAt: db.nowIso(), updatedAt: db.nowIso(),
             };
             db.insert('conversations', c);
@@ -149,9 +173,9 @@ export function localChat(scope: Scope): ChatApi {
         },
 
         async send(brandId, conversationId, input): Promise<SendResult> {
-            scope.require(brandId, 'write');
             const c = conv(brandId, conversationId);
             if (c.archived) throw new ValidationError({ body: 'This conversation is archived. Unarchive it to continue.' });
+            requirePost(brandId, c);
             const body = input.body.trim();
             assertValid({ body: (!body && !input.attachments?.length && 'Write a message.') || (body.length > MAX_BODY && `Messages are limited to ${MAX_BODY} characters.`) });
             const handles = new Map(db.all('agentInstances').filter((a) => a.brandId === brandId).map((a) => [a.handle, a.id]));
@@ -167,7 +191,7 @@ export function localChat(scope: Scope): ChatApi {
         },
 
         async retry(brandId, conversationId, failedMessageId) {
-            scope.require(brandId, 'write');
+            requirePost(brandId, conv(brandId, conversationId));
             const c = conv(brandId, conversationId);
             const failed = db.find('messages', failedMessageId);
             if (!failed || failed.conversationId !== c.id || failed.status !== 'failed' || !failed.replyToId) throw new NotFoundError('Failed message');
@@ -197,10 +221,21 @@ export function localChat(scope: Scope): ChatApi {
             return structuredClone(db.patch('conversations', id, { archived }));
         },
 
+        async setVisibility(brandId, id, visibility) {
+            const f = scope.require(brandId, 'write');
+            const c = conv(brandId, id);
+            if ((c.visibility ?? 'agency_internal') === 'user_private' && c.createdBy !== scope.userId) throw new AccessDeniedError();
+            if (!['agency_internal', 'client_shared', 'user_private'].includes(visibility)) throw new ValidationError({ visibility: 'Choose a visibility.' });
+            if (visibility === 'user_private' && c.createdBy !== scope.userId) throw new ValidationError({ visibility: 'Only the creator can make a conversation private.' });
+            void f;
+            return structuredClone(db.patch('conversations', id, { visibility, updatedAt: db.nowIso() }));
+        },
+
         async search(brandId, query) {
             const q = query.trim().toLowerCase();
             if (q.length < 2) return [];
-            const convs = new Map(scope.rows('conversations', brandId).map((c) => [c.id, c]));
+            const f = scope.facts(brandId);
+            const convs = new Map(scope.rows('conversations', brandId).filter((c) => canRead(f, c)).map((c) => [c.id, c]));
             return structuredClone(
                 db.all('messages').filter((m) => m.brandId === brandId && convs.has(m.conversationId) && (m.body.toLowerCase().includes(q) || m.attachments.some((a) => a.name.toLowerCase().includes(q)))),
             )

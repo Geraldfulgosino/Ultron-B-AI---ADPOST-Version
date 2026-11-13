@@ -45,7 +45,7 @@ export function localAi(scope: Scope): AiProvidersApi {
 
     const ctx = (brandId: ID) => {
         const f = scope.facts(brandId);
-        const access: AiAccess = { canManageConnections: isAgencyAdminRole(f.agencyMembership?.role), canAssign: can(f, 'admin'), canViewAllUsage: can(f, 'admin') };
+        const access: AiAccess = { canManageConnections: !!f.platformAdmin || isAgencyAdminRole(f.agencyMembership?.role), canAssign: can(f, 'admin'), canViewAllUsage: can(f, 'admin') };
         return { f, access, agencyId: f.brand.agencyId };
     };
     const requireView = (brandId: ID) => {

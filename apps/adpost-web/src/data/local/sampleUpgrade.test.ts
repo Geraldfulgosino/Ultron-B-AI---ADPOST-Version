@@ -8,7 +8,7 @@ const KEY = 'adpost.db.upgrade-test';
 describe('sample dataset upgrade on load', () => {
     afterEach(() => localStorage.removeItem(KEY));
 
-    it('adds the 20 demo websites to an older stored snapshot and keeps user data', () => {
+    it('adds the 30 demo websites to an older stored snapshot and keeps user data', () => {
         const old = buildSampleSeed().snapshot;
         old.websites = [];
         old.brands.push({ ...old.brands[0]!, id: 'brd_user', slug: 'user-client', name: 'User Client' });
@@ -16,12 +16,12 @@ describe('sample dataset upgrade on load', () => {
         localStorage.setItem(KEY, JSON.stringify({ v: DB_SCHEMA_VERSION, data: old }));
 
         const db = createLocalBackend({ persistKey: KEY }).db;
-        expect(db.all('websites').filter((w) => w.isDemo)).toHaveLength(20);
+        expect(db.all('websites').filter((w) => w.isDemo)).toHaveLength(30);
         expect(db.find('brands', 'brd_user')?.name).toBe('User Client');
         const pod = db.all('websites').filter((w) => w.brandId === 'brd_adpost_pod');
         expect(pod.map((w) => [w.name, w.isPrimary])).toEqual([['My POD site', true], ['POD — Production', false], ['POD — Staging', false]]);
 
         // Loading again adds nothing.
-        expect(createLocalBackend({ persistKey: KEY }).db.all('websites')).toHaveLength(21);
+        expect(createLocalBackend({ persistKey: KEY }).db.all('websites')).toHaveLength(31);
     });
 });

@@ -1,10 +1,11 @@
 import type { ID, Integration, SeoInsight } from '@/domain/types';
 import type { AnalyticsApi, InsightsApi, IntegrationsApi, Kpi, ReportsApi } from '../contracts';
 import { addDays, buildReport, dailySeries, delta, generateInsightCandidates, latestDate, previousWindow, totals } from '@/domain/analytics';
-import { assertValid, NotFoundError, ValidationError } from '../errors';
+import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import { byClientId, type Scope } from './scope';
 import { emitAutomationEvent } from './automation';
+import { effectiveRole, hasClientPermission } from '../access';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -271,7 +272,9 @@ export function localReports(scope: Scope): ReportsApi {
         },
 
         async recordExport(brandId, format) {
-            scope.facts(brandId); // any member who can preview can export (legacy client portal allows it)
+            const f = scope.facts(brandId);
+            // Client Users need the explicit download_reports permission (read-only by default).
+            if (effectiveRole(f) === 'client' && !hasClientPermission(f, 'download_reports')) throw new AccessDeniedError('Report downloads are not enabled for your account.');
             scope.audit(brandId, `report.exported_${format}`, 'brand', brandId);
             emitAutomationEvent(db, brandId, 'report.generated');
         },

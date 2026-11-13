@@ -12,7 +12,9 @@ import { INSIGHT_STATUS, SEVERITY } from './labels';
 import { useReportFilters } from './useReportFilters';
 
 export function ReportsPage() {
-    const { brand } = useBrand();
+    const { brand, role, clientPermissions } = useBrand();
+    // Client Users download reports only with the explicit permission (enforced again by the data layer).
+    const canDownload = role !== 'client' || clientPermissions.includes('download_reports');
     const { filters, setFilters, dataEnd, websites } = useReportFilters(true);
     const f: ReportFilters | null = filters ? { from: filters.from, to: filters.to, websiteId: filters.websiteId, source: filters.source ?? 'all' } : null;
     const q = useQuery((api) => (f ? api.reports.preview(brand.id, f) : Promise.resolve(null)), [brand.id, f?.from, f?.to, f?.websiteId, f?.source]);
@@ -33,7 +35,7 @@ export function ReportsPage() {
         <Page
             title="Reports"
             description="Client-ready performance report preview and exports"
-            actions={r && (
+            actions={r && canDownload && (
                 <>
                     <Button variant="secondary" onClick={() => void exportAs('csv')}><Download className="h-4 w-4" aria-hidden="true" /> Export CSV</Button>
                     <Button onClick={() => void exportAs('pdf')}><FileText className="h-4 w-4" aria-hidden="true" /> Export PDF</Button>

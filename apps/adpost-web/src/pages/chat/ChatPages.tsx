@@ -4,11 +4,18 @@ import { Archive, ArchiveRestore, FileText, MessageSquarePlus, Search } from 'lu
 import { Page } from '@/layouts/AppShell';
 import { Alert, Badge, Button, EmptyState, ErrorState, Input, Label, LoadingState, Select } from '@/components/ui';
 import { ChatView, type ProposalHandlers } from '@/components/chat/ChatView';
-import { useAction, useBrand, useQuery } from '@/app/backend';
+import { useBackend, useAction, useBrand, useQuery } from '@/app/backend';
 import type { ConversationKind, TeamKey } from '@/domain/types';
 import { cn, formatDateTime } from '@/lib/utils';
 import { clientBase } from '@/app/paths';
 import { useWebsiteScope } from '@/components/workspace/WorkspaceSelector';
+import type { ConversationVisibility } from '@/domain/types';
+
+export const VISIBILITY_LABEL: Record<ConversationVisibility, string> = {
+    agency_internal: 'Agency internal',
+    client_shared: 'Shared with client',
+    user_private: 'Private (only me)',
+};
 
 const TEAMS: Array<{ key: TeamKey; label: string; description: string }> = [
     { key: 'seo', label: 'SEO Team', description: 'SEO Manager with the Technical, Content and Statistics specialists' },
@@ -82,11 +89,21 @@ function ThreadHeader({ conversationId }: { conversationId: string }) {
     const rename = useAction((api) => api.chat.rename(brand.id, conversationId, title));
     const archive = useAction((api, archived: boolean) => api.chat.archive(brand.id, conversationId, archived));
     const summarize = useAction((api) => api.chat.summarize(brand.id, conversationId));
+    const setVis = useAction((api, v: ConversationVisibility) => api.chat.setVisibility(brand.id, conversationId, v));
+    const { session } = useBackend();
     const sites = useQuery((api) => api.websites.list(brand.id, { includeArchived: true }), [brand.id]);
     if (!c.data) return null;
     const scoped = c.data.websiteId ? sites.data?.find((w) => w.id === c.data!.websiteId) : null;
     return (
         <div className="space-y-2">
+            <p className="flex flex-wrap items-center gap-2 text-xs text-fg-muted" aria-label="Conversation visibility">
+                <Badge variant={(c.data.visibility ?? 'agency_internal') === 'client_shared' ? 'yellow' : 'gray'}>{VISIBILITY_LABEL[c.data.visibility ?? 'agency_internal']}</Badge>
+                {can.write && ((c.data.visibility ?? 'agency_internal') !== 'user_private' || c.data.createdBy === session?.user.id) && (
+                    <Select aria-label="Change who can read this conversation" className="h-7 w-auto py-0 text-xs" value={c.data.visibility ?? 'agency_internal'} onChange={(e) => void setVis.run(e.target.value as ConversationVisibility)}>
+                        {(Object.keys(VISIBILITY_LABEL) as ConversationVisibility[]).filter((v) => v !== 'user_private' || c.data!.createdBy === session?.user.id).map((v) => <option key={v} value={v}>{VISIBILITY_LABEL[v]}</option>)}
+                    </Select>
+                )}
+            </p>
             <p className="text-xs text-fg-muted" aria-label="Conversation scope">
                 Scope: {brand.name}{c.data.websiteId ? ` · website ${scoped?.name ?? ''}${scoped?.domain ? ` (${scoped.domain})` : ''}${scoped?.isDemo ? ' · Demo record: any analysis is simulated' : ''}` : ' · all websites'}. Agents use only this client’s data.
             </p>
@@ -149,7 +166,9 @@ export function AgentChatPage() {
     const conv = useQuery((api) => (conversationId ? api.chat.get(brand.id, conversationId) : Promise.resolve(null)), [brand.id, conversationId]);
     const [agentId, setAgentId] = useState('');
     const { websiteId } = useWebsiteScope();
-    const create = useAction((api) => api.chat.createDirect(brand.id, agentId || agents.data![0]!.id, undefined, { websiteId }));
+    const [visibility, setVisibility] = useState<ConversationVisibility>('agency_internal');
+    const { can: perms } = useBrand();
+    const create = useAction((api) => api.chat.createDirect(brand.id, agentId || agents.data![0]!.id, undefined, { websiteId, ...(perms.write ? { visibility } : {}) }));
     const apply = useProposalApply();
     const base = `${clientBase(brand)}/chat`;
 
@@ -166,6 +185,14 @@ export function AgentChatPage() {
                                 </option>
                             ))}
                         </Select>
+                        {perms.write ? (
+                            <>
+                                <Label htmlFor="new-chat-visibility">Who can read it</Label>
+                                <Select id="new-chat-visibility" value={visibility} onChange={(e) => setVisibility(e.target.value as ConversationVisibility)}>
+                                    {(Object.keys(VISIBILITY_LABEL) as ConversationVisibility[]).map((v) => <option key={v} value={v}>{VISIBILITY_LABEL[v]}</option>)}
+                                </Select>
+                            </>
+                        ) : <p className="text-xs text-fg-muted">Conversations you start are shared with your agency team.</p>}
                         <Button
                             className="w-full"
                             size="sm"

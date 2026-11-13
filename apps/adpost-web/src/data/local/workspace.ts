@@ -16,6 +16,8 @@ export function toBrandAccess(f: AccessFacts): BrandAccess {
         can: { read: can(f, 'read'), write: can(f, 'write'), admin: can(f, 'admin'), staff: can(f, 'staff') },
         clientId: restriction === null || restriction === 'none' ? null : restriction,
         assignableRoles: assignableRoles(f),
+        clientPermissions: role === 'client' ? [...(f.membership?.permissions ?? [])] : [],
+        isSuperAdmin: !!f.platformAdmin,
     };
 }
 

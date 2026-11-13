@@ -9,6 +9,7 @@ import { ALL_TOOLS, estimateCost, modelOption } from '@/domain/agents';
 import { retrieve } from '@/domain/knowledge';
 import { ProviderError, SimulatedProvider, type BrandContext, type ChatTurn, type CompletionResponse, type LlmProvider } from '@/ai/provider';
 import { AccessDeniedError } from '../errors';
+import { can, hasClientPermission } from '../access';
 import { newId } from '@/lib/utils';
 import type { LocalDatabase } from './db';
 import type { Scope } from './scope';
@@ -92,9 +93,14 @@ export function brandContext(scope: Scope, brandId: ID, query: string, tools: re
 
 export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provider: LlmProvider = new SimulatedProvider()): Promise<RunResult> {
     const { db } = scope;
-    scope.require(brandId, 'write');
+    const f = scope.facts(brandId);
+    // Client Users (ai_chat) may run client-facing agents in client-shared conversations only (mirrors agent-execute).
+    const conversation = input.conversationId ? db.find('conversations', input.conversationId) : undefined;
+    const clientRun = !can(f, 'write') && hasClientPermission(f, 'ai_chat') && conversation?.brandId === brandId && conversation.visibility === 'client_shared';
+    if (!can(f, 'write') && !clientRun) throw new AccessDeniedError();
     const agent = db.find('agentInstances', input.agentInstanceId) as AgentInstance | undefined;
     if (!agent || agent.brandId !== brandId) throw new AccessDeniedError('Agent not found in this brand.');
+    if (clientRun && !agent.clientFacing) throw new AccessDeniedError('This agent is not available to client users.');
     const version = db.find('instructionVersions', agent.activeInstructionVersionId);
     const brand = db.find('brands', brandId)!;
     // Settings → AI Providers: the agent's assignment (or brand/organization default) decides the model.
@@ -152,7 +158,8 @@ export async function runAgent(scope: Scope, brandId: ID, input: RunInput, provi
             agent: { templateKey: agent.templateKey, displayName: agent.displayName, handle: agent.handle },
             brandName: brand.name,
             instructions: version?.instructions ?? '',
-            context: brandContext(scope, brandId, last, agent.tools, (input.conversationId && db.find('conversations', input.conversationId)?.websiteId) || null),
+            // Staff-only knowledge is never placed in a Client User's agent context.
+            context: brandContext(scope, brandId, last, clientRun ? agent.tools.filter((t) => t !== 'read_knowledge') : agent.tools, (input.conversationId && db.find('conversations', input.conversationId)?.websiteId) || null),
             messages: input.messages,
             maxOutputTokens: agent.limits.maxOutputTokens,
             allowedTools: agent.tools,

@@ -43,7 +43,8 @@ describe('access rules (mirror of RLS helpers)', () => {
     it('client role is not staff and is restricted to its client', () => {
         expect(can(facts('client', { clientId: 'c1' }), 'staff')).toBe(false);
         expect(clientRestriction(facts('client', { clientId: 'c1' }))).toBe('c1');
-        expect(clientRestriction(facts('client'))).toBe('none');
+        // A Client User without a legacy inner client covers the whole client (migration 0009).
+        expect(clientRestriction(facts('client'))).toBe('all');
         expect(clientRestriction(facts('member'))).toBeNull();
     });
 

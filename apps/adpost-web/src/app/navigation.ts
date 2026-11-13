@@ -31,6 +31,8 @@ export interface NavItem {
     icon: LucideIcon;
     /** `staff` = any non-client role. Clients only see items without this flag. */
     requires?: NavCapability;
+    /** Also shown to Client Users: `true`, or only with this permission. */
+    client?: true | 'ai_chat';
 }
 
 export interface NavGroup {
@@ -64,7 +66,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'AI Workforce',
         items: [
             { label: 'Agents', path: 'agents', icon: Bot, requires: 'staff' },
-            { label: 'Agent Chat', path: 'chat', icon: MessageSquare, requires: 'staff' },
+            { label: 'Agent Chat', path: 'chat', icon: MessageSquare, requires: 'staff', client: 'ai_chat' },
             { label: 'Team Chat', path: 'team', icon: UsersRound, requires: 'staff' },
             { label: 'Executions', path: 'executions', icon: Activity, requires: 'staff' },
             { label: 'AI Providers', path: 'settings/ai-providers', icon: PlugZap, requires: 'admin' },
@@ -74,7 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
     {
         label: 'Work',
         items: [
-            { label: 'Projects & Tasks', path: 'projects', icon: KanbanSquare, requires: 'staff' },
+            { label: 'Projects & Tasks', path: 'projects', icon: KanbanSquare, requires: 'staff', client: true },
             { label: 'Approvals', path: 'approvals', icon: ShieldCheck, requires: 'staff' },
             { label: 'Web Studio', path: 'studio', icon: Palette, requires: 'staff' },
         ],

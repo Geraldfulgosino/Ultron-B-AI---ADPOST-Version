@@ -4,7 +4,8 @@ import { Navigate } from 'react-router';
 import type { Capability } from '@/data/access';
 import { NotFoundPage, RouteErrorPage } from '@/pages/StatusPages';
 import { ForgotPasswordPage, LoginPage, RegisterPage } from '@/pages/auth/AuthPages';
-import { BrandLayout, LegacyBrandRedirect, RequireAuth, RequireCapability } from '@/layouts/BrandLayout';
+import { BrandLayout, LegacyBrandRedirect, RequireAuth, RequireCapability, RequireStaffOrClient } from '@/layouts/BrandLayout';
+import { useBrand } from '@/app/backend';
 import { AgencyLayout } from '@/layouts/AgencyLayout';
 import { BrandPickerPage } from '@/pages/BrandPickerPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
@@ -19,6 +20,24 @@ const AgenciesPage = page(agencyPages, 'AgenciesPage');
 const AgencyOverviewPage = page(agencyPages, 'AgencyOverviewPage');
 const AgencyClientsPage = page(agencyPages, 'AgencyClientsPage');
 const AgencySettingsPage = page(agencyPages, 'AgencySettingsPage');
+const AgencyUsersPage = page(agencyPages, 'AgencyUsersPage');
+const platformPages = () => import('@/pages/platform/PlatformPages');
+const PlatformLayout = page(platformPages, 'PlatformLayout');
+const PlatformOverviewPage = page(platformPages, 'PlatformOverviewPage');
+const PlatformAgenciesPage = page(platformPages, 'PlatformAgenciesPage');
+const PlatformUsersPage = page(platformPages, 'PlatformUsersPage');
+const PlatformAuditPage = page(platformPages, 'PlatformAuditPage');
+const accountPages = () => import('@/pages/account/AccountPages');
+const HomeRedirect = page(accountPages, 'HomeRedirect');
+const MyProfilePage = page(accountPages, 'MyProfilePage');
+const AcceptAgencyInvitationPage = page(accountPages, 'AcceptAgencyInvitationPage');
+const ClientProjectsPage = page(() => import('@/pages/work/ClientProjectsPage'), 'ClientProjectsPage');
+
+/** Client Users get the shared-projects view; staff get the full board. */
+function ProjectsRoute() {
+    const { role } = useBrand();
+    return role === 'client' ? <ClientProjectsPage /> : <ProjectsPage />;
+}
 const BrandSettingsPage = page(() => import('@/pages/brand/BrandSettingsPage'), 'BrandSettingsPage');
 const aiSettings = () => import('@/pages/settings/AiSettingsPages');
 const AiProvidersPage = page(aiSettings, 'AiProvidersPage');
@@ -52,7 +71,7 @@ const KnowledgePage = page(() => import('@/pages/knowledge/KnowledgePage'), 'Kno
 const guard = (cap: Capability, el: React.ReactNode) => <RequireCapability cap={cap}>{el}</RequireCapability>;
 
 export const routes: RouteObject[] = [
-    { path: '/', element: <Navigate to="/agencies" replace /> },
+    { path: '/', element: <Navigate to="/home" replace /> },
     { path: '/login', element: <LoginPage /> },
     { path: '/register', element: <RegisterPage /> },
     { path: '/forgot-password', element: <ForgotPasswordPage /> },
@@ -61,6 +80,19 @@ export const routes: RouteObject[] = [
         errorElement: <RouteErrorPage />,
         children: [
             { path: '/brands', element: <BrandPickerPage /> },
+            { path: '/home', element: <HomeRedirect /> },
+            { path: '/me', element: <MyProfilePage /> },
+            { path: '/agency-invitations/:token', element: <AcceptAgencyInvitationPage /> },
+            {
+                path: '/platform',
+                element: <PlatformLayout />,
+                children: [
+                    { index: true, element: <PlatformOverviewPage /> },
+                    { path: 'agencies', element: <PlatformAgenciesPage /> },
+                    { path: 'users', element: <PlatformUsersPage /> },
+                    { path: 'audit', element: <PlatformAuditPage /> },
+                ],
+            },
             { path: '/agencies', element: <AgenciesPage /> },
             {
                 path: '/a/:agencySlug',
@@ -69,6 +101,7 @@ export const routes: RouteObject[] = [
                     { index: true, element: <AgencyOverviewPage /> },
                     { path: 'clients', element: <AgencyClientsPage /> },
                     { path: 'settings', element: <AgencySettingsPage /> },
+                    { path: 'users', element: <AgencyUsersPage /> },
                 ],
             },
             { path: '/b/:brandSlug/*', element: <LegacyBrandRedirect /> },
@@ -91,12 +124,12 @@ export const routes: RouteObject[] = [
                     { path: 'reports', element: <ReportsPage /> },
                     { path: 'agents', element: guard('staff', <AgentsPage />) },
                     { path: 'agents/:agentId', element: guard('staff', <AgentDetailPage />) },
-                    { path: 'chat', element: guard('staff', <AgentChatPage />) },
-                    { path: 'chat/:conversationId', element: guard('staff', <AgentChatPage />) },
+                    { path: 'chat', element: <RequireStaffOrClient client="ai_chat"><AgentChatPage /></RequireStaffOrClient> },
+                    { path: 'chat/:conversationId', element: <RequireStaffOrClient client="ai_chat"><AgentChatPage /></RequireStaffOrClient> },
                     { path: 'team', element: guard('staff', <TeamChatPage />) },
                     { path: 'team/:conversationId', element: guard('staff', <TeamChatPage />) },
                     { path: 'executions', element: guard('staff', <ExecutionsPage />) },
-                    { path: 'projects', element: guard('staff', <ProjectsPage />) },
+                    { path: 'projects', element: <RequireStaffOrClient client><ProjectsRoute /></RequireStaffOrClient> },
                     { path: 'approvals', element: guard('staff', <ApprovalsPage />) },
                     { path: 'studio', element: guard('staff', <StudioPage />) },
                     { path: 'studio/:changeId', element: guard('staff', <StudioDetailPage />) },

@@ -212,6 +212,7 @@ function ConfigCard({ agent, readOnly, assigned }: { agent: AgentInstance; readO
         a.agents.update(brand.id, agent.id, {
             displayName: form.displayName,
             active: form.active,
+            clientFacing: form.clientFacing,
             model: MODEL_CATALOG[Number(form.modelIndex)]!,
             tools: form.tools,
             limits: { maxOutputTokens: Number(form.maxOutputTokens), maxRunsPerDay: Number(form.maxRunsPerDay), monthlyBudgetUsd: Number(form.monthlyBudgetUsd) },
@@ -282,6 +283,10 @@ function ConfigCard({ agent, readOnly, assigned }: { agent: AgentInstance; readO
                         <input type="checkbox" className="h-4 w-4 rounded border-line-strong" disabled={readOnly} checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
                         Active (inactive agents ignore messages and @mentions)
                     </label>
+                    <label className="flex items-center gap-2 text-sm text-fg-secondary">
+                        <input type="checkbox" className="h-4 w-4 rounded border-line-strong" disabled={readOnly} checked={form.clientFacing} onChange={(e) => setForm({ ...form, clientFacing: e.target.checked })} />
+                        Client-facing (client users with AI chat permission may use this agent; instructions stay private)
+                    </label>
                     {!readOnly && <Button type="submit" loading={save.pending}>Save configuration</Button>}
                 </form>
             </CardContent>
@@ -293,6 +298,7 @@ function toForm(a: AgentInstance) {
     return {
         displayName: a.displayName,
         active: a.active,
+        clientFacing: !!a.clientFacing,
         modelIndex: String(Math.max(0, MODEL_CATALOG.findIndex((m) => m.provider === a.model.provider && m.model === a.model.model))),
         tools: [...a.tools] as ToolKey[],
         maxOutputTokens: String(a.limits.maxOutputTokens),

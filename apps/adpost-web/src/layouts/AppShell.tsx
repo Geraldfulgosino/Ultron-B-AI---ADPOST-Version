@@ -124,6 +124,7 @@ export function AppShell({ brand, roleLabel, brands, navGroups, user, onSignOut,
                     <div className="min-w-0">
                         <p className="text-sm font-medium text-white truncate">{user.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                        <Link to="/me" className="text-xs text-slate-300 underline hover:text-white">My profile</Link>
                     </div>
                     <button type="button" onClick={onSignOut} className="ml-2 text-slate-400 hover:text-white transition-colors" aria-label="Sign out">
                         <LogOut className="h-4 w-4" />

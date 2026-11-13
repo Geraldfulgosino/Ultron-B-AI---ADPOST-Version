@@ -35,6 +35,7 @@ export function AgencyLayout() {
         { to: base, label: 'Overview', end: true },
         { to: `${base}/clients`, label: 'Clients', end: false },
         { to: `${base}/settings`, label: 'Settings', end: false },
+        ...(a.access.canEdit ? [{ to: `${base}/users`, label: 'Users', end: false }] : []),
     ];
     const switchable = (agencies.data ?? []).filter((x) => x.counts || x.access.canChangeStatus);
 
@@ -61,6 +62,7 @@ export function AgencyLayout() {
                                     </select>
                                 </label>
                             )}
+                            <Link to="/me" className="text-sm text-fg-soft hover:text-fg">My profile</Link>
                             <ThemeToggle />
                             <button type="button" className="flex items-center gap-1 text-sm text-fg-soft hover:text-fg" onClick={async () => { await signOut(); navigate('/login', { replace: true }); }}>
                                 <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out

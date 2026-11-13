@@ -134,8 +134,11 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
     const { brand, can } = useBrand();
     const messages = useQuery((api) => api.chat.messages(brand.id, conversation.id), [brand.id, conversation.id]);
     const members = useQuery((api) => (can.staff ? api.members.list(brand.id) : Promise.resolve([])), [brand.id]);
-    const runs = useQuery((api) => api.agents.executions(brand.id, { conversationId: conversation.id }), [brand.id, conversation.id, messages.data?.length]);
-    const routing = useQuery((api) => api.ai.assignments(brand.id), [brand.id]);
+    const runs = useQuery((api) => (can.staff ? api.agents.executions(brand.id, { conversationId: conversation.id }) : Promise.resolve([])), [brand.id, conversation.id, messages.data?.length]);
+    const routing = useQuery((api) => (can.staff ? api.ai.assignments(brand.id) : Promise.resolve([])), [brand.id]);
+    const { role, clientPermissions } = useBrand();
+    // Mirrors app.can_post_in_conversation: staff with write access, or Client Users with ai_chat in client-shared threads.
+    const canPost = can.write || (role === 'client' && clientPermissions.includes('ai_chat') && conversation.visibility === 'client_shared');
     const runById = new Map((runs.data ?? []).map((r) => [r.id, r]));
     const [body, setBody] = useState('');
     const [files, setFiles] = useState<AttachmentInput[]>([]);
@@ -199,7 +202,7 @@ export function ChatView({ conversation, agents, header, applyProposal }: {
             {send.error || retry.error || dismiss.error || saveAttachment.error ? (
                 <div className="px-4 pb-2">{Object.keys(errors).length ? <p className="text-xs text-danger">{Object.values(errors)[0]}</p> : <ErrorState error={send.error ?? retry.error ?? dismiss.error ?? saveAttachment.error} />}</div>
             ) : null}
-            {can.write && !conversation.archived ? (
+            {canPost && !conversation.archived ? (
                 <form
                     className="border-t border-line bg-surface p-3 rounded-b-xl space-y-2"
                     onSubmit={(e) => {

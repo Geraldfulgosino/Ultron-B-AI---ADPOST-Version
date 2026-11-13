@@ -24,7 +24,11 @@ export class Scope {
         const membership = this.db.all('brandMemberships').find((m) => m.brandId === brandId && m.userId === this.userId) ?? null;
         const agencyMembership =
             this.db.all('agencyMemberships').find((m) => m.agencyId === brand.agencyId && m.userId === this.userId) ?? null;
-        const facts = { brand, membership, agencyMembership };
+        // Suspended accounts lose all access on the next request (mirrors app.is_active_user).
+        if (this.db.find('users', this.userId)?.deactivatedAt) throw new AccessDeniedError();
+        const platformAdmin = this.db.all('platformAdmins').some((p) => p.userId === this.userId);
+        const agencySuspended = this.db.find('agencies', brand.agencyId)?.status === 'suspended';
+        const facts = { brand, membership, agencyMembership, platformAdmin, agencySuspended };
         if (!can(facts, 'read')) throw new AccessDeniedError();
         return facts;
     }
@@ -45,8 +49,9 @@ export class Scope {
         const restriction = clientRestriction(f);
         let rows = (this.db.all(table) as Array<Tables[K] & BrandRow>).filter((r) => r.brandId === brandId);
         if (restriction !== null) {
-            if (!opts.clientKey || restriction === 'none') return [];
-            rows = rows.filter((r) => opts.clientKey!(r) === restriction);
+            // Client Users only ever read client-readable tables (those passing a clientKey).
+            if (!opts.clientKey) return [];
+            if (restriction !== 'all') rows = rows.filter((r) => opts.clientKey!(r) === restriction);
         }
         return structuredClone(rows);
     }

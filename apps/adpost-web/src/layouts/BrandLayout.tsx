@@ -21,7 +21,17 @@ export function RequireAuth() {
 
 /** Nav items the user's capabilities allow. UX only: the data layer enforces access. */
 export function visibleNav(access: BrandAccess): NavGroup[] {
-    return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !i.requires || access.can[i.requires]) })).filter((g) => g.items.length > 0);
+    const clientUser = access.role === 'client';
+    const show = (i: NavGroup['items'][number]) =>
+        !i.requires || access.can[i.requires] || (clientUser && (i.client === true || (i.client === 'ai_chat' && access.clientPermissions.includes('ai_chat'))));
+    return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter(show) })).filter((g) => g.items.length > 0);
+}
+
+/** Staff, or a Client User with the given permission (or any Client User for `true`). UX gate only. */
+export function RequireStaffOrClient({ client, children }: { client: true | 'ai_chat'; children: React.ReactNode }) {
+    const access = useBrand();
+    const ok = access.can.staff || (access.role === 'client' && (client === true || access.clientPermissions.includes(client)));
+    return ok ? <>{children}</> : <ForbiddenPage />;
 }
 
 /** Page-level gate for direct URL access. The data layer still enforces the real rule. */
