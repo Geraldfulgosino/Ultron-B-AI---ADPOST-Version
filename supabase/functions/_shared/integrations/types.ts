@@ -80,15 +80,15 @@ export interface IntegrationDescriptor {
     authMethods: Array<'none' | 'application_password' | 'oauth2'>;
     readOnly: true;
     syncKinds: string[];
-    /** True only when the connector has an executable implementation with passing tests. */
+    /** True only when the connector has an executable implementation with passing tests (NOT the same as live-verified). */
     implemented: boolean;
 }
 
 export const INTEGRATION_REGISTRY: Record<IntegrationProvider, IntegrationDescriptor> = {
     wordpress: { provider: 'wordpress', label: 'WordPress', authMethods: ['none', 'application_password'], readOnly: true, syncKinds: ['discovery', 'pages', 'posts', 'categories', 'tags', 'media'], implemented: true },
-    google_analytics: { provider: 'google_analytics', label: 'Google Analytics 4', authMethods: ['oauth2'], readOnly: true, syncKinds: ['daily_summary', 'dimensions'], implemented: false },
-    google_search_console: { provider: 'google_search_console', label: 'Google Search Console', authMethods: ['oauth2'], readOnly: true, syncKinds: ['queries', 'pages'], implemented: false },
-    site_crawler: { provider: 'site_crawler', label: 'Technical SEO crawler', authMethods: ['none'], readOnly: true, syncKinds: ['crawl'], implemented: false },
+    google_analytics: { provider: 'google_analytics', label: 'Google Analytics 4', authMethods: ['oauth2'], readOnly: true, syncKinds: ['daily_summary', 'dimensions'], implemented: true },
+    google_search_console: { provider: 'google_search_console', label: 'Google Search Console', authMethods: ['oauth2'], readOnly: true, syncKinds: ['queries', 'pages'], implemented: true },
+    site_crawler: { provider: 'site_crawler', label: 'Technical SEO crawler', authMethods: ['none'], readOnly: true, syncKinds: ['crawl'], implemented: true },
 };
 
 /** Demo websites (reserved .example domains) are never contacted by any connector. */
