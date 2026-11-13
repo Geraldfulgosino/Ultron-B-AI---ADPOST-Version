@@ -135,6 +135,9 @@ export interface SafeFetchOptions {
     timeoutMs?: number;
     maxBytes?: number;
     userAgent?: string;
+    /** Extra request headers. `authorization` is sent to the ORIGINAL origin only and dropped on any cross-origin redirect. */
+    headers?: Record<string, string>;
+    accept?: string;
 }
 
 export interface SafeFetchResult {
@@ -156,6 +159,7 @@ export async function safeFetch(input: string, o: SafeFetchOptions): Promise<Saf
     const maxBytes = o.maxBytes ?? 2_000_000;
     const chain: SafeFetchResult['chain'] = [];
     let url = validatePublicUrl(input);
+    const origin = url.origin;
     for (let hop = 0; ; hop++) {
         const host = url.hostname.replace(/^\[|\]$/g, '');
         if (!isIPv4(host) && !host.includes(':')) assertResolvedPublic(host, await o.resolve(host));
@@ -166,7 +170,7 @@ export async function safeFetch(input: string, o: SafeFetchOptions): Promise<Saf
             res = await o.fetch(url.toString(), {
                 redirect: 'manual',
                 signal: ctrl.signal,
-                headers: { 'user-agent': o.userAgent ?? 'ULTRON-B-SEO-Auditor/0.1 (+respectful; low rate)', accept: 'text/html,application/xml,text/plain;q=0.9,*/*;q=0.1' },
+                headers: requestHeaders(o, url.origin === origin),
             });
         } catch (e) {
             throw new UrlSafetyError('network', (e as Error).name === 'AbortError' ? 'The site did not respond in time.' : 'The site could not be reached.');
@@ -185,6 +189,17 @@ export async function safeFetch(input: string, o: SafeFetchOptions): Promise<Saf
         res.headers.forEach((v, k) => (headers[k] = v));
         return { finalUrl: url.toString(), status: res.status, headers, body: text, truncated, chain };
     }
+}
+
+function requestHeaders(o: SafeFetchOptions, sameOrigin: boolean): Record<string, string> {
+    const h: Record<string, string> = {};
+    for (const [k, v] of Object.entries(o.headers ?? {})) {
+        if (k.toLowerCase() === 'authorization' && !sameOrigin) continue;
+        h[k.toLowerCase()] = v;
+    }
+    h['user-agent'] = o.userAgent ?? 'ULTRON-B-SEO-Auditor/0.1 (+respectful; low rate)';
+    h.accept = o.accept ?? 'text/html,application/xml,text/plain;q=0.9,*/*;q=0.1';
+    return h;
 }
 
 async function readCapped(res: Response, maxBytes: number): Promise<{ text: string; truncated: boolean }> {

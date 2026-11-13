@@ -74,3 +74,17 @@ Reply with one of:
 - **"Approve 0006–0009 on staging"**: steps 1–5 above.
 - **"Approve 0006–0008 only"**: the 0009 role model is deferred. `db push` has no target-version option, so 0009 would be moved out of the folder for that push only, and a dry run would confirm exactly 0006–0008.
 - **Hold.**
+
+## 7. Precheck results (2026-11-13, read-only)
+- Git: branch clean, local = remote = `23af499`. Linked project ref: `ppwkxlwxzutigepaizob`.
+- `migration list --linked`: remote 0001–0005; local-only 0006–0009. `db push --dry-run`: exactly 0006–0009, no seeds, no roles.
+- Exact row counts (single read-only SELECT through `db query --linked`):
+  - `agent_templates` = 6 (from 0003; not modified by 0006–0009).
+  - **Every other table checked = 0:** auth.users, profiles, agencies, agency_memberships, brands, brand_memberships, clients, websites, invitations, conversations, messages, agent_instances, projects, tasks, audit_logs, integrations, storage.objects.
+- Constraint compatibility:
+  - 0 bad slugs and 0 bad names.
+  - No websites, so the new URL, domain and primary rules have nothing to violate.
+- 31 public tables, all with RLS. None of the 0007–0009 tables exist yet.
+- Extensions: pgcrypto (`extensions`) and supabase_vault are present. 0009 uses only `extensions.digest` / `extensions.gen_random_bytes`.
+- Backup: there is no user data to preserve. `db dump` needs Docker, which is not installed on this machine. Recovery is by forward-fix migration; the 6 templates are re-creatable from 0003. No remote reset.
+- Local: 100/100 DB tests pass (migrations 0001–0009 on PGlite).
