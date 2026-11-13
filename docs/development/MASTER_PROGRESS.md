@@ -120,3 +120,13 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
 | M3 AI scope | Website-scoped conversations, context and server tool hosts | `f0254cd` |
 | Next | Agency-level AI team; agency membership UI; Supabase adapters; staging (approval) | — |
 See MULTI_AGENCY_ARCHITECTURE.md.
+
+## Master prompt v6.0: Super Admin / Admin / Client User (2026-11-13)
+| Milestone | Status | Commit |
+|---|---|---|
+| Role model, RLS, invitations, audit, bootstrap (migration 0009) | Validated on PGlite (100 DB tests). **Not applied to staging** | `1f6dec7` |
+| Hierarchy reconciliation (owner answers) | Done in the SQL dev seed and local sample (one-time, rename/archive only) | `1f6dec7` |
+| Super Admin platform, agency users, Client User portal, My profile | Local adapter + UI, tested; browser QA 13/13 | `f582e17` |
+| Server: Client User agent runs; `user-invite` function | Implemented and tested with fakes; **not deployed** | `e9574dc` |
+| Docs | ROLE_ARCHITECTURE, PERMISSION_MATRIX, SUPER_ADMIN_DESIGN, AGENCY_ADMIN_DESIGN, CLIENT_PORTAL_ACCESS, USER_INVITATION_FLOW, RLS_ROLE_TEST_MATRIX, STAGING_MIGRATION_PLAN_0006_0009 | docs commit |
+| Milestones O–Q (staging) | **Plan ready, awaiting explicit approval** | — |

@@ -72,3 +72,21 @@
   - Covered: the POD, TRADE BAGS, HAMPTONS, LIPSKY and GoldStar ATM website screens, selector options, environment and primary labels, client-change reset, and a demo-scoped chat labelled simulated.
   - The earlier login, agency, client, website and chat flows still pass, and isolation denials work.
   - 0 console errors, 0 failed requests, 0 requests to `.example`/`.test` hosts.
+
+## 2026-11-13: master prompt v6.0 (roles)
+- `npm test`: **524 passed + 1 opt-in skipped** (48 files). `tsc`: 0 errors. Build ok.
+- **DB (PGlite, migrations 0001–0009 + dev seed): 100 tests.** `roles.db.test.ts` (22) covers every prohibited scenario in RLS_ROLE_TEST_MATRIX.md.
+- **Server logic (fakes):**
+  - `handlers.test.ts`: 20, including 5 Client User run rules.
+  - `invites.test.ts`: 10 (delivery is marked `sent` only on Auth acceptance; refusals cover RLS-hidden, wrong token, expired, accepted, origin and malformed input).
+- **Local adapter and UI:** `agencies.test.ts` (16), `agencies.test.tsx` (16), plus the access, routing and sample-upgrade updates.
+- **Real browser (headless Edge over CDP, http://localhost:5173, mock adapter): 13/13 checks.**
+  - Super Admin: overview, agencies, users and audit.
+  - The reconciled ADPOST and GoldStarATM clients.
+  - ADPOST Admin: denied `/platform` and VCA; can use agency users.
+  - LIPSKY Client User: limited nav, denied platform and agency users.
+  - POD read-only client: no Agent Chat.
+  - My profile.
+  - 0 console errors.
+- **Fixed from QA:** the platform overview counted websites of archived clients (30 vs. 24 on the agency rows). Fixed in the local adapter and in `platform_overview()` (0009).
+- **Level:** local only. Nothing ran against staging. No email was sent. These are not live security verification.

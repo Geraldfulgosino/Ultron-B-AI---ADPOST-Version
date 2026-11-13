@@ -267,6 +267,8 @@ export function localAgencies(scope: Scope): AgenciesApi {
         async platformOverview() {
             if (!platform()) throw new AccessDeniedError('Platform administrators only.');
             const month = db.nowIso().slice(0, 7);
+            // Websites of archived clients are not counted (same rule as the agency pages).
+            const liveSites = db.all('websites').filter((w) => w.status !== 'archived' && db.find('brands', w.brandId)?.status !== 'archived');
             return {
                 agencies: db.all('agencies').filter((a) => a.status !== 'archived').length,
                 suspendedAgencies: db.all('agencies').filter((a) => a.status === 'suspended').length,
@@ -275,8 +277,8 @@ export function localAgencies(scope: Scope): AgenciesApi {
                     + db.all('agencyInvitations').filter((i) => (i.status === 'pending' || i.status === 'sent') && i.expiresAt >= db.nowIso()).length,
                 enabledAgents: db.all('agentInstances').filter((a) => a.active && db.find('brands', a.brandId)?.status === 'active').length,
                 clients: db.all('brands').filter((b) => b.status !== 'archived').length,
-                websites: db.all('websites').filter((w) => w.status !== 'archived').length,
-                demoWebsites: db.all('websites').filter((w) => w.status !== 'archived' && w.isDemo).length,
+                websites: liveSites.length,
+                demoWebsites: liveSites.filter((w) => w.isDemo).length,
                 activeUsers: db.all('users').filter((u) => !u.deactivatedAt).length,
                 integrations: { connected: db.all('integrations').filter((i) => i.status === 'connected').length, error: db.all('integrations').filter((i) => i.status === 'error').length },
                 aiRequestsThisMonth: db.all('aiUsage').filter((u) => u.createdAt.startsWith(month) && u.executionStatus !== 'limited').length,

@@ -110,3 +110,25 @@ Scope: migration 0007, the shared AI runtime, the two Edge Functions (not deploy
 - SEO fetches are limited to active websites that have a URL, and to the scoped website when set.
 - Verified locally by PGlite negative tests: cross-agency and cross-client reads and writes; manipulated brand, client and website ids; manager escalation; job-function escalation.
 - Not yet verified on staging (approval pending).
+
+---
+
+# Security Review: v6.0 roles (2026-11-13)
+
+**Status: validated locally (PGlite + fakes). Not applied to staging.**
+
+| Area | Control | Evidence |
+|---|---|---|
+| Privilege escalation | Only Super Admins grant/revoke Super Admin (never the last). Agency roles go through Super Admin RPCs only. `agency_memberships` writes revoked from `authenticated` | roles.db escalation tests |
+| Bootstrap | `app.bootstrap_super_admin`: not executable by app users, confirmed email only, one-time and closes, audited. No auto-promotion of the first sign-up. Sign-up metadata ignored | bootstrap test on a fresh DB |
+| Suspension | Agency suspension and user deactivation apply on the next query, even with a live JWT | suspension tests |
+| Client data | Client Users are read-only by default. Explicit permissions are validated as client-only. No knowledge, instructions or internal/private conversations | portal tests, handler tests |
+| Server AI runs | `agent-execute` re-checks role, visibility and client-facing agents server-side, strips knowledge tools, and reads instructions with the service role after the RLS check | handlers.test.ts |
+| Invitations | Hashed single-use tokens; the confirmed matching email is required; delivery via Auth admin on the server only; `sent` only on provider acceptance; allow-listed origins; sanitized errors | invites.test.ts, roles.db invitation test |
+| Audit | Super Admin actions go to `platform_audit_events` (readable by Super Admins only; written only by definer functions) | grant/revoke test |
+
+Open items:
+- Run the matrix on staging with real Auth users after approval.
+- Configure SMTP and `ALLOWED_ORIGINS` before deploying `user-invite`.
+- Rate limiting of invitation sends is not implemented. It relies on the Supabase Auth limits.
+- Local mock mode remains a simulation without a security boundary.

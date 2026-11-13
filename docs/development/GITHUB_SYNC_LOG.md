@@ -37,3 +37,7 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-11-02 | v5 M3/M7/M8: AI provider settings UI + switching | 5768a48 | ok | 5768a48 |
 | 2026-11-02 | v5 M4/M8/M9 server: agent-execute + ai-connection-test | 2eb9ad8 | ok | 2eb9ad8 |
 | 2026-11-02 | v5 docs: AI provider architecture + status | 239a5d5 | ok | 239a5d5 |
+| 2026-11-13 | Multi-agency hierarchy, demo websites, sign-in fixes (pushed on owner request) | 0841ef1…9c8860a | ok | 9c8860a |
+| 2026-11-13 | v6 migration 0009 roles + hierarchy reconciliation | 1f6dec7 | ok | 1f6dec7 |
+| 2026-11-13 | v6 Super Admin platform, agency users, Client User portal (local) | f582e17 | ok | f582e17 |
+| 2026-11-13 | v6 server: Client User agent runs + user-invite function | e9574dc | ok | e9574dc |

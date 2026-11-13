@@ -170,9 +170,8 @@ describe('agencies', () => {
         // Migration 0009: Super Admin access is platform-wide (was directory-only under 0008).
         expect(await count(U.platform, 'brands', `agency_id = '${A.adpost}'`)).toBe(6);
         const o = (await as<{ platform_overview: Record<string, number> }>(db, U.platform, 'select public.platform_overview()'))[0]!.platform_overview;
-        // 20 demo websites + the user website added by the demo-seed test above.
-        // 12 active clients; 30 demo websites + the user website added by the demo-seed test above.
-        expect(o).toMatchObject({ agencies: 4, clients: 12, websites: 31, demo_websites: 30 });
+        // 12 active clients: 24 demo websites (the 6 of the 3 archived clients are not counted) + the user website added above.
+        expect(o).toMatchObject({ agencies: 4, clients: 12, websites: 25, demo_websites: 24 });
         for (const u of [U.adpostOwner, U.podAdmin, U.stranger]) expect(await attempt(db, u, 'select public.platform_overview()'), u.email).toBe(DENIED);
     });
 

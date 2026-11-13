@@ -444,3 +444,19 @@ grant execute on function public.create_invitation(uuid, text, text, uuid, text[
 revoke execute on function app.platform_audit(text, text, uuid, uuid, uuid, jsonb) from public, authenticated;
 grant execute on function app.agency_open(uuid), app.brand_agency_open(uuid), app.client_permission(uuid, text),
     app.can_read_conversation(uuid), app.can_post_in_conversation(uuid) to authenticated;
+
+-- Platform totals: websites count only for clients that are not archived (matches the agency pages).
+create or replace function public.platform_overview() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+begin
+    if not app.is_platform_admin() then raise exception 'platform administrators only' using errcode = '42501'; end if;
+    return jsonb_build_object(
+        'agencies', (select count(*) from public.agencies where status <> 'archived'),
+        'clients', (select count(*) from public.brands where status <> 'archived'),
+        'websites', (select count(*) from public.websites w join public.brands b on b.id = w.brand_id where w.status <> 'archived' and b.status <> 'archived'),
+        'demo_websites', (select count(*) from public.websites w join public.brands b on b.id = w.brand_id where w.status <> 'archived' and b.status <> 'archived' and w.is_demo),
+        'active_users', (select count(*) from public.profiles where deactivated_at is null),
+        'connected_integrations', (select count(*) from public.integrations where status = 'connected'),
+        'integration_errors', (select count(*) from public.integrations where status = 'error')
+    );
+end $$;

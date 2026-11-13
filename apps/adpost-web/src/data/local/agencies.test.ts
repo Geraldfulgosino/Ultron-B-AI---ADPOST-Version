@@ -88,7 +88,7 @@ describe('Super Admin', () => {
         expect((await p.agencies.list()).map((a) => [a.name, a.counts?.clients, a.counts?.archivedClients, a.counts?.websites])).toEqual([
             ['ADPOST', 4, 2, 8], ['GoldStarATM', 4, 1, 8], ['VCA', 4, 0, 8],
         ]);
-        expect(await p.agencies.platformOverview()).toMatchObject({ agencies: 3, clients: 12, websites: 30, demoWebsites: 30 });
+        expect(await p.agencies.platformOverview()).toMatchObject({ agencies: 3, clients: 12, websites: 24, demoWebsites: 24 }); // = the agency rows (archived clients' websites excluded)
         expect((await p.workspace.listBrands()).map((b) => b.roleLabel)).toEqual(Array(15).fill('Super Admin'));
         expect((await p.agencies.clients('agy_vca')).map((c) => c.client.name)).toEqual(['CMS', 'HLDC', 'LIPSKY', 'LOOP19']);
     });

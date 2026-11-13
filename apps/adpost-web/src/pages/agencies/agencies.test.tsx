@@ -19,7 +19,7 @@ describe('Super Admin (sample dataset)', () => {
         await waitFor(() => expect(router.state.location.pathname).toBe('/platform'));
         const metrics = await screen.findByRole('region', { name: 'Platform metrics' });
         expect(within(metrics).getByText('Managed clients').parentElement!.textContent).toContain('12');
-        expect(within(metrics).getByText('30 demo records (not live websites)')).toBeInTheDocument();
+        expect(within(metrics).getByText('24 demo records (not live websites)')).toBeInTheDocument();
     });
 
     it('agency directory: three agencies with real counts; suspend and restore an agency', async () => {

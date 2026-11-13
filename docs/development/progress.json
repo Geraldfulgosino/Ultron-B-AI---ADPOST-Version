@@ -1,7 +1,7 @@
 {
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
-  "updated": "2026-11-05",
+  "updated": "2026-11-13",
   "currentPhase": "17",
   "phases": [
     {
@@ -143,9 +143,20 @@
   "multiAgency": {
     "mapping": "Client = Brand (owner-confirmed 2026-11-05)",
     "migration 0008": "implemented + validated on PGlite; NOT applied to staging",
-    "dev seed": "supabase/seeds/dev/sample_hierarchy.sql + local sampleSeed.ts: 3 agencies, 10 clients, no websites; guarded, idempotent",
+    "dev seed": "reconciled 2026-11-13: 3 agencies, 15 clients (12 active, 3 archived), 30 demo websites; one-time, rename/archive only",
     "UI": "agencies directory, agency overview/clients/settings, websites + detail, hierarchical selector (local adapter)",
     "AI scope": "website-scoped conversations and tool hosts; agency-level cross-client AI team NOT implemented",
-    "commits": "0841ef1, 606a78a, f0254cd (local; NOT pushed, owner approval required)"
+    "commits": "0841ef1, 606a78a, f0254cd, 9c8860a (pushed)"
+  },
+  "roles": {
+    "migration 0009": "implemented + validated on PGlite (100 DB tests); NOT applied to staging",
+    "super admin UI": "/platform overview, agencies, users, audit (local adapter)",
+    "agency admin UI": "/a/:agency/users; client-user invitations with explicit permissions",
+    "client portal": "read-only default; ai_chat / comment_tasks / download_reports",
+    "agent-execute client runs": "implemented + handler-tested; NOT deployed",
+    "user-invite function": "implemented + tested with fakes; NOT deployed; no email sent",
+    "browser QA": "13/13 (mock adapter)",
+    "staging 0006-0009": "plan ready (STAGING_MIGRATION_PLAN_0006_0009.md); awaiting approval",
+    "commits": "1f6dec7, f582e17, e9574dc"
   }
 }
