@@ -107,30 +107,40 @@ export function createSupabaseData(user: Db, service: Db, userId: string | null,
             return m ? { id: m.id, conversationId: m.conversation_id, brandId: m.brand_id, authorUserId: m.author_user_id, body: m.body, mentions: m.mentions ?? [] } : null;
         },
         async conversation(id): Promise<CallerConversation | null> {
-            const c = must(await user.from('conversations').select('id, brand_id, kind, team_key, agent_instance_ids, archived, website_id').eq('id', id).maybeSingle(), 'conversation') as Record<string, any> | null;
-            return c ? { id: c.id, brandId: c.brand_id, kind: c.kind, teamKey: c.team_key, agentInstanceIds: c.agent_instance_ids ?? [], archived: c.archived, websiteId: c.website_id ?? null } : null;
+            const c = must(await user.from('conversations').select('id, brand_id, kind, team_key, agent_instance_ids, archived, website_id, visibility').eq('id', id).maybeSingle(), 'conversation') as Record<string, any> | null;
+            return c ? { id: c.id, brandId: c.brand_id, kind: c.kind, teamKey: c.team_key, agentInstanceIds: c.agent_instance_ids ?? [], archived: c.archived, websiteId: c.website_id ?? null, visibility: c.visibility ?? 'agency_internal' } : null;
         },
         async brand(brandId): Promise<CallerBrand | null> {
             const b = must(await user.from('brands').select('id, agency_id, name').eq('id', brandId).maybeSingle(), 'brand') as Record<string, any> | null;
             if (!b || !userId) return null;
-            const bm = must(await user.from('brand_memberships').select('role').eq('brand_id', brandId).eq('user_id', userId).maybeSingle(), 'membership') as { role: string } | null;
+            const bm = must(await user.from('brand_memberships').select('role, permissions').eq('brand_id', brandId).eq('user_id', userId).maybeSingle(), 'membership') as { role: string; permissions: string[] | null } | null;
+            // Super Admins have no membership rows; platform_admins lets a user read only their own row.
+            const superAdmin = must(await user.from('platform_admins').select('user_id').eq('user_id', userId).maybeSingle(), 'platform role');
             const am = must(await user.from('agency_memberships').select('role').eq('agency_id', b.agency_id).eq('user_id', userId).maybeSingle(), 'agency membership');
             const sites = must(await user.from('websites').select('id, name, domain, website_url, status, is_demo').eq('brand_id', brandId), 'websites') as Array<Record<string, any>>;
             return {
-                brandId, agencyId: b.agency_id, brandName: b.name, canWrite: !!am || WRITE_ROLES.includes(bm?.role ?? ''),
+                brandId, agencyId: b.agency_id, brandName: b.name, canWrite: !!superAdmin || !!am || WRITE_ROLES.includes(bm?.role ?? ''),
+                isClientUser: bm?.role === 'client', clientPermissions: bm?.role === 'client' ? bm.permissions ?? [] : [],
                 websites: sites.map((s) => ({ id: s.id, name: s.name, domain: s.domain, websiteUrl: s.website_url, status: s.status, isDemo: !!s.is_demo })),
             };
         },
         async agents(brandId, ids): Promise<AgentRow[]> {
             if (!ids.length) return [];
             const rows = must(await user.from('agent_instances')
-                .select('id, display_name, handle, template_key, active, tools, max_output_tokens, max_runs_per_day, monthly_budget_usd, agent_templates(team), agent_instruction_versions!agent_instances_active_version_fk(version, instructions)')
+                .select('id, display_name, handle, template_key, active, tools, client_facing, max_output_tokens, max_runs_per_day, monthly_budget_usd, active_instruction_version_id, agent_templates(team)')
                 .eq('brand_id', brandId).in('id', ids), 'agents') as Array<Record<string, any>>;
+            // Visibility of the agents was checked above with the caller's JWT (RLS). Their instructions are staff-only,
+            // so they are read with the service role and used server-side only; they are never returned to the caller.
+            const versionIds = rows.map((r) => r.active_instruction_version_id).filter(Boolean);
+            const versions = versionIds.length
+                ? must(await service.from('agent_instruction_versions').select('id, version, instructions').in('id', versionIds), 'instructions') as Array<{ id: string; version: number; instructions: string }>
+                : [];
             return ids.map((id) => rows.find((r) => r.id === id)).filter(Boolean).map((r: any) => {
-                versionByAgent.set(r.id, r.agent_instruction_versions?.version ?? 0);
+                const v = versions.find((x) => x.id === r.active_instruction_version_id);
+                versionByAgent.set(r.id, v?.version ?? 0);
                 return {
                     id: r.id, name: r.display_name, handle: r.handle, templateKey: r.template_key, team: r.agent_templates?.team ?? 'seo', active: r.active,
-                    instructions: r.agent_instruction_versions?.instructions ?? '', tools: r.tools ?? [],
+                    instructions: v?.instructions ?? '', tools: r.tools ?? [], clientFacing: !!r.client_facing,
                     limits: { maxOutputTokens: r.max_output_tokens, maxRunsPerDay: r.max_runs_per_day, monthlyBudgetUsd: Number(r.monthly_budget_usd) },
                 };
             });

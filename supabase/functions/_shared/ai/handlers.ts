@@ -21,9 +21,19 @@ import type { AIToolGateway } from './tools.ts';
 import type { ChatMessage } from './types.ts';
 
 export interface CallerMessage { id: string; conversationId: string; brandId: string; authorUserId: string | null; body: string; mentions: string[] }
-export interface CallerConversation { id: string; brandId: string; kind: 'direct' | 'group'; teamKey: 'seo' | 'web' | 'all' | null; agentInstanceIds: string[]; archived: boolean; websiteId: string | null }
+export interface CallerConversation { id: string; brandId: string; kind: 'direct' | 'group'; teamKey: 'seo' | 'web' | 'all' | null; agentInstanceIds: string[]; archived: boolean; websiteId: string | null; visibility: 'agency_internal' | 'client_shared' | 'user_private' }
 export interface CallerWebsite { id: string; name: string; domain: string | null; websiteUrl: string | null; status: string; isDemo: boolean }
-export interface CallerBrand { brandId: string; agencyId: string; brandName: string; canWrite: boolean; websites: CallerWebsite[] }
+export interface CallerBrand {
+    brandId: string;
+    agencyId: string;
+    brandName: string;
+    /** Staff with write access, agency admins/managers, or a Super Admin. */
+    canWrite: boolean;
+    /** Client User of this client (brand role 'client') and its explicit permissions. */
+    isClientUser: boolean;
+    clientPermissions: string[];
+    websites: CallerWebsite[];
+}
 
 /**
  * Hosts the SEO tools may fetch: only ACTIVE, non-demo websites WITH a URL (drafts and demo records are never crawled),
@@ -33,7 +43,7 @@ export function allowedHostsFor(brand: CallerBrand, websiteId: string | null): s
     const auditable = brand.websites.filter((w) => w.websiteUrl && w.domain && w.status === 'active' && !w.isDemo);
     return (websiteId ? auditable.filter((w) => w.id === websiteId) : auditable).map((w) => w.domain!);
 }
-export interface AgentRow extends AgentProfile { templateKey: string; team: 'seo' | 'web' }
+export interface AgentRow extends AgentProfile { templateKey: string; team: 'seo' | 'web'; clientFacing: boolean }
 export interface RoutingData { assignments: AssignmentConfig[]; connections: ConnectionConfig[]; models: ModelCatalogEntry[]; brandPolicy: RoutingPolicy | null; orgPolicy: RoutingPolicy | null }
 export interface HistoryRow { authorType: 'user' | 'agent' | 'system'; authorName: string; body: string; agentInstanceId: string | null }
 
@@ -107,10 +117,15 @@ export async function handleAgentExecute(input: ExecuteInput, deps: HandlerDeps,
     if (!conv || conv.brandId !== msg.brandId) throw new HttpError(404, 'Conversation not found.');
     if (conv.archived) throw new HttpError(409, 'This conversation is archived.');
     const brand = await d.brand(conv.brandId);
-    if (!brand?.canWrite) throw new HttpError(403, 'You cannot run agents in this brand.');
+    if (!brand) throw new HttpError(403, 'You cannot run agents in this brand.');
+    // Client Users (ai_chat) may run client-facing agents in client-shared one-to-one chats (mirrors migration 0009).
+    const clientRun = !brand.canWrite && brand.isClientUser && brand.clientPermissions.includes('ai_chat') && conv.visibility === 'client_shared';
+    if (!brand.canWrite && !clientRun) throw new HttpError(403, 'You cannot run agents in this brand.');
+    if (clientRun && conv.kind !== 'direct') throw new HttpError(403, 'Client users can use one-to-one agent chats only.');
     if ((await d.requestsInLastMinute(d.userId)) >= USER_REQUESTS_PER_MINUTE) throw new HttpError(429, 'Too many AI requests. Wait a minute and try again.');
 
     const agents = await d.agents(brand.brandId, conv.agentInstanceIds);
+    if (clientRun && !agents.every((a) => a.clientFacing)) throw new HttpError(403, 'This agent is not available to client users.');
     const routing = await d.routing(brand.brandId, brand.agencyId);
     const rows = await d.history(conv.id, msg.id, HISTORY_LIMIT);
     const teammates = agents.filter((a) => a.active).map((a) => ({ handle: a.handle, name: a.name }));
@@ -120,7 +135,9 @@ export async function handleAgentExecute(input: ExecuteInput, deps: HandlerDeps,
     const fetchDeps = deps.resolveDns ? { resolve: deps.resolveDns, fetch: deps.fetch } : null;
 
     const runTurn = async (agentId: string, depth: number, parentExecutionId: string | null, key: string, extra: ChatMessage[]): Promise<TurnOutcome> => {
-        const agent = agents.find((a) => a.id === agentId)!;
+        const found = agents.find((a) => a.id === agentId)!;
+        // Staff-only knowledge never enters a Client User's run.
+        const agent = clientRun ? { ...found, tools: found.tools.filter((t) => t !== 'read_knowledge') } : found;
         const assignment = routing.assignments.find((x) => x.agentInstanceId === agentId) ?? null;
         const conn = assignment ? routing.connections.find((c) => c.id === assignment.connectionId) ?? null : null;
         const history = [...toHistory(rows, agentId), { role: 'user' as const, content: msg.body }, ...extra];
@@ -129,7 +146,7 @@ export async function handleAgentExecute(input: ExecuteInput, deps: HandlerDeps,
             triggerMessageId: msg.id, parentExecutionId, handoffDepth: depth, agent, history,
             websiteScope: scopedSite ? { name: scopedSite.name, url: scopedSite.websiteUrl, isDemo: scopedSite.isDemo } : null,
             routing: { assignment, connections: routing.connections, models: routing.models, brandPolicy: routing.brandPolicy, orgPolicy: routing.orgPolicy },
-            toolContext: { brandId: brand.brandId, allowedHosts, fetchDeps, teammates: teammates.filter((t) => t.handle !== agent.handle), searchKnowledge: (q) => d.searchKnowledge(brand.brandId, q), metrics: async () => null },
+            toolContext: { brandId: brand.brandId, allowedHosts, fetchDeps, teammates: teammates.filter((t) => t.handle !== agent.handle), searchKnowledge: clientRun ? undefined : (q) => d.searchKnowledge(brand.brandId, q), metrics: async () => null },
             usage: await d.usage(brand.brandId, brand.agencyId, d.userId!, agentId, conn?.id ?? null),
             signal, onEvent: emit ? (e) => emit(agentId, e) : undefined,
         });
