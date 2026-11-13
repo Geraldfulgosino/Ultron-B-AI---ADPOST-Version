@@ -130,3 +130,21 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | Server: Client User agent runs; `user-invite` function | Implemented and tested with fakes; **not deployed** | `e9574dc` |
 | Docs | ROLE_ARCHITECTURE, PERMISSION_MATRIX, SUPER_ADMIN_DESIGN, AGENCY_ADMIN_DESIGN, CLIENT_PORTAL_ACCESS, USER_INVITATION_FLOW, RLS_ROLE_TEST_MATRIX, STAGING_MIGRATION_PLAN_0006_0009 | docs commit |
 | Milestones O–Q (staging) | **Plan ready, awaiting explicit approval** | — |
+
+## Master prompt v7.0: first real website integration, Lugenix (2026-11-13)
+| Phase | Status | Commit |
+|---|---|---|
+| 01 Baseline | Verified. The Lugenix records claimed in the prompt are not in the repository or on staging. Staging is empty | — |
+| 02 Pilot workspace | Pilot seed prepared and tested. **Not applied**. Agency decision pending | docs commit |
+| 03 Live data mode | Provider switch exists (`VITE_DATA_PROVIDER`). **17E/17F adapters not implemented** | — |
+| 04 Reusable integration system | Types, registry, status model, sync service, repository | `ccbc803`, `f2d4130` |
+| 05 WordPress | Connector implemented and tested. **Public API live-verified** (read-only, nothing stored) | `ccbc803` |
+| 06 GA4 | Connector and OAuth implemented, fake-tested. **No Google call made** | `783ce3c`, `f2d4130` |
+| 07 Search Console | Connector, property coverage and opportunities implemented, fake-tested. **No Google call made** | `783ce3c`, `f2d4130` |
+| 08 Crawler | Implemented and tested. **Live 40-page read-only crawl** | `d5ff731` |
+| 09 Persistence | Migration 0010 validated on PGlite. **Not applied** | `c894bab` |
+| 10 Integrations UI | Honest mock UI, plus the browser client for the functions | `89f4e03` |
+| 11–14 Dashboard, SEO skills, AI context, reports on real data | Not started (they depend on 17F and staging data) | — |
+| 15 n8n | Not started (optional) | — |
+| 16 Security | See INTEGRATION_SECURITY.md (one NULL-helper bug found and fixed) | `c894bab` |
+| 17 Tests | 593 passed + 1 opt-in skipped (57 files); tsc clean; build ok | — |

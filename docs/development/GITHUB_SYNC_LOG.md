@@ -41,3 +41,11 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-11-13 | v6 migration 0009 roles + hierarchy reconciliation | 1f6dec7 | ok | 1f6dec7 |
 | 2026-11-13 | v6 Super Admin platform, agency users, Client User portal (local) | f582e17 | ok | f582e17 |
 | 2026-11-13 | v6 server: Client User agent runs + user-invite function | e9574dc | ok | e9574dc |
+| 2026-11-13 | v6 docs + platform totals fix | 23af499 | ok | 23af499 |
+| 2026-11-13 | v7 WordPress connector + encrypted credentials | ccbc803 | ok | ccbc803 |
+| 2026-11-13 | v7 migration 0010 + NULL helper fix | c894bab | ok | c894bab |
+| 2026-11-13 | v7 technical SEO crawler | d5ff731 | ok | d5ff731 |
+| 2026-11-13 | v7 Google OAuth, GA4, Search Console connectors | 783ce3c | ok | 783ce3c |
+| 2026-11-13 | v7 sync service + integration Edge Functions | f2d4130 | ok | f2d4130 |
+| 2026-11-13 | v7 Integrations UI + browser client | 89f4e03 | ok | 89f4e03 |
+| 2026-11-13 | v7 pilot seed + docs | (this commit) | see next entry | — |

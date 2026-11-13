@@ -1,12 +1,43 @@
 # Session Handoff
 
-**Updated:** 2026-11-13 (master prompt v6.0: Super Admin / Admin / Client User roles)
+**Updated:** 2026-11-13 (master prompt v7.0: first real website integration, Lugenix Digital Services)
 **Project root:** `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`
 **Branch:** `feature/adpost-react-supabase-ai`, pushed. The remote SHA is in GITHUB_SYNC_LOG.md. `main` is untouched.
-**Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`. The CLI 2.121.0 is linked.
-**Applied to staging:** migrations 0001–0005.
-**Local only, awaiting approval:** 0006_advisor_fixes, 0007_ai_providers, 0008_agency_client_website, 0009_roles_access. The dry run confirms these four would be pushed, with no seeds.
-**Deployed Edge Functions:** none. `agent-execute`, `ai-connection-test` and `user-invite` are implemented, not deployed.
+**Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`, linked.
+**Applied to staging:** 0001–0005 only. Staging is empty except 6 agent templates (read-only precheck).
+**Local only, awaiting approval:** 0006, 0007, 0008, 0009, **0010_website_integrations**, plus the pilot seed `supabase/seeds/pilot/lugenix_pilot.sql`.
+**Deployed Edge Functions:** none. Implemented: `agent-execute`, `ai-connection-test`, `user-invite`, **`integration-sync`**, **`integration-google`**.
+
+## 2026-11-13: v7.0 integrations (read first)
+- **Read first:** LUGENIX_INTEGRATION_PLAN.md (verified baseline and order of approvals) and LUGENIX_PILOT_CHECKLIST.md.
+- **Reusable server-side connectors** in `supabase/functions/_shared/integrations/`:
+  - `wordpress.ts`
+  - `crawler.ts`
+  - `google.ts`, `ga4.ts`, `gsc.ts`
+  - services `sync.ts` and `googleSync.ts`
+  - `secrets.ts` (AES-GCM)
+  - `supabaseRepo.ts`
+- **Live, read-only, nothing stored:**
+  - WordPress public API on the pilot: 21 pages, 137 posts, 8 categories, 0 tags, 1,076 media counted. Rank Math, Elementor, Site Kit.
+  - A 40-page crawl: all HTTP 200, heuristic findings only.
+- **Persistence:** migration 0010 (see REAL_DATA_MIGRATION_PLAN.md). It also fixes `app.can_read_client_row` returning NULL (in 0009).
+- **UI:** the Integrations page is honest in mock mode. The browser client for the functions is in `src/data/supabase/integrationsClient.ts`.
+- **Not done:**
+  - 17E/17F: staging auth and the Supabase data adapter, so the dashboard still uses mock data;
+  - the `/oauth/google/callback` page;
+  - the dashboard, AI context and reports on real integration data;
+  - the n8n adapter.
+
+## Owner decisions needed (v7)
+1. **Pilot agency:** a separate agency "Lugenix Digital Services" (slug `lugenix`, as prepared), or put the pilot client under GoldStarATM?
+2. **Approve staging migrations 0006–0010**, then the pilot seed.
+3. **Approve the Edge secrets and the `integration-sync` deployment.** This is the first real staging writes: WordPress inventory and crawl.
+4. **Optional:** a dedicated WordPress user plus Application Password for authenticated reads (drafts, media list).
+5. **Google:** create a Google Cloud OAuth client (Web; redirect `<app origin>/oauth/google/callback`; Analytics Admin, Analytics Data and Search Console APIs), and approve authorizing the Lugenix Google account.
+6. Earlier open items still stand (first Super Admin bootstrap, invitation SMTP, AI provider accounts and budgets).
+
+## Next exact task (no approval needed)
+Implement 17E/17F: the Supabase auth adapter (login, session restore, role redirects, password reset) and the data adapter for agencies, clients, websites and integrations, behind `VITE_DATA_PROVIDER=supabase`, with no mock fallback. Then add the `/oauth/google/callback` route and the live Integrations actions.
 
 ## 2026-11-13: v6.0 role model (read first)
 - **Roles:**

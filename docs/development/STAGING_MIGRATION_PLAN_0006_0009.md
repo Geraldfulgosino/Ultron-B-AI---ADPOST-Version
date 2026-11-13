@@ -88,3 +88,8 @@ Reply with one of:
 - Extensions: pgcrypto (`extensions`) and supabase_vault are present. 0009 uses only `extensions.digest` / `extensions.gen_random_bytes`.
 - Backup: there is no user data to preserve. `db dump` needs Docker, which is not installed on this machine. Recovery is by forward-fix migration; the 6 templates are re-creatable from 0003. No remote reset.
 - Local: 100/100 DB tests pass (migrations 0001–0009 on PGlite).
+
+## 8. Addendum (v7): migration 0010 and the pilot seed
+- `20261113000010_website_integrations.sql` is now also pending. A dry run would list 0006–0010. Details: REAL_DATA_MIGRATION_PLAN.md.
+- 0009 was edited before any application: `app.can_read_client_row` is coalesced to false (NULL fix).
+- Recommended approval set: **0006–0010 together** (all additive; staging is empty). The pilot seed and every function deployment remain separate approvals.

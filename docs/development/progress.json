@@ -158,5 +158,17 @@
     "browser QA": "13/13 (mock adapter)",
     "staging 0006-0009": "plan ready (STAGING_MIGRATION_PLAN_0006_0009.md); awaiting approval",
     "commits": "1f6dec7, f582e17, e9574dc"
+  },
+  "integrations": {
+    "migration 0010": "implemented + validated on PGlite; NOT applied to staging",
+    "wordpress connector": "implemented + tested; public API live-verified read-only (nothing stored)",
+    "crawler": "implemented + tested; live 40-page read-only crawl (nothing stored)",
+    "ga4 / gsc connectors": "implemented + fake-tested; no Google request made",
+    "edge functions": "integration-sync, integration-google implemented; NOT deployed",
+    "integrations ui": "honest mock UI; live actions need 17F",
+    "pilot seed": "prepared + tested; NOT applied; agency decision pending",
+    "dashboard/ai/reports on real data": "not started (needs 17F + staging data)",
+    "tests": "593 passed + 1 opt-in skipped (57 files); tsc clean; build ok",
+    "commits": "ccbc803, c894bab, d5ff731, 783ce3c, f2d4130, 89f4e03"
   }
 }
