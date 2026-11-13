@@ -12,8 +12,16 @@ const DENIED = '42501';
 let db: PGlite;
 let tables: string[];
 
-const count = async (u: TestUser, table: string, where = 'true') =>
-    (await as<{ n: number }>(db, u, `select count(*)::int as n from public.${table} where ${where}`))[0]!.n;
+/** Service-role-only tables (migration 0010): app users have no SELECT privilege at all. */
+const SERVICE_ONLY = new Set(['integration_secrets', 'integration_oauth_states']);
+const count = async (u: TestUser, table: string, where = 'true') => {
+    if (SERVICE_ONLY.has(table)) {
+        // Stronger than an empty result: the statement itself is refused. Counts as nothing visible.
+        expect(await attempt(db, u, `select 1 from public.${table} limit 1`), table).toBe(DENIED);
+        return 0;
+    }
+    return (await as<{ n: number }>(db, u, `select count(*)::int as n from public.${table} where ${where}`))[0]!.n;
+};
 /** Rows affected by an UPDATE/DELETE (RLS hides rows instead of raising). */
 const affected = async (u: TestUser, sql: string) => (await as(db, u, `${sql} returning 1`)).length;
 
@@ -27,9 +35,11 @@ describe('brand isolation (SELECT) across every brand-owned table', () => {
     it('covers the full tenant-owned table set', () => {
         // 25 core tables + 6 AI provider tables carrying brand_id (migration 0007).
         // + task_comments and platform_audit_events (migration 0009).
-        expect(tables.length).toBe(33);
+        // + 9 website-integration tables (migration 0010).
+        expect(tables.length).toBe(42);
         expect(tables).toEqual(expect.arrayContaining(['clients', 'messages', 'tasks', 'knowledge_chunks', 'integration_secrets', 'audit_logs',
-            'ai_provider_connections', 'ai_routing_policies', 'ai_agent_model_assignments', 'ai_usage_events', 'ai_provider_health_checks', 'ai_audit_events', 'task_comments', 'platform_audit_events']));
+            'ai_provider_connections', 'ai_routing_policies', 'ai_agent_model_assignments', 'ai_usage_events', 'ai_provider_health_checks', 'ai_audit_events', 'task_comments', 'platform_audit_events',
+            'integration_oauth_states', 'integration_sync_runs', 'wp_content_items', 'ga4_metric_rows', 'gsc_metric_rows', 'seo_crawl_jobs', 'seo_crawl_pages', 'seo_findings', 'report_snapshots']));
     });
 
     it('a POD-only manager never sees DMD or other-agency rows in any table', async () => {
@@ -63,7 +73,8 @@ describe('brand isolation (SELECT) across every brand-owned table', () => {
 
     it('secret tables are invisible to every signed-in role, even owners and agency staff', async () => {
         for (const who of [U.podOwner, U.agencyOwner]) {
-            expect(await count(who, 'integration_secrets')).toBe(0);
+            // Migration 0010: no privilege at all on credential ciphertexts (stronger than an empty RLS result).
+            expect(await attempt(db, who, 'select 1 from public.integration_secrets')).toBe(DENIED);
             expect(await count(who, 'n8n_connection_secrets')).toBe(0);
         }
         expect((await as<{ n: number }>(db, 'service_role', 'select count(*)::int as n from public.integration_secrets'))[0]!.n).toBe(4);

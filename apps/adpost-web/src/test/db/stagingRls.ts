@@ -21,7 +21,8 @@ interface Check {
 
 const BRAND_TABLES_SQL = `select array_agg(c.table_name::text order by c.table_name) from information_schema.columns c
     join information_schema.tables tb on tb.table_schema = c.table_schema and tb.table_name = c.table_name and tb.table_type = 'BASE TABLE'
-    where c.table_schema = 'public' and c.column_name = 'brand_id'`;
+    where c.table_schema = 'public' and c.column_name = 'brand_id'
+      and has_table_privilege('authenticated', format('public.%I', c.table_name), 'select')`;
 
 export const CHECKS: Check[] = [
     { name: 'podManager: no non-POD row in any brand table', who: 'podManager', sql: `__SUM_OTHER__${B.pod}`, expect: '0' },
@@ -36,7 +37,7 @@ export const CHECKS: Check[] = [
     { name: 'deactivated: no own membership', who: 'deactivated', sql: `select count(*) from public.brand_memberships`, expect: '0' },
     { name: 'anon: no table privilege', who: 'anon', sql: `select count(*) from public.clients`, expect: 'ERR:42501' },
     { name: 'anon: cannot call invitation RPC', who: 'anon', sql: `select public.accept_invitation('x')`, expect: 'ERR:42501' },
-    { name: 'owner: secrets invisible', who: 'podOwner', sql: `select count(*) from public.integration_secrets`, expect: '0' },
+    { name: 'owner: secrets invisible', who: 'podOwner', sql: `select count(*) from public.integration_secrets`, expect: 'ERR:42501' },
     { name: 'agency: n8n secrets invisible', who: 'agencyOwner', sql: `select count(*) from public.n8n_connection_secrets`, expect: '0' },
     { name: 'client: only own client', who: 'podClient', sql: `select string_agg(id::text, ',') from public.clients`, expect: C.pod1 },
     { name: 'client: only own website', who: 'podClient', sql: `select string_agg(id::text, ',') from public.websites`, expect: W.pod1 },

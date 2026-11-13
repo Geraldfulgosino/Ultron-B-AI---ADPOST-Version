@@ -83,8 +83,9 @@ $$;
 
 create or replace function app.can_read_client_row(p_brand_id uuid, p_client_id uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
-    select app.is_brand_staff(p_brand_id)
-        or (app.brand_role(p_brand_id) = 'client' and (app.client_scope(p_brand_id) is null or app.client_scope(p_brand_id) = p_client_id));
+    -- coalesce: never NULL (a NULL would pass an 'if not ...' check in PL/pgSQL callers).
+    select coalesce(app.is_brand_staff(p_brand_id)
+        or (app.brand_role(p_brand_id) = 'client' and (app.client_scope(p_brand_id) is null or app.client_scope(p_brand_id) = p_client_id)), false);
 $$;
 
 -- ── Conversation visibility (explicit scopes, enforced by RLS) ─────────────
