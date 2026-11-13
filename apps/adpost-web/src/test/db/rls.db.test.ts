@@ -26,9 +26,10 @@ afterAll(async () => db?.close());
 describe('brand isolation (SELECT) across every brand-owned table', () => {
     it('covers the full tenant-owned table set', () => {
         // 25 core tables + 6 AI provider tables carrying brand_id (migration 0007).
-        expect(tables.length).toBe(31);
+        // + task_comments and platform_audit_events (migration 0009).
+        expect(tables.length).toBe(33);
         expect(tables).toEqual(expect.arrayContaining(['clients', 'messages', 'tasks', 'knowledge_chunks', 'integration_secrets', 'audit_logs',
-            'ai_provider_connections', 'ai_routing_policies', 'ai_agent_model_assignments', 'ai_usage_events', 'ai_provider_health_checks', 'ai_audit_events']));
+            'ai_provider_connections', 'ai_routing_policies', 'ai_agent_model_assignments', 'ai_usage_events', 'ai_provider_health_checks', 'ai_audit_events', 'task_comments', 'platform_audit_events']));
     });
 
     it('a POD-only manager never sees DMD or other-agency rows in any table', async () => {

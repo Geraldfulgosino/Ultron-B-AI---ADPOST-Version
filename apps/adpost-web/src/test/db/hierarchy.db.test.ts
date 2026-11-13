@@ -60,13 +60,19 @@ describe('dev sample seed', () => {
     const counts = async () => (await db.query<{ slug: string; n: number }>(`select a.slug, count(b.id)::int as n from public.agencies a
         left join public.brands b on b.agency_id = a.id group by a.slug order by a.slug`)).rows;
 
-    it('creates exactly 3 agencies and 10 clients (5 ADPOST, 4 VCA, 1 Lugenix), 20 demo websites, six agents each', async () => {
-        expect(await counts()).toEqual([{ slug: 'adpost', n: 5 }, { slug: 'lugenix-digital-services', n: 1 }, { slug: 'vca', n: 4 }]);
+    it('reconciled hierarchy: 3 agencies, 15 clients (12 active, 3 archived), 30 demo websites, six agents each', async () => {
+        expect(await counts()).toEqual([{ slug: 'adpost', n: 6 }, { slug: 'lugenix-digital-services', n: 5 }, { slug: 'vca', n: 4 }]);
+        expect((await db.query<{ name: string }>(`select name from public.agencies order by name`)).rows.map((r) => r.name)).toEqual(['ADPOST', 'GoldStarATM', 'VCA']);
+        const active = async (agency: string) => (await db.query<{ name: string }>(`select b.name from public.brands b join public.agencies a on a.id = b.agency_id where a.slug = '${agency}' and b.status = 'active' order by b.name`)).rows.map((r) => r.name);
+        expect(await active('vca')).toEqual(['CMS', 'HLDC', 'LIPSKY', 'LOOP19']);
+        expect(await active('adpost')).toEqual(['CAR MAGNETS', 'DYNAMIC SCREEN PRINTING', 'FMF', 'POD']);
+        expect(await active('lugenix-digital-services')).toEqual(['ATM FLORIDA', 'ATM HAWAII', 'ATM NEBRASKA', 'ATM OHIO']);
+        expect((await db.query<{ slug: string }>(`select slug from public.brands where status = 'archived' order by slug`)).rows.map((r) => r.slug)).toEqual(['goldstar-atm', 'studio-pilates', 'trade-bags']);
         const names = (await db.query<{ name: string }>(`select b.name from public.brands b join public.agencies a on a.id = b.agency_id where a.slug = 'adpost' order by b.name`)).rows.map((r) => r.name);
-        expect(names).toEqual(['DSP', 'FMF', 'POD', 'STUDIO PILATES', 'TRADE BAGS']);
-        expect((await db.query<{ n: number }>('select count(*)::int as n from public.websites where is_demo')).rows[0]!.n).toBe(20);
-        expect((await db.query<{ n: number }>("select count(*)::int as n from public.brands where status = 'active'")).rows[0]!.n).toBe(10);
-        expect((await db.query<{ n: number }>('select count(*)::int as n from public.agent_instances')).rows[0]!.n).toBe(60);
+        expect(names).toEqual(['CAR MAGNETS', 'DYNAMIC SCREEN PRINTING', 'FMF', 'POD', 'STUDIO PILATES', 'TRADE BAGS']);
+        expect((await db.query<{ n: number }>('select count(*)::int as n from public.websites where is_demo')).rows[0]!.n).toBe(30);
+        expect((await db.query<{ n: number }>("select count(*)::int as n from public.brands where status = 'active'")).rows[0]!.n).toBe(12);
+        expect((await db.query<{ n: number }>('select count(*)::int as n from public.agent_instances')).rows[0]!.n).toBe(90);
         const v = await db.query<{ instructions: string }>(`select v.instructions from public.agent_instances i join public.agent_instruction_versions v on v.id = i.active_instruction_version_id where i.brand_id = '${C['goldstar-atm']}' and i.template_key = 'seo_manager'`);
         expect(v.rows[0]!.instructions).toContain('GoldStar ATM');
     });
@@ -75,8 +81,14 @@ describe('dev sample seed', () => {
         await db.exec(`update public.brands set description = 'edited by a user' where id = '${C.pod}'`);
         await runSeed(db);
         await runSeed(db);
-        expect(await counts()).toEqual([{ slug: 'adpost', n: 5 }, { slug: 'lugenix-digital-services', n: 1 }, { slug: 'vca', n: 4 }]);
-        expect((await db.query<{ n: number }>('select count(*)::int as n from public.agent_instances')).rows[0]!.n).toBe(60);
+        expect(await counts()).toEqual([{ slug: 'adpost', n: 6 }, { slug: 'lugenix-digital-services', n: 5 }, { slug: 'vca', n: 4 }]);
+        expect((await db.query<{ n: number }>('select count(*)::int as n from public.agent_instances')).rows[0]!.n).toBe(90);
+        // The one-time reconciliation does not undo a later user change (restore an archived client, rename).
+        await db.exec(`update public.brands set status = 'active' where slug = 'trade-bags'; update public.brands set name = 'HLDC Group' where slug = 'hamptons'`);
+        await runSeed(db);
+        expect((await db.query<{ status: string }>(`select status from public.brands where slug = 'trade-bags'`)).rows[0]!.status).toBe('active');
+        expect((await db.query<{ name: string }>(`select name from public.brands where slug = 'hamptons'`)).rows[0]!.name).toBe('HLDC Group');
+        await db.exec(`update public.brands set status = 'archived' where slug = 'trade-bags'; update public.brands set name = 'HLDC' where slug = 'hamptons'`);
         expect((await db.query<{ d: string }>(`select description as d from public.brands where id = '${C.pod}'`)).rows[0]!.d).toBe('edited by a user');
     });
 
@@ -92,10 +104,10 @@ describe('demo websites (dev seed)', () => {
 
     it('two per client: production (primary) and staging on reserved .example domains, nothing connected', async () => {
         const r = await rows();
-        expect(r).toHaveLength(20);
+        expect(r).toHaveLength(30);
         const byClient = new Map<string, Row[]>();
         for (const x of r) byClient.set(x.client, [...(byClient.get(x.client) ?? []), x]);
-        expect(byClient.size).toBe(10);
+        expect(byClient.size).toBe(15);
         for (const [client, list] of byClient) {
             expect(list.map((x) => [x.environment, x.domain, x.is_primary]), client).toEqual([
                 ['production', `${client}.example`, true],
@@ -103,7 +115,8 @@ describe('demo websites (dev seed)', () => {
             ]);
             expect(list.every((x) => x.platform === 'unknown' && x.status === 'active')).toBe(true);
         }
-        expect(r.find((x) => x.client === 'hamptons')!.name).toBe('HAMPTONS — Production');
+        expect(r.find((x) => x.client === 'hamptons')!.name).toBe('HLDC — Production');
+        expect(r.find((x) => x.client === 'dsp')!.name).toBe('DYNAMIC SCREEN PRINTING — Production');
         const connected = await db.query<{ n: number }>(`select count(*)::int as n from public.integrations i join public.websites w on w.id = i.website_id where w.is_demo`);
         expect(connected.rows[0]!.n).toBe(0);
     });
@@ -121,7 +134,7 @@ describe('demo websites (dev seed)', () => {
         await db.exec(`delete from public.websites where domain = 'staging.fmf.example'`); // simulate a partially seeded client
         await runSeed(db);
         await runSeed(db);
-        expect(await rows()).toHaveLength(20);
+        expect(await rows()).toHaveLength(30);
         const fmf = (await db.query<{ name: string; is_primary: boolean }>(`select name, is_primary from public.websites where brand_id = '${C.fmf}' order by name`)).rows;
         expect(fmf).toEqual([
             { name: 'FMF user site', is_primary: true },
@@ -152,12 +165,14 @@ describe('agencies', () => {
         expect(await attempt(db, U.platform, `select public.create_agency('Dup', 'adpost')`)).toBe(UNIQUE);
     });
 
-    it('platform admins see the directory and totals but no client data; others cannot read totals', async () => {
+    it('super admins (platform admins) see every agency and its clients, and platform totals; others cannot read totals', async () => {
         expect(await count(U.platform, 'agencies', `slug in ('adpost', 'vca', 'lugenix-digital-services')`)).toBe(3);
-        expect(await count(U.platform, 'brands', `agency_id = '${A.adpost}'`)).toBe(0);
+        // Migration 0009: Super Admin access is platform-wide (was directory-only under 0008).
+        expect(await count(U.platform, 'brands', `agency_id = '${A.adpost}'`)).toBe(6);
         const o = (await as<{ platform_overview: Record<string, number> }>(db, U.platform, 'select public.platform_overview()'))[0]!.platform_overview;
         // 20 demo websites + the user website added by the demo-seed test above.
-        expect(o).toMatchObject({ agencies: 4, clients: 10, websites: 21, demo_websites: 20 });
+        // 12 active clients; 30 demo websites + the user website added by the demo-seed test above.
+        expect(o).toMatchObject({ agencies: 4, clients: 12, websites: 31, demo_websites: 30 });
         for (const u of [U.adpostOwner, U.podAdmin, U.stranger]) expect(await attempt(db, u, 'select public.platform_overview()'), u.email).toBe(DENIED);
     });
 
@@ -179,9 +194,11 @@ describe('clients', () => {
         expect(await count(U.adpostOwner, 'agent_instances', `brand_id = '${nc}'`)).toBe(6);
         expect(await attempt(db, U.adpostOwner, `select public.create_client('${A.adpost}', 'POD again', 'pod')`)).toBe(UNIQUE);
         expect(await attempt(db, U.vcaAdmin, `select public.create_client('${A.vca}', 'POD (VCA)', 'pod')`)).toBe('ok');
-        for (const u of [U.adpostManager, U.podAdmin, U.vcaAdmin, U.platform, U.stranger]) {
+        for (const u of [U.adpostManager, U.podAdmin, U.vcaAdmin, U.stranger]) {
             expect(await attempt(db, u, `select public.create_client('${A.adpost}', 'Rogue', 'rogue-${u.id.slice(-2)}')`), u.email).toBe(DENIED);
         }
+        // Super Admins may create managed clients in any agency (migration 0009).
+        expect(await attempt(db, U.platform, `select public.create_client('${A.adpost}', 'By super admin', 'by-super-admin')`)).toBe('ok');
         expect(await attempt(db, U.vcaAdmin, `insert into public.brands (agency_id, name, slug) values ('${A.adpost}', 'Smuggled', 'smuggled')`)).toBe(DENIED);
     });
 
