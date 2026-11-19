@@ -1,6 +1,6 @@
 # Session Handoff
 
-**Updated:** 2026-11-20 (Milestone 2: Phase 17E authentication UI and role-aware routing, local)
+**Updated:** 2026-11-20 (Milestone 3: Phase 17F repositories, local)
 **Project root (current, laptop):** `C:\Users\GeraldFulgosino\Documents\Ultron-B-AI---ADPOST-Version`. Until 2026-11-13 the project lived on a desktop at `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`.
 **Branch:** `feature/adpost-react-supabase-ai`, pushed. The remote SHA is in GITHUB_SYNC_LOG.md. `main` is untouched.
 **Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`. It was linked from the desktop. On the laptop the Supabase CLI is **not installed and not linked** (see below).
@@ -8,7 +8,17 @@
 **Local only, awaiting approval:** 0006, 0007, 0008, 0009, **0010_website_integrations**, plus the pilot seed `supabase/seeds/pilot/lugenix_pilot.sql`.
 **Deployed Edge Functions:** none. Implemented: `agent-execute`, `ai-connection-test`, `user-invite`, **`integration-sync`**, **`integration-google`**.
 
-## 2026-11-20: Milestone 2, Phase 17E UI and role-aware routing (read first)
+## 2026-11-20: Milestone 3, Phase 17F repositories (read first)
+- Plan and status: PHASE17F_DATA_ADAPTER_PLAN.md. **F1–F5 done**, local only; `SUPABASE_ADAPTER_READY` is still `false`.
+- **What exists:**
+  - `src/data/supabase/dbPort.ts`: `DbPort` and `supabaseDbPort(client)`, the only code that calls supabase-js for data. Error codes only, no raw messages, no tokens; identifiers checked.
+  - `src/data/supabase/repositories.ts`: agencies, clients, websites, memberships, profiles, integration connections (read-only, no credentials), conversations, messages (keyset pages), projects and tasks (offset pages with totals); `resolveHome()`; invitation RPCs.
+  - `src/test/db/pgPort.ts`: the same port over PGlite under the user's JWT claims, so repositories run against the real migrations with RLS on.
+- **Finding:** `insert … returning` is refused (42501) on `brands` and `conversations`, because their read policies look the row up by id through a helper that cannot see a row inserted by the same statement. PostgREST `return=representation` would hit the same error on staging. Repositories now insert with a client-generated UUID and read the row back with a normal select. No migration change.
+- **Verification:** tsc 0 errors; **713 passed + 1 opt-in skipped** (65 files, 2 identical full runs); build ok; 0 vulnerabilities. Repository mutation checks (cross-agency guard, 0-row update reported as success, swallowed read errors) each fail tests. PGlite is a local emulation: these are **not** staging results.
+- **Next exact task (no approval needed):** F6, compose `SupabaseBackend` (`BrandApi`) from the repositories, area by area, then F8 (run the backend contract suite against it on PGlite) and F9 (boot path, still gated).
+
+## 2026-11-20: Milestone 2, Phase 17E UI and role-aware routing
 - **Owner decisions of 2026-11-20:**
   - **A. Client Users** land on their assigned client and have no agency administration. Agency routes (`/a/:agency`, `/clients`, `/settings`, `/users`) and `/agencies` send them to `/home`, which resolves to their client (or a client picker for several clients). `/platform`, other agencies and other clients return 403.
   - **B. Lugenix** stays a separate parent agency. The pilot seed already does this: agency `lugenix` "Lugenix Digital Services" → client "Lugenix Digital Services" → `https://lugenixdigitalservices.com` (production, WordPress, not demo). The dev seed's GoldStarATM agency (`agy_lugenix`, slug `lugenix-digital-services`) is unchanged; no IDs were rewritten.
@@ -73,7 +83,7 @@
 
 ## Still pending (after Milestone 2)
 - **E10 is decided (Decision A) and implemented locally.** The a11y gap from Milestone 1 is fixed.
-- **Next exact task (no approval needed):** Phase 17F, the Supabase data adapter (repositories over a narrow port, tested against the migrations on PGlite with RLS). Keep `SUPABASE_ADAPTER_READY = false` until its contract and authorization tests pass.
+- **Next exact task:** see Milestone 3 above (17F F6).
 
 ## Still pending (unchanged by Milestone 1)
 - **Staging migrations 0006–0010:** local only, awaiting approval. The pilot seed is not applied.

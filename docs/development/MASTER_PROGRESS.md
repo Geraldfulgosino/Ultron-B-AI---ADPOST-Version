@@ -174,3 +174,15 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | Accessibility | All status pages have `<main id="main">` and a focused heading; in-shell 403 reachable by the skip link; field errors linked |
 | Verification | tsc 0 errors; 687 passed + 1 opt-in skipped; build ok; 0 vulnerabilities; no browser QA |
 | Commit | see GITHUB_SYNC_LOG.md |
+
+## Milestone 3: Phase 17F repositories (2026-11-20)
+| Item | Result |
+|---|---|
+| `DbPort` | Narrow PostgREST-shaped port; `supabaseDbPort(client)` is the only supabase-js data code |
+| Repositories | Agencies, clients, websites, memberships, profiles, integration connections (read-only), conversations, messages, projects, tasks; `resolveHome()`; invitation RPCs |
+| Authorization | RLS decides; hidden = `AccessDeniedError`; outages = `ServiceError`; 0-row updates are denied, never success; no mock fallback |
+| Pagination | Offset pages with totals (max 100); keyset pages for messages |
+| Finding | `insert … returning` refused on `brands`/`conversations` (id-based read policies); fixed with client-generated ids and insert-then-read |
+| Tests | 20 PGlite repository tests + 6 port unit tests; mutation-checked. Full suite 713 passed + 1 opt-in skipped |
+| Still gated | `SUPABASE_ADAPTER_READY = false`; F6–F9 next; F10 needs staging approval |
+| Commit | see GITHUB_SYNC_LOG.md |

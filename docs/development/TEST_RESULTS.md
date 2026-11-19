@@ -121,3 +121,12 @@
 - `npm run build`: ok. `npm audit`: 0 vulnerabilities.
 - **Test fixes during the milestone:** two new tests matched a stale heading under full parallel load (the same race class as Milestone 1). They now wait for the new route. The reset page briefly showed "Checking your reset link" after a successful reset; it now shows "Your password was changed" until the redirect.
 - **Level:** mock adapter, scripted auth backend and PGlite. No Supabase request was made. No real-browser QA.
+
+## 2026-11-20: Milestone 3, Phase 17F repositories (laptop, Node 26.13.1)
+- `npm run typecheck`: 0 errors.
+- `npm test`: **713 passed + 1 opt-in skipped** (65 files), identical across 2 full runs.
+  - New: `src/test/db/repositories.db.test.ts` (20, PGlite with all 10 migrations, the dev sample seed and RLS on), `src/data/supabase/dbPort.test.ts` (6).
+- Covered: Super Admin, VCA Admin, LIPSKY Client User, a user with no membership; cross-agency and cross-client denial; client-shared vs internal conversations and messages; client-visible projects and tasks; own memberships and profiles only; integration rows without credentials; revocation and suspension on the next query; invitation preview and acceptance through RPCs; keyset and offset pagination; literal search terms; transport failures as `ServiceError`.
+- Mutation checks: removing the cross-agency guard, reporting a 0-row update as success, or swallowing read errors each fails tests.
+- `npm run build`: ok. `npm audit`: 0 vulnerabilities.
+- **Level:** PGlite emulation of Postgres + RLS, and a stub supabase-js client. No Supabase request was made. Not staging results.

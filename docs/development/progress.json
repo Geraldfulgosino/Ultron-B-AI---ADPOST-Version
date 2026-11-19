@@ -91,9 +91,9 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Claude: Phase 17F Supabase data adapter (repositories over a narrow port, PGlite RLS tests), SUPABASE_ADAPTER_READY stays false. Owner: approve staging migrations 0006-0010 + pilot seed; Auth settings (site URL, redirect URLs, SMTP); test users; Super Admin bootstrap; Supabase CLI on the laptop.",
+  "nextTask": "Claude: 17F F6 compose SupabaseBackend from the repositories, F8 contract suite on PGlite, F9 boot path (SUPABASE_ADAPTER_READY stays false). Owner: approve staging migrations 0006-0010 + pilot seed; Auth settings (site URL, redirect URLs, SMTP); test users; Super Admin bootstrap; Supabase CLI on the laptop.",
   "tests": {
-    "adpostWeb": "687 passed + 1 opt-in skipped (63 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
+    "adpostWeb": "713 passed + 1 opt-in skipped (65 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
     "sql": "10 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0010 local only",
@@ -115,7 +115,7 @@
     "17A client foundation": "implemented + validated locally (config validation, project-ref guard, secret-key refusal, provider factory, status screen); not run against staging",
     "17B/C schema + RLS hardening": "implemented + validated locally on real Postgres (PGlite, 37 tests); awaiting approval to deploy to staging",
     "17D auth": "not implemented (adapter); DB side (profile trigger, invitation RPCs, deactivation) validated locally",
-    "17E-F adapters": "not implemented",
+    "17E-F adapters": "17E done locally (see 17E auth adapter); 17F F1-F5 done locally (DbPort, repositories, resolveHome, invitation RPCs); F6-F9 next; F10 blocked on approval",
     "17G realtime": "publication migration validated locally; client not implemented",
     "17H storage": "bucket policies/limits validated locally; client not implemented",
     "17I AI edge functions": "not implemented; awaiting model provider credentials",
@@ -125,7 +125,8 @@
     "17I Claude SEO capability integration": "upstream audited at 6be93f4 (MIT); 40-skill registry implemented + tested; no skill executes yet (needs model API)",
     "17J SEO execution tools": "SSRF-safe fetcher implemented + unit-tested; Edge Function not deployed",
     "17G live AI chat": "architecture + provider plan documented; NOT implemented; awaiting model API authorization",
-    "17E auth adapter": "E1-E10 done locally: adapter, auth UI (forgot/reset password, confirmation, session ended, access pending), role-aware landing, Decision A, invitation pages; E11 (staging) blocked on approval"
+    "17E auth adapter": "E1-E10 done locally: adapter, auth UI (forgot/reset password, confirmation, session ended, access pending), role-aware landing, Decision A, invitation pages; E11 (staging) blocked on approval",
+    "17F data adapter": "F1-F5 done: DbPort + supabaseDbPort, PGlite port, 10 repositories, resolveHome, invitation RPCs; 20 PGlite + 6 unit tests; insert-then-read fix for id-based read policies. Not connected."
   },
   "aiProviders": {
     "M2 schema 0007": "implemented + validated locally (19 DB tests); NOT applied to staging (awaiting approval)",
@@ -200,6 +201,12 @@
     "routing": "role-aware /home; safeNext() return URLs; Client Users redirected from agency routes",
     "a11y": "status pages render main#main with focused heading; field errors linked",
     "tests": "687 passed + 1 skipped; mutation-checked",
+    "commit": "see GITHUB_SYNC_LOG.md"
+  },
+  "milestone3": {
+    "repositories": "agencies, clients, websites, memberships, profiles, integrations (read-only), conversations, messages, projects, tasks",
+    "finding": "insert ... returning refused on brands/conversations (id-based read policies); client-generated ids + insert-then-read",
+    "tests": "713 passed + 1 skipped; mutation-checked",
     "commit": "see GITHUB_SYNC_LOG.md"
   }
 }

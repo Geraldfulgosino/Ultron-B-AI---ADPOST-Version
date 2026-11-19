@@ -42,6 +42,17 @@ export class PendingConfirmationError extends Error {
     }
 }
 
+/**
+ * The backend could not answer (network, timeout, server error). Shown with a Retry; never
+ * replaced by cached or mock data.
+ */
+export class ServiceError extends Error {
+    constructor(message = 'The server could not be reached. Try again.') {
+        super(message);
+        this.name = 'ServiceError';
+    }
+}
+
 /** Throws ValidationError if any rule produced a message. */
 export function assertValid(rules: Record<string, string | false | null | undefined>): void {
     const fields: Record<string, string> = {};
