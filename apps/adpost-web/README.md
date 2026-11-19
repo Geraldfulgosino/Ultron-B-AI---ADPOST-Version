@@ -2,6 +2,8 @@
 
 A standalone React 19 + TypeScript + Vite + Tailwind v4 app for ADPOST's multi-brand AI operations. It runs **fully local** on a typed in-memory adapter with synthetic data. No Supabase connection and no LLM keys are needed. Every AI reply is produced by a deterministic **simulated** provider and labelled as such.
 
+Requires Node.js 24 or later (24 LTS and 26 LTS are tested).
+
 ```bash
 cd apps/adpost-web
 npm install

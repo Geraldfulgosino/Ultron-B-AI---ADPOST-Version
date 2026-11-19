@@ -1,7 +1,7 @@
 {
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
-  "updated": "2026-11-13",
+  "updated": "2026-11-19",
   "currentPhase": "17",
   "phases": [
     {
@@ -91,12 +91,12 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Owner: approve pushing commits 0841ef1..(docs) to GitHub; approve staging migrations 0006-0008 (+ optional dev seed). Claude next: agency membership management UI, agency-level AI team design, Supabase adapters.",
+  "nextTask": "Claude: Phase 17E Supabase auth adapter, then 17F data adapter. Owner: approve staging migrations 0006-0010 + pilot seed; Lugenix agency decision; install/login Supabase CLI on the laptop for any remote step.",
   "tests": {
-    "adpostWeb": "468/468 pass + 1 opt-in (74 real-Postgres DB tests via PGlite)",
+    "adpostWeb": "593 passed + 1 opt-in skipped (57 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-19)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
-    "sql": "8 migrations apply on PGlite; 0001-0005 applied to staging; 0006, 0007, 0008 local only",
+    "sql": "10 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0010 local only",
     "browserQa": "headless Edge 2026-11-02: role nav, brand switch, chat/team chat, forms, mobile drawer, axe WCAG 2.1 AA 0 violations (both themes)"
   },
   "supabase": {
@@ -170,5 +170,22 @@
     "dashboard/ai/reports on real data": "not started (needs 17F + staging data)",
     "tests": "593 passed + 1 opt-in skipped (57 files); tsc clean; build ok",
     "commits": "ccbc803, c894bab, d5ff731, 783ce3c, f2d4130, 89f4e03"
+  },
+  "environment": {
+    "host": "laptop (Windows 11)",
+    "projectRoot": "C:\\Users\\GeraldFulgosino\\Documents\\Ultron-B-AI---ADPOST-Version",
+    "previousRoot": "C:\\LUGENIX\\AI AGENTS\\ULTRON B AI - ADPOST\\ultron-b-ai-sprint-16-client-dashboard-reporting-production",
+    "node": "26.13.1",
+    "npm": "11.20.0",
+    "git": "2.56.0",
+    "nodeEngine": ">=24.0.0",
+    "supabaseCli": "not installed, not linked",
+    "phpDocker": "not installed (B-001)"
+  },
+  "milestone1": {
+    "recovery audit": "done; local = remote = d289290 at start",
+    "@types/node": "declared 24.19.2 in apps/adpost-web (was resolved from repo-root node_modules)",
+    "client user test": "stale 403 heading race in agencies.test.tsx; fixed with expectDenied() + /a/adpost/users regression check",
+    "findings": "Client Users can open their own agency workspace shell (scoped, read-only) -> 17E; in-shell 403 has no <main>"
   }
 }

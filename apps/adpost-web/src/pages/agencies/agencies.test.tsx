@@ -13,6 +13,21 @@ const POD_CLIENT = 'client@pod.example.test';
 const clientNames = (table: HTMLElement) =>
     within(table).getAllByRole('link').filter((a) => a.getAttribute('href')?.endsWith('/dashboard')).map((a) => a.textContent);
 
+type Router = Awaited<ReturnType<typeof renderSampleApp>>['router'];
+
+/**
+ * Navigates and asserts the new route is refused. A 403 left over from the previous route
+ * must unmount first; otherwise `findByRole` can match that stale heading before React
+ * commits the new route, and the assertion would not be about `path` at all.
+ */
+async function expectDenied(router: Router, path: string) {
+    const stale = screen.queryAllByRole('heading', { name: 'Access denied' });
+    await router.navigate(path);
+    await waitFor(() => expect(router.state.location.pathname).toBe(path));
+    await waitFor(() => stale.forEach((h) => expect(h).not.toBeInTheDocument()));
+    expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument();
+}
+
 describe('Super Admin (sample dataset)', () => {
     it('lands on /platform with platform metrics; demo websites are labelled', async () => {
         const { router } = await renderSampleApp('/home', SUPER);
@@ -53,8 +68,7 @@ describe('Admin (sample dataset)', () => {
         const list = await screen.findByRole('list', { name: 'Agencies' });
         expect(within(list).getAllByRole('listitem')).toHaveLength(1);
         expect(within(list).getByText('4 clients · 8 websites (8 demo)')).toBeInTheDocument();
-        await router.navigate('/a/adpost/clients');
-        expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument();
+        await expectDenied(router, '/a/adpost/clients');
     });
 
     it('exact target clients per agency; archived clients are preserved under the Archived filter', async () => {
@@ -125,18 +139,20 @@ describe('Client User portal (sample dataset)', () => {
         await userEvent.click(await screen.findByRole('button', { name: /Start chat/ }));
         await waitFor(() => expect(router.state.location.pathname).toMatch(/\/chat\/cnv_/));
         expect(db.all('conversations')).toEqual([expect.objectContaining({ visibility: 'client_shared', createdBy: 'usr_lipsky_client' })]);
-        await router.navigate('/a/vca/c/cms/dashboard');
-        expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument();
+        await expectDenied(router, '/a/vca/c/cms/dashboard');
     });
 
     it('a read-only Client User has no chat, no report downloads and no admin pages', async () => {
         const { router } = await renderSampleApp('/a/adpost/c/pod/reports', POD_CLIENT);
         await screen.findByRole('heading', { name: 'Reports' });
         expect(screen.queryByRole('button', { name: /Export PDF/ })).toBeNull();
-        await router.navigate('/a/adpost/c/pod/chat');
-        expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument();
-        await router.navigate('/a/adpost/c/pod/members');
-        expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument();
+        await expectDenied(router, '/a/adpost/c/pod/chat');
+        await expectDenied(router, '/a/adpost/c/pod/members');
+        // Agency user administration is refused too: no user list and no invitations.
+        await router.navigate('/a/adpost/users');
+        expect(await screen.findByText('Only agency admins and Super Admins manage users.')).toBeInTheDocument();
+        expect(screen.queryByRole('table', { name: 'Users' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /Invite/ })).toBeNull();
     });
 });
 

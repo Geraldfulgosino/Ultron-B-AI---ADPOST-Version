@@ -111,7 +111,7 @@ Phases 00–16 completed locally and pushed to `feature/adpost-react-supabase-ai
 | M13 Real API smoke tests | **Awaiting credentials, budget and approval** | — |
 | M14 Production readiness | Not started (no deployment authorized) | — |
 
-## Multi-agency, client and website management (2026-11-05, local only, NOT pushed)
+## Multi-agency, client and website management (2026-11-05; pushed 2026-11-13, see GITHUB_SYNC_LOG.md)
 | Milestone | Status | Commit |
 |---|---|---|
 | Phase 0 audit + mapping | Done; owner confirmed Client = Brand, synthetic analytics test-only | — |
@@ -148,3 +148,15 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | 15 n8n | Not started (optional) | — |
 | 16 Security | See INTEGRATION_SECURITY.md (one NULL-helper bug found and fixed) | `c894bab` |
 | 17 Tests | 593 passed + 1 opt-in skipped (57 files); tsc clean; build ok | — |
+
+## Milestone 1: new laptop baseline recovery (2026-11-19)
+**Project root (laptop):** `C:\Users\GeraldFulgosino\Documents\Ultron-B-AI---ADPOST-Version`. Recovered at `d289290`, with local and remote identical.
+
+| Item | Result |
+|---|---|
+| Read-only recovery audit | Done. Git, docs, architecture, Supabase, roles, AI, SEO skills, Lugenix and environment all audited. No code changes |
+| `@types/node` | Declared in `apps/adpost-web` (24.19.2, exact). It was previously resolved from the repo-root `node_modules`, so a fresh checkout failed `tsc` |
+| Node requirement | `engines.node >= 24.0.0`. Node 24 and 26 LTS supported |
+| Client User test | Root cause: a stale-element race in the test (it matched the previous route's 403 heading). Fixed with `expectDenied()`, plus a regression check on `/a/adpost/users`. Security behaviour unchanged |
+| Verification | tsc 0 errors; 593 passed + 1 opt-in skipped; build ok; 0 vulnerabilities |
+| Findings for 17E | Client Users can open their own agency's workspace shell (data scoped, read-only). In-shell 403 lacks `<main>` |

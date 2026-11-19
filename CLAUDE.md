@@ -40,11 +40,11 @@ npm run typecheck                          # TypeScript check
 - Use factories and synthetic data; never use production data in tests
 
 ## ADPOST Edition (apps/adpost-web)
-- Standalone React 19 + TS + Vite + Tailwind 4 app; own `package.json`. Run `npm test`, `npm run typecheck`, `npm run build` inside `apps/adpost-web`.
+- Standalone React 19 + TS + Vite + Tailwind 4 app; own `package.json` (Node >= 24). Run `npm test`, `npm run typecheck`, `npm run build` inside `apps/adpost-web`.
 - UI depends only on `src/data/contracts.ts`; the local adapter (`src/data/local`) enforces access via `Scope` (mirrors `supabase/migrations/*_rls.sql`; change both together).
 - Every brand-owned feature needs a tenant-isolation test; `src/test/contract` holds backend-agnostic contract tests.
 - AI runs only through `src/data/local/engine.ts` (stand-in for the `agent-execute` Edge Function). Never put model keys in `VITE_*`.
-- Supabase (Phase 17) and Netlify (Phase 18) are not authorized yet. Progress: `docs/development/`.
+- Supabase staging `ppwkxlwxzutigepaizob` has 0001–0005 applied; every further remote change (migrations, seeds, secrets, Edge Function deploys, accounts) needs explicit owner approval. Netlify (Phase 18) is not authorized. Progress: `docs/development/`.
 
 ## Legacy sprints
 See `docs/superpowers/` for the Laravel sprint plans and specs.

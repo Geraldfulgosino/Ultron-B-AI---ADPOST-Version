@@ -90,3 +90,17 @@
   - 0 console errors.
 - **Fixed from QA:** the platform overview counted websites of archived clients (30 vs. 24 on the agency rows). Fixed in the local adapter and in `platform_overview()` (0009).
 - **Level:** local only. Nothing ran against staging. No email was sent. These are not live security verification.
+
+## 2026-11-19: Milestone 1 (new laptop, Node 26.13.1, npm 11.20.0, Windows 11)
+- **Before the fixes:**
+  - `tsc`: 1 error, `vite.config.ts(5,36) TS2591 node:url` (`@types/node` was undeclared).
+  - `npm test`: 592 passed, 1 failed, 1 skipped. The failure was `agencies.test.tsx` "a read-only Client User …", deterministic on this machine (a stale-element race).
+- **After the fixes:**
+  - `npm run typecheck`: 0 errors.
+  - `npm test`: **593 passed + 1 opt-in skipped** (57 files), identical across 3 full runs. `agencies.test.tsx` passed 5/5 isolated runs.
+  - `npm run build`: ok. `npm audit`: 0 vulnerabilities.
+- **Skipped:** `src/test/db/stagingRls.db.test.ts` (opt-in: needs `STAGING_RLS_RESULT_FILE` from a staging run).
+- **Not run:**
+  - Legacy root build and typecheck (root `node_modules` not installed on the laptop).
+  - Laravel PHPUnit (B-001: no PHP/Docker).
+  - Any staging or live test, and any real-browser QA.
