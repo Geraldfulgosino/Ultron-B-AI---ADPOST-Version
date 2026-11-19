@@ -33,15 +33,15 @@ Real sign-in against Supabase Auth (`ppwkxlwxzutigepaizob`) behind `VITE_DATA_PR
 | E3 | `SupabaseAuth` adapter: sign-in, restore, sign-out, register, profile, change password, reset, suspension, change events | No | **Done** (`src/data/supabase/auth.ts`) |
 | E4 | Unit tests with a fake port: every rule above, plus a check that no token reaches the adapter or UI state | No | **Done**: 26 tests in `src/data/supabase/auth.test.ts`, 4 in `src/data/local/auth.test.ts`. Mutation-checked (generation guard, re-auth, reset leak, restore suspension) |
 | E5 | `BackendProvider` subscribes to `onSessionChange` | No | **Done** |
-| E6 | UI: `/forgot-password` form and `/reset-password` page; the sign-up confirmation notice | No | Next |
-| E7 | Role-aware landing in Supabase mode: `users.home()` from `platform_admins`, `agency_memberships` and `brand_memberships` (17F) | No (code) | With 17F |
-| E8 | Invitation acceptance: sign up or sign in, confirm email, then `preview_invitation` / `accept_invitation` / `accept_agency_invitation` RPCs (17F) | No (code) | With 17F |
-| E9 | Membership revocation in the UI: an `AccessDeniedError` from RLS sends the user to `/home`; Realtime on memberships later (17G) | No | With 17F |
-| E10 | Client Users kept out of agency routes: redirect from `/a/:agency[/clients\|/settings\|/users]` to their client | **Owner decision** (see below) | Proposed |
+| E6 | UI: `/forgot-password` form and `/reset-password` page; the sign-up confirmation notice | No | **Done** (2026-11-20), plus expired-link and session-ended notices and `/access-pending` |
+| E7 | Role-aware landing in Supabase mode: `users.home()` from `platform_admins`, `agency_memberships` and `brand_memberships` (17F) | No (code) | UI and local rules **done** (several clients → `/brands`, none → `/access-pending`); Supabase query with 17F |
+| E8 | Invitation acceptance: sign up or sign in, confirm email, then `preview_invitation` / `accept_invitation` / `accept_agency_invitation` RPCs (17F) | No (code) | UI **done** (`?next=` through sign-in and registration, expired and wrong-account states); RPC calls with 17F |
+| E9 | Membership revocation in the UI: an `AccessDeniedError` from RLS sends the user to `/home`; Realtime on memberships later (17G) | No | **Done**: the open page turns into a 403 whose link goes to `/home` (then `/access-pending` when nothing is left) |
+| E10 | Client Users kept out of agency routes: redirect from `/a/:agency[/clients\|/settings\|/users]` to their client | Owner approved (Decision A, 2026-11-20) | **Done**: routes, data layer (`AgencyAccess.workspace`), RLS verified on PGlite |
 | E11 | Staging verification: apply 0006–0010, configure Auth (site URL, redirect URLs, SMTP), create test users, bootstrap the first Super Admin, run the RLS matrix with real JWTs | **Yes, each step** | Blocked |
 
 ## Owner decisions and approvals
-- **E10:** today a Client User can open their own agency's overview, clients list and read-only settings. Data is scoped to their client, and every write is refused. Should Client Users be limited strictly to `/a/:agency/c/:client/...`? Recommended: yes.
+- **E10:** decided 2026-11-20 (Decision A): Client Users are limited to their client portal. Implemented.
 - **Auth configuration on staging:** site URL, allowed redirect URLs (`http://127.0.0.1:5173/**`, `http://localhost:5173/**`), email confirmation on, custom SMTP for invitations and resets.
 - **Test users:** create them in the dashboard, or allow sign-up through the API.
 - **First Super Admin:** you run `select app.bootstrap_super_admin('<email>')` after 0009 is applied.

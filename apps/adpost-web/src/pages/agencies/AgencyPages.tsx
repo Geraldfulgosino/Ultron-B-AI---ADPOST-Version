@@ -4,7 +4,7 @@
  * integration exists. Permanent deletion is not offered: archive and restore instead.
  */
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 import { Building2, ChevronRight, LogOut, Plus, Search, Zap } from 'lucide-react';
 import { fieldErrors, useAction, useBackend, useQuery } from '@/app/backend';
 import { agencyBase, clientBase } from '@/app/paths';
@@ -51,6 +51,10 @@ function Filters({ query, setQuery, status, setStatus, label, withSuspended = fa
 export function AgenciesPage() {
     const { session, signOut } = useBackend();
     const navigate = useNavigate();
+    // Client Users (and users without access) have no agency directory: send them to their landing page.
+    const home = useQuery((api) => api.users.home(), []);
+    if (home.loading) return <LoadingState />;
+    if (home.data && (home.data.reason === 'client_user' || home.data.reason === 'none')) return <Navigate to={home.data.path} replace />;
     return (
         <div className="min-h-screen bg-canvas">
             <header className="border-b border-line bg-surface">

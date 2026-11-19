@@ -125,6 +125,7 @@ export class LocalBackend implements Backend {
             completePasswordReset: async () => {
                 throw new AuthError('Password reset links need Supabase Auth. Local accounts use the dev password shown on the sign-in page.');
             },
+            inRecovery: () => false,
             onSessionChange: (listener) => {
                 this.sessionListeners.add(listener);
                 return () => this.sessionListeners.delete(listener);
@@ -157,7 +158,9 @@ export class LocalBackend implements Backend {
             if (!raw) return null;
             const { userId } = JSON.parse(raw) as { userId: string };
             const user = this.db.find('users', userId);
-            return user ? { user: structuredClone(user) } : null;
+            // A stored session of a suspended or removed account is not restored.
+            if (!user || user.deactivatedAt) return null;
+            return { user: { id: user.id, name: user.name, email: user.email } };
         } catch {
             return null;
         }

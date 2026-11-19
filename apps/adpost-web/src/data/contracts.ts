@@ -35,6 +35,8 @@ export interface AuthApi {
     requestPasswordReset(email: string): Promise<void>;
     /** Sets a new password inside a recovery session opened from a reset link. */
     completePasswordReset(newPassword: string): Promise<Session>;
+    /** True while a recovery session from a reset link is open (the reset page shows its form). */
+    inRecovery(): boolean;
     /** Session changes the app did not start itself: expiry, other tabs, suspension, recovery. */
     onSessionChange(listener: (session: Session | null) => void): () => void;
 }
@@ -89,6 +91,11 @@ export interface AgencyAccess {
     canChangeStatus: boolean;
     /** Agency owners/admins: add clients. */
     canAddClients: boolean;
+    /**
+     * May open the agency workspace (overview, clients, settings): platform admins, agency members
+     * and client staff. False for Client Users, who only use their client's portal.
+     */
+    workspace: boolean;
 }
 
 export interface AgencyView extends T.Agency {

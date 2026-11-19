@@ -4,6 +4,8 @@ import type { Backend, BrandAccess, BrandApi, Session } from '@/data/contracts';
 interface BackendState {
     backend: Backend;
     session: Session | null;
+    /** True when the session ended without the user signing out (expiry, another tab, suspension). */
+    sessionEnded: boolean;
     signIn(email: string, password: string): Promise<void>;
     register(input: { name: string; email: string; password: string }): Promise<void>;
     signOut(): Promise<void>;
@@ -15,22 +17,53 @@ const BackendContext = createContext<BackendState | null>(null);
 
 export function BackendProvider({ backend, children }: { backend: Backend; children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(() => backend.auth.currentSession());
+    const [sessionEnded, setSessionEnded] = useState(false);
+    const sessionRef = useRef(session);
+    sessionRef.current = session;
+    /** Set by an explicit sign-out, so its own SIGNED_OUT event is not reported as "session ended". */
+    const signingOut = useRef(false);
     // Expiry, sign-out in another tab, suspension and password recovery arrive from the backend.
-    useEffect(() => backend.auth.onSessionChange(setSession), [backend]);
+    useEffect(
+        () =>
+            backend.auth.onSessionChange((next) => {
+                if (!next && sessionRef.current && !signingOut.current) setSessionEnded(true);
+                setSession(next);
+            }),
+        [backend],
+    );
 
     const value = useMemo<BackendState>(
         () => ({
             backend,
             session,
-            signIn: async (email, password) => setSession(await backend.auth.signIn(email, password)),
-            register: async (input) => setSession(await backend.auth.register(input)),
+            sessionEnded,
+            signIn: async (email, password) => {
+                const next = await backend.auth.signIn(email, password);
+                signingOut.current = false;
+                setSessionEnded(false);
+                setSession(next);
+            },
+            register: async (input) => {
+                const next = await backend.auth.register(input);
+                signingOut.current = false;
+                setSessionEnded(false);
+                setSession(next);
+            },
             signOut: async () => {
-                await backend.auth.signOut();
-                setSession(null);
+                // Clear the UI state even if the network call fails: the local session is gone either way.
+                signingOut.current = true;
+                try {
+                    await backend.auth.signOut();
+                } catch {
+                    // The adapter has already dropped its local session; nothing else to undo.
+                } finally {
+                    setSessionEnded(false);
+                    setSession(null);
+                }
             },
             refreshSession: () => setSession(backend.auth.currentSession()),
         }),
-        [backend, session],
+        [backend, session, sessionEnded],
     );
 
     return <BackendContext.Provider value={value}>{children}</BackendContext.Provider>;

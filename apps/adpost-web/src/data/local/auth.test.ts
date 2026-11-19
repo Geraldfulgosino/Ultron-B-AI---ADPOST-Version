@@ -43,4 +43,16 @@ describe('LocalBackend auth: Phase 17E contract additions', () => {
         db.patch('users', IDS.users.priya, { deactivatedAt: db.nowIso() });
         expect(seen).toEqual([]);
     });
+
+    it('does not restore a stored session of an account suspended since (stale session state)', () => {
+        const db = testDb();
+        // A session stored by an earlier page load (another tab, before the suspension).
+        const stored = () => sessionStorage.setItem('adpost.session.v1', JSON.stringify({ userId: IDS.users.priya }));
+        stored();
+        expect(new LocalBackend(db, true).auth.currentSession()?.user.id).toBe(IDS.users.priya);
+        db.patch('users', IDS.users.priya, { deactivatedAt: db.nowIso() });
+        stored();
+        expect(new LocalBackend(db, true).auth.currentSession()).toBeNull();
+        sessionStorage.clear();
+    });
 });

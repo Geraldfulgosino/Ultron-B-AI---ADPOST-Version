@@ -111,3 +111,13 @@
 - `npm run build`: ok. `npm audit`: 0 vulnerabilities.
 - Mutation checks: removing the generation guard, the password re-authentication, the reset no-enumeration rule or the restore suspension check each fails at least one test.
 - **Level:** fake ports only. No Supabase request was made.
+
+## 2026-11-20: Milestone 2, Phase 17E UI and role-aware routing (laptop, Node 26.13.1)
+- `npm run typecheck`: 0 errors.
+- `npm test`: **687 passed + 1 opt-in skipped** (63 files), identical across 3 full runs.
+  - New: `src/app/redirects.test.ts` (15), `src/app/roles.test.tsx` (18), `src/pages/auth/auth.test.tsx` (19), `src/pages/invitations.test.tsx` (7).
+  - Extended: `src/data/local/agencies.test.ts` (+2), `src/data/local/auth.test.ts` (+1), `src/data/supabase/auth.test.ts` (+1), `src/test/db/roles.db.test.ts` (+1, PGlite), `agencies.test.tsx` (Client User agency routes now redirect).
+- Scenarios covered: valid and invalid sign-in, unconfirmed email, expired session, explicit sign-out, sign-out failure, suspension while signed in, stale stored session, password reset request, expired reset link, reset completion, registration with confirmation, invitation acceptance (new account via `?next=`), expired client and agency invitations, wrong account, revoked client membership, revoked agency role, Super Admin / Admin / Client User route access, cross-agency and cross-client denial, direct URL navigation, open redirects and redirect loops, 403 landmarks and focus.
+- `npm run build`: ok. `npm audit`: 0 vulnerabilities.
+- **Test fixes during the milestone:** two new tests matched a stale heading under full parallel load (the same race class as Milestone 1). They now wait for the new route. The reset page briefly showed "Checking your reset link" after a successful reset; it now shows "Your password was changed" until the redirect.
+- **Level:** mock adapter, scripted auth backend and PGlite. No Supabase request was made. No real-browser QA.

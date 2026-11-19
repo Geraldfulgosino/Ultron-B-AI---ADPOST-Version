@@ -148,11 +148,14 @@ describe('Client User portal (sample dataset)', () => {
         expect(screen.queryByRole('button', { name: /Export PDF/ })).toBeNull();
         await expectDenied(router, '/a/adpost/c/pod/chat');
         await expectDenied(router, '/a/adpost/c/pod/members');
-        // Agency user administration is refused too: no user list and no invitations.
-        await router.navigate('/a/adpost/users');
-        expect(await screen.findByText('Only agency admins and Super Admins manage users.')).toBeInTheDocument();
-        expect(screen.queryByRole('table', { name: 'Users' })).toBeNull();
-        expect(screen.queryByRole('button', { name: /Invite/ })).toBeNull();
+        // Agency administration is not part of the client portal (Decision A): the agency
+        // workspace sends a Client User back to their client, with no user list or invitations.
+        for (const path of ['/a/adpost/users', '/a/adpost', '/a/adpost/clients', '/a/adpost/settings', '/agencies']) {
+            await router.navigate(path);
+            await waitFor(() => expect(router.state.location.pathname).toBe('/a/adpost/c/pod/dashboard'));
+            expect(screen.queryByRole('table', { name: 'Users' })).toBeNull();
+            expect(screen.queryByRole('button', { name: /Invite/ })).toBeNull();
+        }
     });
 });
 

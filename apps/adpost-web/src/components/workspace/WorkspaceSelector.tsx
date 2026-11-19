@@ -42,7 +42,7 @@ const selectClass = 'w-full rounded-md bg-slate-800 border border-slate-700 px-2
 const labelClass = 'text-xs text-slate-400 uppercase tracking-wide mb-1 block';
 
 export function WorkspaceSelector() {
-    const { brand } = useBrand();
+    const { brand, role } = useBrand();
     const navigate = useNavigate();
     const location = useLocation();
     const agencies = useQuery((api) => api.agencies.list({ status: 'all' }), []);
@@ -61,7 +61,10 @@ export function WorkspaceSelector() {
         <div className="space-y-2">
             <div>
                 <label htmlFor="agency-switcher" className={labelClass}>Agency</label>
-                {agencyOptions.length > 1 ? (
+                {role === 'client' ? (
+                    // Client Users have no agency workspace: the agency is shown, not linked.
+                    <p id="agency-switcher" className="text-sm font-medium text-white truncate">{agencies.data?.find((a) => a.id === brand.agencyId)?.name ?? brand.agencySlug}</p>
+                ) : agencyOptions.length > 1 ? (
                     <select id="agency-switcher" className={selectClass} value={brand.agencySlug} onChange={(e) => navigate(agencyBase(e.target.value))}>
                         {agencyOptions.map((a) => <option key={a.id} value={a.slug}>{a.name}</option>)}
                     </select>

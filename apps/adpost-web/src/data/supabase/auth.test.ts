@@ -270,6 +270,18 @@ describe('SupabaseAuth: password recovery', () => {
         await expect(auth.completePasswordReset('another-pass')).rejects.toBeInstanceOf(AuthError);
     });
 
+    it('tells the reset page about recovery even when the same user was already signed in', async () => {
+        const { auth, port } = await setup();
+        await auth.signIn('admin@agency.example.test', 'correct-horse');
+        await flush();
+        const seen: unknown[] = [];
+        auth.onSessionChange((s) => seen.push(s?.user.id ?? null));
+        port.emit('PASSWORD_RECOVERY', 'usr_admin');
+        await flush();
+        expect(auth.inRecovery()).toBe(true);
+        expect(seen).toEqual(['usr_admin']);
+    });
+
     it('refuses a recovery session for a suspended account', async () => {
         const { auth, port } = await setup();
         port.stored = 'usr_suspended';

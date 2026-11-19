@@ -10,12 +10,17 @@ import { ErrorState, LoadingState } from '@/components/ui';
 import { ForbiddenPage } from '@/pages/StatusPages';
 import { clientBase } from '@/app/paths';
 import { WorkspaceSelector } from '@/components/workspace/WorkspaceSelector';
+import { loginPath } from '@/app/redirects';
 
-/** Redirects to /login (preserving the target) when signed out. */
+/**
+ * Redirects to /login (preserving the target) when signed out. The session is restored before
+ * the app mounts, so this never redirects a user whose session is still valid; when the session
+ * ends later (expiry, another tab, suspension) the login page says so.
+ */
 export function RequireAuth() {
     const { session } = useBackend();
     const location = useLocation();
-    if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+    if (!session) return <Navigate to={loginPath(location)} replace />;
     return <Outlet />;
 }
 
@@ -31,13 +36,13 @@ export function visibleNav(access: BrandAccess): NavGroup[] {
 export function RequireStaffOrClient({ client, children }: { client: true | 'ai_chat'; children: React.ReactNode }) {
     const access = useBrand();
     const ok = access.can.staff || (access.role === 'client' && (client === true || access.clientPermissions.includes(client)));
-    return ok ? <>{children}</> : <ForbiddenPage />;
+    return ok ? <>{children}</> : <ForbiddenPage embedded />;
 }
 
 /** Page-level gate for direct URL access. The data layer still enforces the real rule. */
 export function RequireCapability({ cap, children }: { cap: Capability; children: React.ReactNode }) {
     const access = useBrand();
-    return access.can[cap] ? <>{children}</> : <ForbiddenPage />;
+    return access.can[cap] ? <>{children}</> : <ForbiddenPage embedded />;
 }
 
 export function BrandLayout() {
@@ -48,7 +53,7 @@ export function BrandLayout() {
     const brands = useQuery((api) => api.workspace.listBrands(), []);
 
     if (brand.error instanceof AccessDeniedError) return <ForbiddenPage />;
-    if (brand.error) return <div className="p-8"><ErrorState error={brand.error} onRetry={brand.reload} /></div>;
+    if (brand.error) return <main id="main" className="p-8"><ErrorState error={brand.error} onRetry={brand.reload} /></main>;
     if (brand.loading || !brand.data) return <LoadingState />;
 
     const access = brand.data;

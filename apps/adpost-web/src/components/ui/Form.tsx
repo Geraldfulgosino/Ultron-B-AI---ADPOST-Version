@@ -9,14 +9,18 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ error, className, ...props }: InputProps) {
+    // Screen readers announce the error with the field when it is linked by id.
+    const errorId = error && props.id ? `${props.id}-error` : undefined;
+    const describedBy = [props['aria-describedby'], errorId].filter(Boolean).join(' ') || undefined;
     return (
         <div className="w-full">
             <input
                 aria-invalid={error ? true : undefined}
                 className={cn(fieldBase, error ? 'border-danger-line-strong text-danger-ink' : 'border-line-strong text-fg', className)}
                 {...props}
+                aria-describedby={describedBy}
             />
-            {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+            {error && <p id={errorId} className="mt-1 text-xs text-danger">{error}</p>}
         </div>
     );
 }
@@ -69,7 +73,7 @@ export function Field({
                 {label}
             </Label>
             {children}
-            {hint && <p className="mt-1 text-xs text-fg-muted">{hint}</p>}
+            {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-fg-muted">{hint}</p>}
         </div>
     );
 }

@@ -197,6 +197,33 @@ describe('Client User portal', () => {
         await expect(c.users.list({})).rejects.toBeInstanceOf(AccessDeniedError);
     });
 
+    it('Decision A: reads its agency name but not the agency workspace (overview, client list, users, audit)', async () => {
+        const db = sampleDb();
+        const c = api(db, 'usr_lipsky_client');
+        const vca = await c.agencies.bySlug('vca');
+        expect(vca.name).toBe('VCA');
+        expect(vca.access).toEqual({ isMember: false, canEdit: false, canChangeStatus: false, canAddClients: false, workspace: false });
+        expect(vca.counts).toBeNull();
+        await expect(c.agencies.overview('agy_vca')).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(c.agencies.clients('agy_vca')).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(c.agencies.update('agy_vca', { name: 'Taken over' })).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(c.users.list({ agencyId: 'agy_vca' })).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(c.users.agencyInvitations('agy_vca')).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(c.users.audit({ agencyId: 'agy_vca' })).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(c.agencies.bySlug('adpost')).rejects.toBeInstanceOf(AccessDeniedError);
+        // Staff keep the workspace.
+        expect((await api(db, 'usr_vca_admin').agencies.bySlug('vca')).access.workspace).toBe(true);
+        expect((await api(db, 'usr_pod_seo').agencies.bySlug('adpost')).access.workspace).toBe(true);
+    });
+
+    it('home: several clients → the client picker; no membership → access pending', async () => {
+        const db = sampleDb();
+        db.insert('brandMemberships', { id: 'bm_x', brandId: CMS, userId: 'usr_lipsky_client', role: 'client', clientId: null, department: null, permissions: [], joinedAt: db.nowIso() });
+        expect(await api(db, 'usr_lipsky_client').users.home()).toEqual({ path: '/brands', reason: 'client_user' });
+        db.delete('brandMemberships', (m) => m.userId === 'usr_lipsky_client');
+        expect(await api(db, 'usr_lipsky_client').users.home()).toEqual({ path: '/access-pending', reason: 'none' });
+    });
+
     it('AI chat only with client-facing agents in client-shared conversations; staff-internal conversations stay hidden', async () => {
         const db = sampleDb();
         const staff = api(db, 'usr_vca_admin');

@@ -93,13 +93,15 @@ export function localAgencies(scope: Scope): AgenciesApi {
         const clients = readableClients(a.id);
         const isPlatform = platform();
         if (!m && !clients.length && !isPlatform) return null;
+        // Client Users read their agency's name (RLS agencies_select) but not its workspace.
+        const workspace = isPlatform || !!m || clients.some((c) => can(scope.facts(c.id), 'staff'));
         // Websites of archived clients are not counted (they are preserved, not active work).
         const ids = new Set(clients.filter((c) => c.status !== 'archived').map((c) => c.id));
         const websites = db.all('websites').filter((w) => ids.has(w.brandId) && w.status !== 'archived');
         return {
             ...structuredClone(a),
-            access: { isMember: !!m, canEdit: isPlatform || isAgencyAdminRole(m?.role), canChangeStatus: isPlatform, canAddClients: isAgencyAdminRole(m?.role) && a.status !== 'archived' },
-            counts: m || clients.length ? {
+            access: { isMember: !!m, canEdit: isPlatform || isAgencyAdminRole(m?.role), canChangeStatus: isPlatform, canAddClients: isAgencyAdminRole(m?.role) && a.status !== 'archived', workspace },
+            counts: workspace && (m || clients.length) ? {
                 clients: clients.filter((c) => c.status !== 'archived').length,
                 activeClients: clients.filter((c) => c.status === 'active').length,
                 archivedClients: clients.filter((c) => c.status === 'archived').length,
@@ -189,7 +191,7 @@ export function localAgencies(scope: Scope): AgenciesApi {
         },
 
         async clients(agencyId, filter = {}) {
-            find(agencyId);
+            if (!find(agencyId).access.workspace) throw new AccessDeniedError('Client Users open their client portal, not the agency workspace.');
             const q = filter.query?.trim().toLowerCase();
             const status = filter.status ?? 'all';
             return readableClients(agencyId)
@@ -241,7 +243,7 @@ export function localAgencies(scope: Scope): AgenciesApi {
 
         async overview(agencyId) {
             const agency = find(agencyId);
-            if (!agency.counts) throw new AccessDeniedError('Only members of this agency can see its overview.');
+            if (!agency.counts || !agency.access.workspace) throw new AccessDeniedError('Only members of this agency can see its overview.');
             const clients = readableClients(agencyId).filter((c) => c.status !== 'archived');
             const ids = new Set(clients.filter((c) => { try { return can(scope.facts(c.id), 'staff'); } catch { return false; } }).map((c) => c.id));
             const sites = db.all('websites').filter((w) => clients.some((c) => c.id === w.brandId) && w.status !== 'archived');

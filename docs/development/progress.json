@@ -1,7 +1,7 @@
 {
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
-  "updated": "2026-11-19",
+  "updated": "2026-11-20",
   "currentPhase": "17",
   "phases": [
     {
@@ -91,9 +91,9 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Claude: 17E E6 (forgot/reset password pages, confirmation notice), then 17F (users.home, invitation RPCs, data adapter). Owner: E10 decision (Client Users and agency routes); approve staging migrations 0006-0010 + pilot seed; Lugenix agency decision; Supabase CLI on the laptop.",
+  "nextTask": "Claude: Phase 17F Supabase data adapter (repositories over a narrow port, PGlite RLS tests), SUPABASE_ADAPTER_READY stays false. Owner: approve staging migrations 0006-0010 + pilot seed; Auth settings (site URL, redirect URLs, SMTP); test users; Super Admin bootstrap; Supabase CLI on the laptop.",
   "tests": {
-    "adpostWeb": "623 passed + 1 opt-in skipped (59 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-19)",
+    "adpostWeb": "687 passed + 1 opt-in skipped (63 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
     "sql": "10 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0010 local only",
@@ -125,7 +125,7 @@
     "17I Claude SEO capability integration": "upstream audited at 6be93f4 (MIT); 40-skill registry implemented + tested; no skill executes yet (needs model API)",
     "17J SEO execution tools": "SSRF-safe fetcher implemented + unit-tested; Edge Function not deployed",
     "17G live AI chat": "architecture + provider plan documented; NOT implemented; awaiting model API authorization",
-    "17E auth adapter": "E1-E5 implemented + unit-tested with fake ports (contract additions, AuthPort, SupabaseAuth); E6 UI next; not connected (SUPABASE_ADAPTER_READY=false)"
+    "17E auth adapter": "E1-E10 done locally: adapter, auth UI (forgot/reset password, confirmation, session ended, access pending), role-aware landing, Decision A, invitation pages; E11 (staging) blocked on approval"
   },
   "aiProviders": {
     "M2 schema 0007": "implemented + validated locally (19 DB tests); NOT applied to staging (awaiting approval)",
@@ -189,5 +189,17 @@
     "client user test": "stale 403 heading race in agencies.test.tsx; fixed with expectDenied() + /a/adpost/users regression check",
     "findings": "Client Users can open their own agency workspace shell (scoped, read-only) -> 17E; in-shell 403 has no <main>",
     "commit": "53261fd (pushed, verified)"
+  },
+  "ownerDecisions": {
+    "2026-11-20 A": "Client Users land on their client; no agency administration (implemented: routes, data layer, RLS verified on PGlite)",
+    "2026-11-20 B": "Lugenix Digital Services stays a separate parent agency (pilot seed already matches; dev seed IDs unchanged)",
+    "2026-11-20 C": "Local development only; 0006-0010 not applied; no users, deployments or staging writes"
+  },
+  "milestone2": {
+    "auth ui": "forgot-password, reset-password, registration confirmation, expired-link and session-ended notices, access-pending",
+    "routing": "role-aware /home; safeNext() return URLs; Client Users redirected from agency routes",
+    "a11y": "status pages render main#main with focused heading; field errors linked",
+    "tests": "687 passed + 1 skipped; mutation-checked",
+    "commit": "see GITHUB_SYNC_LOG.md"
   }
 }

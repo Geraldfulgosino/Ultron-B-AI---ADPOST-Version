@@ -1,5 +1,5 @@
 import { createContext, Suspense, useContext } from 'react';
-import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, NavLink, Outlet, useNavigate, useParams } from 'react-router';
 import { LogOut, Zap } from 'lucide-react';
 import { useBackend, useQuery } from '@/app/backend';
 import { agencyBase } from '@/app/paths';
@@ -27,9 +27,11 @@ export function AgencyLayout() {
     const agencies = useQuery((api) => api.agencies.list({ status: 'all' }), []);
 
     if (agency.error instanceof AccessDeniedError) return <ForbiddenPage />;
-    if (agency.error) return <div className="p-8"><ErrorState error={agency.error} onRetry={agency.reload} /></div>;
+    if (agency.error) return <main id="main" className="p-8"><ErrorState error={agency.error} onRetry={agency.reload} /></main>;
     if (agency.loading || !agency.data) return <LoadingState />;
     const a = agency.data;
+    // Client Users use their client portal only; /home sends them to it (never back here).
+    if (!a.access.workspace) return <Navigate to="/home" replace />;
     const base = agencyBase(a.slug);
     const tabs = [
         { to: base, label: 'Overview', end: true },

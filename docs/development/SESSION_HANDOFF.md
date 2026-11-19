@@ -1,6 +1,6 @@
 # Session Handoff
 
-**Updated:** 2026-11-19 (Milestone 1: new laptop baseline recovery)
+**Updated:** 2026-11-20 (Milestone 2: Phase 17E authentication UI and role-aware routing, local)
 **Project root (current, laptop):** `C:\Users\GeraldFulgosino\Documents\Ultron-B-AI---ADPOST-Version`. Until 2026-11-13 the project lived on a desktop at `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`.
 **Branch:** `feature/adpost-react-supabase-ai`, pushed. The remote SHA is in GITHUB_SYNC_LOG.md. `main` is untouched.
 **Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`. It was linked from the desktop. On the laptop the Supabase CLI is **not installed and not linked** (see below).
@@ -8,7 +8,29 @@
 **Local only, awaiting approval:** 0006, 0007, 0008, 0009, **0010_website_integrations**, plus the pilot seed `supabase/seeds/pilot/lugenix_pilot.sql`.
 **Deployed Edge Functions:** none. Implemented: `agent-execute`, `ai-connection-test`, `user-invite`, **`integration-sync`**, **`integration-google`**.
 
-## 2026-11-19: new laptop baseline (read first)
+## 2026-11-20: Milestone 2, Phase 17E UI and role-aware routing (read first)
+- **Owner decisions of 2026-11-20:**
+  - **A. Client Users** land on their assigned client and have no agency administration. Agency routes (`/a/:agency`, `/clients`, `/settings`, `/users`) and `/agencies` send them to `/home`, which resolves to their client (or a client picker for several clients). `/platform`, other agencies and other clients return 403.
+  - **B. Lugenix** stays a separate parent agency. The pilot seed already does this: agency `lugenix` "Lugenix Digital Services" → client "Lugenix Digital Services" → `https://lugenixdigitalservices.com` (production, WordPress, not demo). The dev seed's GoldStarATM agency (`agy_lugenix`, slug `lugenix-digital-services`) is unchanged; no IDs were rewritten.
+  - **C. Supabase:** local development only. 0006–0010 not applied; no users, deployments or staging writes.
+- **Server-side enforcement of Decision A:**
+  - Local adapter: `AgencyAccess.workspace` is false for Client Users; `agencies.overview` and `agencies.clients` refuse them. Users, invitations and audit already refused them.
+  - RLS (0001–0009): a Client User reads its agency's name row only. No agency memberships, invitations, audit, platform tables, other Client Users or other clients; agency updates and client inserts are refused. New PGlite test in `roles.db.test.ts`. No new migration was needed.
+- **Auth UI (E6, plus E7/E9 in mock mode):**
+  - `/forgot-password` form (same answer for known and unknown emails; rate limits reported).
+  - `/reset-password` (public): waits for the recovery session from the email link, explains invalid or expired links from the error code (never the raw description), confirms the new password, then signs out and returns to sign-in with a notice.
+  - Registration: email-confirmation notice (`PendingConfirmationError`), no account enumeration, `?next=` kept for invitations.
+  - Sign-in: expired-link message, "session ended" notice after expiry, suspension or sign-out in another tab, fixed notices only (never text from the URL).
+  - `/access-pending` for signed-in users without any membership. `/home` shows an error with Retry instead of redirecting on failure (no loops).
+  - Return URLs: `src/app/redirects.ts` `safeNext()` allows same-app paths only, rejects `//host`, `/\host`, schemes, control characters and every auth page (loop prevention).
+  - Sign-out clears the UI even if the backend call fails. `AuthApi.inRecovery()` added; `SupabaseAuth` notifies listeners when recovery starts for an already signed-in user.
+  - Local adapter: a stored session of a suspended account is no longer restored.
+  - Invitations: expired client invitations explain themselves; the Accept button is disabled for the wrong account (the data layer refuses it too); agency invitation errors are shown.
+- **Accessibility:** every status page (403, 404, error, access pending) renders `<main id="main">` and focuses its heading; the in-shell 403 is embedded in the shell so "Skip to content" reaches it. Auth pages gained a `main` landmark. Field errors and hints are linked with `aria-describedby`.
+- **Verification:** tsc 0 errors; **687 passed + 1 opt-in skipped** (63 files, 3 identical full runs); build ok; 0 vulnerabilities. Mutation checks: removing the agency-route redirect, the capability gate, the data-layer workspace check or the restore suspension check each fails tests.
+- **Not done:** real-browser QA (no browser automation available in this session); nothing ran against staging.
+
+## 2026-11-19: new laptop baseline
 - **Recovered state:** local and `origin` were identical at `d289290` (v7 docs), with a clean tree. Nothing was lost or duplicated in the move.
 - **Laptop toolchain:**
   - Node 26.13.1 (Active LTS), npm 11.20.0, Git 2.56.0, VS Code 1.146.0, Claude Code 2.1.328.
@@ -48,6 +70,10 @@
   - E6: the `/forgot-password` form, the `/reset-password` page and the sign-up confirmation notice.
   - Then 17F, starting with `users.home()` and the invitation RPCs (E7/E8).
 - **Owner decision:** E10, whether Client Users should be kept out of agency routes.
+
+## Still pending (after Milestone 2)
+- **E10 is decided (Decision A) and implemented locally.** The a11y gap from Milestone 1 is fixed.
+- **Next exact task (no approval needed):** Phase 17F, the Supabase data adapter (repositories over a narrow port, tested against the migrations on PGlite with RLS). Keep `SUPABASE_ADAPTER_READY = false` until its contract and authorization tests pass.
 
 ## Still pending (unchanged by Milestone 1)
 - **Staging migrations 0006–0010:** local only, awaiting approval. The pilot seed is not applied.

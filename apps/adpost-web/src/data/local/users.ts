@@ -215,7 +215,7 @@ export function localUsers(scope: Scope): UsersApi {
         },
 
         async home() {
-            if (db.find('users', scope.userId)?.deactivatedAt) return { path: '/agencies', reason: 'none' };
+            if (db.find('users', scope.userId)?.deactivatedAt) return { path: '/access-pending', reason: 'none' };
             if (superAdmin()) return { path: '/platform', reason: 'super_admin' };
             const admin = [...adminAgencies()];
             if (admin.length === 1) return { path: `/a/${db.find('agencies', admin[0]!)!.slug}`, reason: 'admin' };
@@ -223,7 +223,9 @@ export function localUsers(scope: Scope): UsersApi {
             const readable = db.all('brands').filter((b) => b.status !== 'archived' && (() => { try { return can(scope.facts(b.id), 'read'); } catch { return false; } })());
             const clientOnly = readable.length > 0 && readable.every((b) => db.all('brandMemberships').some((m) => m.brandId === b.id && m.userId === scope.userId && m.role === 'client'));
             if (readable.length === 1) return { path: `${clientBase(readable[0]!)}/dashboard`, reason: clientOnly ? 'client_user' : 'member' };
-            return { path: '/agencies', reason: readable.length ? (clientOnly ? 'client_user' : 'member') : 'none' };
+            if (!readable.length) return { path: '/access-pending', reason: 'none' };
+            // Client Users with several clients choose one; they never land on agency pages.
+            return clientOnly ? { path: '/brands', reason: 'client_user' } : { path: '/agencies', reason: 'member' };
         },
     };
 }

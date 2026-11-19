@@ -83,9 +83,10 @@ export class SupabaseAuth implements AuthApi {
 
     async signOut(): Promise<void> {
         ++this.generation;
-        await this.port.signOut();
+        // The local session is dropped even when the network call fails.
         this.session = null;
         this.recovery = false;
+        await this.port.signOut();
     }
 
     currentSession(): Session | null {
@@ -156,14 +157,16 @@ export class SupabaseAuth implements AuthApi {
             this.recovery = false;
             return this.publish(null);
         }
+        // Entering recovery must reach the reset page even when the user was already signed in.
+        const entersRecovery = event === 'PASSWORD_RECOVERY' && !this.recovery;
         if (event === 'PASSWORD_RECOVERY') this.recovery = true;
-        this.publish(toSession(profile));
+        this.publish(toSession(profile), entersRecovery);
     }
 
-    private publish(next: Session | null): void {
+    private publish(next: Session | null, force = false): void {
         const changed = JSON.stringify(next) !== JSON.stringify(this.session);
         this.session = next;
-        if (changed || next === null) for (const l of this.listeners) l(next ? structuredClone(next) : null);
+        if (changed || force || next === null) for (const l of this.listeners) l(next ? structuredClone(next) : null);
     }
 
     private async activeProfile(userId: string): Promise<ProfileRow> {

@@ -199,6 +199,18 @@ describe('suspension, revocation and stale tokens', () => {
 });
 
 describe('Client User portal scope', () => {
+    it('Decision A: reads its agency’s name, but no agency administration data', async () => {
+        expect((await as<{ name: string }>(db, U.lipskyUser, 'select name from public.agencies')).map((r) => r.name)).toEqual(['VCA']);
+        expect((await as<{ slug: string }>(db, U.lipskyUser, 'select slug from public.brands')).map((r) => r.slug)).toEqual(['lipsky']);
+        for (const t of ['agency_memberships', 'agency_invitations', 'platform_admins', 'platform_audit_events', 'invitations', 'audit_logs']) {
+            expect(await count(U.lipskyUser, t), t).toBe(0);
+        }
+        // Only the user's own membership row is visible, never the other Client Users of the client.
+        expect((await as<{ user_id: string }>(db, U.lipskyUser, 'select user_id from public.brand_memberships')).map((r) => r.user_id)).toEqual([U.lipskyUser.id]);
+        expect(await rows(U.lipskyUser, `update public.agencies set name = 'Taken over' where id = '${A.vca}'`)).toBe(0);
+        expect(await attempt(db, U.lipskyUser, `insert into public.brands (agency_id, name, slug) values ('${A.vca}', 'Rogue', 'rogue')`)).toBe(DENIED);
+    });
+
     it('is read-only by default', async () => {
         expect(await rows(U.lipskyReader, `update public.websites set name = 'x' where brand_id = '${C.lipsky}'`)).toBe(0);
         expect(await attempt(db, U.lipskyReader, `insert into public.websites (brand_id, name) values ('${C.lipsky}', 'x')`)).toBe(DENIED);

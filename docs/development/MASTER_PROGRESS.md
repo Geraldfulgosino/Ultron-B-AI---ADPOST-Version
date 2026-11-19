@@ -162,3 +162,15 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | Findings for 17E | Client Users can open their own agency's workspace shell (data scoped, read-only). In-shell 403 lacks `<main>` |
 | Commit | `53261fd`, pushed and verified |
 | 17E E1–E5 | Auth contract additions, `AuthPort`, `SupabaseAuth` adapter, 30 new tests; not connected (see PHASE17E_AUTH_ADAPTER_PLAN.md) |
+
+## Milestone 2: Phase 17E authentication UI and role-aware routing (2026-11-20)
+| Item | Result |
+|---|---|
+| Owner decisions | A: Client Users land on their client, no agency administration. B: Lugenix stays a separate agency (pilot seed already matches). C: local only, no staging writes |
+| Auth pages | `/forgot-password`, `/reset-password`, registration confirmation notice, expired-link and session-ended notices, `/access-pending` |
+| Role landing | Super Admin → `/platform`; Admin → their agency; Client User → their client, or `/brands` for several; no membership → `/access-pending` |
+| Decision A enforcement | Agency routes and `/agencies` redirect Client Users home; `agencies.overview/clients` refuse them in the data layer; RLS verified on PGlite |
+| Return URLs | `safeNext()`: same-app paths only, never an auth page |
+| Accessibility | All status pages have `<main id="main">` and a focused heading; in-shell 403 reachable by the skip link; field errors linked |
+| Verification | tsc 0 errors; 687 passed + 1 opt-in skipped; build ok; 0 vulnerabilities; no browser QA |
+| Commit | see GITHUB_SYNC_LOG.md |

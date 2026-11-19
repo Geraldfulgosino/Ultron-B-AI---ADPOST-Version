@@ -6,13 +6,34 @@ import { Alert, Button, Card, CardContent, CardHeader, CardTitle, ErrorState, Fi
 import { ThemeToggle } from '@/theme/ThemeToggle';
 import { clientBase } from '@/app/paths';
 import { PERMISSION_LABEL } from '@/pages/users/UsersManager';
+import { AccessPendingPage } from '@/pages/StatusPages';
 
-/** After sign-in: Super Admin → /platform; one agency → its dashboard; one client → its dashboard. */
+/**
+ * After sign-in: Super Admin → /platform; Admin → their agency; Client User → their client (or a
+ * client picker); no membership → /access-pending. The target comes from the data layer, never
+ * from a role label held by the browser. Errors stay on this page (with Retry), so a failing
+ * lookup cannot bounce between pages.
+ */
 export function HomeRedirect() {
     const home = useQuery((api) => api.users.home(), []);
-    if (home.error) return <Navigate to="/agencies" replace />;
-    if (!home.data) return <LoadingState />;
+    if (home.error) {
+        return (
+            <main id="main" className="mx-auto max-w-lg px-4 py-12">
+                <h1 className="mb-4 text-lg font-semibold text-fg">Your workspace could not be opened</h1>
+                <ErrorState error={home.error} onRetry={home.reload} />
+            </main>
+        );
+    }
+    if (!home.data) return <LoadingState label="Opening your workspace…" />;
     return <Navigate to={home.data.path} replace />;
+}
+
+/** /access-pending, but only for users who really have no access (anyone else goes home). */
+export function AccessPendingRoute() {
+    const home = useQuery((api) => api.users.home(), []);
+    if (home.loading) return <LoadingState />;
+    if (home.data && home.data.reason !== 'none') return <Navigate to={home.data.path} replace />;
+    return <AccessPendingPage />;
 }
 
 export function MyProfilePage() {

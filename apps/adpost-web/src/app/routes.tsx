@@ -3,7 +3,7 @@ import type { RouteObject } from 'react-router';
 import { Navigate } from 'react-router';
 import type { Capability } from '@/data/access';
 import { NotFoundPage, RouteErrorPage } from '@/pages/StatusPages';
-import { ForgotPasswordPage, LoginPage, RegisterPage } from '@/pages/auth/AuthPages';
+import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from '@/pages/auth/AuthPages';
 import { BrandLayout, LegacyBrandRedirect, RequireAuth, RequireCapability, RequireStaffOrClient } from '@/layouts/BrandLayout';
 import { useBrand } from '@/app/backend';
 import { AgencyLayout } from '@/layouts/AgencyLayout';
@@ -29,6 +29,7 @@ const PlatformUsersPage = page(platformPages, 'PlatformUsersPage');
 const PlatformAuditPage = page(platformPages, 'PlatformAuditPage');
 const accountPages = () => import('@/pages/account/AccountPages');
 const HomeRedirect = page(accountPages, 'HomeRedirect');
+const AccessPendingRoute = page(accountPages, 'AccessPendingRoute');
 const MyProfilePage = page(accountPages, 'MyProfilePage');
 const AcceptAgencyInvitationPage = page(accountPages, 'AcceptAgencyInvitationPage');
 const ClientProjectsPage = page(() => import('@/pages/work/ClientProjectsPage'), 'ClientProjectsPage');
@@ -75,12 +76,15 @@ export const routes: RouteObject[] = [
     { path: '/login', element: <LoginPage /> },
     { path: '/register', element: <RegisterPage /> },
     { path: '/forgot-password', element: <ForgotPasswordPage /> },
+    // Public: the recovery session comes from the email link, not from a prior sign-in.
+    { path: '/reset-password', element: <ResetPasswordPage /> },
     {
         element: <RequireAuth />,
         errorElement: <RouteErrorPage />,
         children: [
             { path: '/brands', element: <BrandPickerPage /> },
             { path: '/home', element: <HomeRedirect /> },
+            { path: '/access-pending', element: <AccessPendingRoute /> },
             { path: '/me', element: <MyProfilePage /> },
             { path: '/agency-invitations/:token', element: <AcceptAgencyInvitationPage /> },
             {
