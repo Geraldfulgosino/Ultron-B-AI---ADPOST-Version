@@ -28,6 +28,15 @@ export interface AuthApi {
     /** Personal profile only. Roles and memberships are never editable here. */
     updateProfile(input: { name: string }): Promise<Session>;
     changePassword(currentPassword: string, newPassword: string): Promise<void>;
+    /**
+     * Sends a reset link when an account exists. Resolves the same way either way (no account
+     * enumeration). Local mode sends nothing.
+     */
+    requestPasswordReset(email: string): Promise<void>;
+    /** Sets a new password inside a recovery session opened from a reset link. */
+    completePasswordReset(newPassword: string): Promise<Session>;
+    /** Session changes the app did not start itself: expiry, other tabs, suspension, recovery. */
+    onSessionChange(listener: (session: Session | null) => void): () => void;
 }
 
 export interface BrandAccess {

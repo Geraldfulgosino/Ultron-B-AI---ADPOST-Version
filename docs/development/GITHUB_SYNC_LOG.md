@@ -49,3 +49,5 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-11-13 | v7 sync service + integration Edge Functions | f2d4130 | ok | f2d4130 |
 | 2026-11-13 | v7 Integrations UI + browser client | 89f4e03 | ok | 89f4e03 |
 | 2026-11-13 | v7 pilot seed + docs | d289290 | ok | d289290 |
+| 2026-11-19 | Milestone 1: laptop baseline (@types/node, Client User test race, docs) | 53261fd | ok | 53261fd (ls-remote verified) |
+| 2026-11-19 | 17E E1–E5: auth contract, AuthPort, SupabaseAuth adapter + tests | (this commit) | see next entry | — |

@@ -64,6 +64,7 @@ async function verifyPassword(stored: string | undefined, email: string, passwor
 
 export class LocalBackend implements Backend {
     private session: Session | null = null;
+    private readonly sessionListeners = new Set<(session: Session | null) => void>();
     readonly auth: AuthApi;
 
     constructor(readonly db: LocalDatabase, private readonly persistSession = false) {
@@ -117,7 +118,27 @@ export class LocalBackend implements Backend {
                 assertValid({ newPassword: (newPassword.length < 8 && 'Use at least 8 characters.') || (newPassword === currentPassword && 'Choose a different password.') });
                 db.setCredential(email, await hashPassword(email, newPassword));
             },
+            requestPasswordReset: async (email) => {
+                // Local mode sends no email; the answer never reveals whether the account exists.
+                assertValid({ email: !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && 'Enter a valid email address.' });
+            },
+            completePasswordReset: async () => {
+                throw new AuthError('Password reset links need Supabase Auth. Local accounts use the dev password shown on the sign-in page.');
+            },
+            onSessionChange: (listener) => {
+                this.sessionListeners.add(listener);
+                return () => this.sessionListeners.delete(listener);
+            },
         };
+        // Mirrors Supabase: a suspended or removed account loses its session on the next change.
+        db.subscribe(() => {
+            if (!this.session) return;
+            const user = db.find('users', this.session.user.id);
+            if (user && !user.deactivatedAt) return;
+            this.session = null;
+            this.store();
+            for (const l of this.sessionListeners) l(null);
+        });
     }
 
     api(): BrandApi {

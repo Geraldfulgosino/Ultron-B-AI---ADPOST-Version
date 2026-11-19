@@ -160,3 +160,5 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | Client User test | Root cause: a stale-element race in the test (it matched the previous route's 403 heading). Fixed with `expectDenied()`, plus a regression check on `/a/adpost/users`. Security behaviour unchanged |
 | Verification | tsc 0 errors; 593 passed + 1 opt-in skipped; build ok; 0 vulnerabilities |
 | Findings for 17E | Client Users can open their own agency's workspace shell (data scoped, read-only). In-shell 403 lacks `<main>` |
+| Commit | `53261fd`, pushed and verified |
+| 17E E1–E5 | Auth contract additions, `AuthPort`, `SupabaseAuth` adapter, 30 new tests; not connected (see PHASE17E_AUTH_ADAPTER_PLAN.md) |

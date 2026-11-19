@@ -15,6 +15,8 @@ const BackendContext = createContext<BackendState | null>(null);
 
 export function BackendProvider({ backend, children }: { backend: Backend; children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(() => backend.auth.currentSession());
+    // Expiry, sign-out in another tab, suspension and password recovery arrive from the backend.
+    useEffect(() => backend.auth.onSessionChange(setSession), [backend]);
 
     const value = useMemo<BackendState>(
         () => ({

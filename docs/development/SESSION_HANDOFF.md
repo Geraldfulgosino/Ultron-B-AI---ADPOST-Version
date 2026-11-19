@@ -37,6 +37,18 @@
   - `npm run build`: ok. `npm audit`: 0 vulnerabilities.
   - The skipped test is `stagingRls.db.test.ts`, which runs only with `STAGING_RLS_RESULT_FILE`.
 
+## 2026-11-19: Phase 17E started (local code only)
+- Plan: PHASE17E_AUTH_ADAPTER_PLAN.md. **E1–E5 done:**
+  - `AuthApi` gained `requestPasswordReset`, `completePasswordReset` and `onSessionChange`, implemented in both adapters.
+  - `AuthPort` and `supabaseAuthPort` pass ids and error codes only, never tokens.
+  - The `SupabaseAuth` adapter covers restore, sign-in, register, profile, change password with re-auth, recovery, and suspension at sign-in, restore and refresh.
+  - `BackendProvider` follows session changes.
+- Nothing is connected: `main.tsx` still never mounts Supabase mode (`SUPABASE_ADAPTER_READY = false`).
+- **Next exact task (no approval needed):**
+  - E6: the `/forgot-password` form, the `/reset-password` page and the sign-up confirmation notice.
+  - Then 17F, starting with `users.home()` and the invitation RPCs (E7/E8).
+- **Owner decision:** E10, whether Client Users should be kept out of agency routes.
+
 ## Still pending (unchanged by Milestone 1)
 - **Staging migrations 0006–0010:** local only, awaiting approval. The pilot seed is not applied.
 - **17E auth adapter and 17F data adapter:** not implemented (`SUPABASE_ADAPTER_READY = false` in `src/main.tsx`).

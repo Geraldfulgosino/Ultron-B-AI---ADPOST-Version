@@ -34,6 +34,14 @@ export class AuthError extends Error {
     }
 }
 
+/** Sign-up succeeded but the account needs email confirmation before the first sign-in. */
+export class PendingConfirmationError extends Error {
+    constructor(message = 'Check your email to confirm your account, then sign in.') {
+        super(message);
+        this.name = 'PendingConfirmationError';
+    }
+}
+
 /** Throws ValidationError if any rule produced a message. */
 export function assertValid(rules: Record<string, string | false | null | undefined>): void {
     const fields: Record<string, string> = {};

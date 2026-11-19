@@ -104,3 +104,10 @@
   - Legacy root build and typecheck (root `node_modules` not installed on the laptop).
   - Laravel PHPUnit (B-001: no PHP/Docker).
   - Any staging or live test, and any real-browser QA.
+
+## 2026-11-19: Phase 17E E1–E5 (laptop)
+- `npm run typecheck`: 0 errors.
+- `npm test`: **623 passed + 1 opt-in skipped** (59 files). New: `src/data/supabase/auth.test.ts` (26) and `src/data/local/auth.test.ts` (4).
+- `npm run build`: ok. `npm audit`: 0 vulnerabilities.
+- Mutation checks: removing the generation guard, the password re-authentication, the reset no-enumeration rule or the restore suspension check each fails at least one test.
+- **Level:** fake ports only. No Supabase request was made.
