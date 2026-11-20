@@ -198,3 +198,14 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | Migration 0011 | `platform_admins` readable by Super Admins (finding); local only |
 | Boot | `supabaseBoot.tsx`: config → client → session → roles → router; still gated |
 | Verification | 739 passed + 1 opt-in skipped; tsc 0; build ok; 0 vulnerabilities |
+
+## Milestone 5: ADPOST/POD GA4 + GSC readiness (2026-11-20)
+| Item | Result |
+|---|---|
+| Pilot seed | `adpost_pod_pilot.sql`: ADPOST → {ADPOST, POD} → one production website each; owner-supplied URLs only; guarded and idempotent (9 tests) |
+| Property ownership | One Google property per website: app check before any Google call + migration 0012 unique index (tests fail without it) |
+| Audit trail | Authorization, property selection, connect and disconnect write `platform_audit_events`, without secrets |
+| Comparisons | `compare.ts`: GA4 and GSC current vs previous, ratios from totals, per website only |
+| OAuth callback | `/oauth/google/callback` route; code and state forwarded once, then removed from the URL |
+| Staging checklist | STAGING_RELEASE_CHECKLIST.md: preflight, compatibility, RLS, backup, auth, Super Admin, OAuth URLs, secrets, pilot, property selection, smoke tests, rollback, approval phrases |
+| Verification | 763 passed + 1 opt-in skipped; tsc 0; build ok; 0 vulnerabilities |

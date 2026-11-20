@@ -14,6 +14,7 @@ function memoryRepo(perms: IntegrationPermissions = ADMIN, site: WebsiteRef = SI
     const items = new Map<string, WpContentRecord & { removedAt: string | null }>();
     const findings = new Map<string, { status: string; lastSeen: string; checkId: string }>();
     const updates: Array<Record<string, unknown>> = [];
+    const audits: Array<{ action: string; details: Record<string, string> }> = [];
     let seq = 0;
     const repo: SyncRepository = {
         permissions: async () => perms,
@@ -70,8 +71,9 @@ function memoryRepo(perms: IntegrationPermissions = ADMIN, site: WebsiteRef = SI
             for (const [fp, f] of findings) if (!seen.includes(fp) && f.status === 'open') { f.status = 'resolved'; n++; }
             return n;
         },
+        audit: async (_w, _u, action, details) => { audits.push({ action, details }); },
     };
-    return { repo, integrations, runs, secrets, items, findings, updates };
+    return { repo, integrations, runs, secrets, items, findings, updates, audits };
 }
 
 type Route = { status?: number; body: unknown; headers?: Record<string, string>; type?: string };
@@ -148,6 +150,9 @@ describe('IntegrationSyncService', () => {
         expect(JSON.stringify(m.updates)).not.toContain('abcdefghijkl');
         expect(await disconnectIntegration(ctx, 'web-1', 'wordpress')).toEqual({ status: 'not_connected' });
         expect(m.secrets.size).toBe(0);
+        // Audit trail: connection and disconnection, never the Application Password.
+        expect(m.audits.map((a) => a.action)).toEqual(['integration.connected', 'integration.disconnected']);
+        expect(JSON.stringify(m.audits)).not.toContain('abcdefghijkl');
     });
 
     it('a failed sync records the category on the run and the connection status', async () => {

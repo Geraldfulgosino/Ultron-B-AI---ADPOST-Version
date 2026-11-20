@@ -1,14 +1,24 @@
 # Session Handoff
 
-**Updated:** 2026-11-20 (Milestone 4: Phase 17F application wiring and boot path, local)
+**Updated:** 2026-11-20 (Milestone 5: ADPOST/POD GA4 + GSC readiness and the staging release checklist, local)
 **Project root (current, laptop):** `C:\Users\GeraldFulgosino\Documents\Ultron-B-AI---ADPOST-Version`. Until 2026-11-13 the project lived on a desktop at `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`.
 **Branch:** `feature/adpost-react-supabase-ai`, pushed. The remote SHA is in GITHUB_SYNC_LOG.md. `main` is untouched.
 **Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`. It was linked from the desktop. On the laptop the Supabase CLI is **not installed and not linked** (see below).
 **Applied to staging:** 0001–0005 only. Staging is empty except 6 agent templates (read-only precheck).
-**Local only, awaiting approval:** 0006, 0007, 0008, 0009, 0010_website_integrations, **0011_platform_admin_directory** (2026-11-20). The Lugenix pilot seed is kept for later and is not part of the next staging step.
+**Local only, awaiting approval:** 0006–0010, **0011_platform_admin_directory** and **0012_integration_property_guard** (2026-11-20), plus the ADPOST/POD pilot seed `supabase/seeds/pilot/adpost_pod_pilot.sql`. The Lugenix pilot seed is kept for later and is not part of the next staging step.
 **Deployed Edge Functions:** none. Implemented: `agent-execute`, `ai-connection-test`, `user-invite`, **`integration-sync`**, **`integration-google`**.
 
-## 2026-11-20: Milestone 4, Phase 17F wiring (read first)
+## 2026-11-20: Milestone 5, ADPOST/POD GA4 + GSC readiness (read first)
+- **Next remote step:** see STAGING_RELEASE_CHECKLIST.md §14 (approval phrases). Nothing remote has been done.
+- **ADPOST and POD records:** POD exists only in the dev sample data (demo `.example` websites); there is no ADPOST corporate client, and no real domain for either is recorded anywhere. The new pilot seed creates ADPOST (agency) → ADPOST and POD (clients) → one production website each, from **URLs you supply at run time**. It refuses placeholders, test domains, IPs, http, duplicates, and domains owned by another client. No domain was invented.
+- **Google:** the existing OAuth, GA4 and GSC code already covered state and PKCE, server-side exchange and refresh, read-only scopes, discovery, verification, all requested metrics and dimensions, pagination, upserts, sync history, freshness and rate limits. Added:
+  - one property per website (app check + migration 0012);
+  - the audit trail;
+  - period comparisons;
+  - the `/oauth/google/callback` route.
+- **Verification:** tsc 0 errors; **763 passed + 1 opt-in skipped** (72 files, 2 identical runs); build ok; 0 vulnerabilities. Local only (PGlite, fake Google): not staging results.
+
+## 2026-11-20: Milestone 4, Phase 17F wiring
 - `SupabaseBackend` (`src/data/supabase/backend.ts`) implements the full `Backend` contract over the repositories (`api.ts`, `moreRepositories.ts`). Roles come from the same pure rules as mock mode (`access.ts`, `toBrandAccess`), computed from RLS-visible rows.
 - Server-side areas not connected yet raise `NotAvailableError` after the access check (list in PHASE17F_DATA_ADAPTER_PLAN.md). No mock fallback anywhere.
 - Boot path `src/app/supabaseBoot.tsx`, wired in `main.tsx` but still behind `SUPABASE_ADAPTER_READY = false`.

@@ -160,6 +160,21 @@ describe('Client User (LIPSKY)', () => {
     });
 });
 
+describe('Google OAuth callback in live mode', () => {
+    it('continues at the website of the server-confirmed integration; another client’s website is refused', async () => {
+        const lipskySite = X.liveSite;
+        const cmsSite = (await db.query<{ id: string }>(`select id from public.websites where brand_id = '${C.cms}' limit 1`)).rows[0]!.id;
+        const forSite = (websiteId: string) => async () => ({ websiteId, provider: 'google_analytics' as const });
+        const own = await pgBackend(db, PASSWORD, { completeGoogle: forSite(lipskySite) });
+        await own.auth.signIn(U.vcaAdmin.email, PASSWORD);
+        expect(await own.api().integrations.completeGoogleAuthorization({ state: 's', code: 'c', error: null }))
+            .toEqual({ websiteId: lipskySite, provider: 'google_analytics', returnPath: `/a/vca/c/lipsky/websites/${lipskySite}` });
+        const other = await pgBackend(db, PASSWORD, { completeGoogle: forSite(cmsSite) });
+        await other.auth.signIn(U.lipskyUser.email, PASSWORD);
+        await expect(other.api().integrations.completeGoogleAuthorization({ state: 's', code: 'c', error: null })).rejects.toBeInstanceOf(AccessDeniedError);
+    });
+});
+
 describe('sessions and change notifications', () => {
     it('a user without membership lands on access pending and sees no client', async () => {
         const api = (await signedIn(U.stranger)).api();

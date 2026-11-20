@@ -53,4 +53,5 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-11-19 | 17E E1–E5: auth contract, AuthPort, SupabaseAuth adapter + tests | 95b7ca6 | ok | 95b7ca6 (ls-remote verified) |
 | 2026-11-20 | Milestone 2: 17E auth UI, role-aware routing, Decision A, 403 a11y | a606155 | ok | a606155 (ls-remote verified) |
 | 2026-11-20 | Milestone 3: 17F DbPort, repositories, PGlite repository tests | b0f97c8 | ok | b0f97c8 (ls-remote verified) |
-| 2026-11-20 | Milestone 4: 17F SupabaseBackend, contract on PGlite, boot path, migration 0011 | (this commit) | see next entry | — |
+| 2026-11-20 | Milestone 4: 17F SupabaseBackend, contract on PGlite, boot path, migration 0011 | 0442d68 | ok | 0442d68 (ls-remote verified) |
+| 2026-11-20 | Milestone 5: ADPOST/POD pilot seed, Google property guard (0012), audit, comparisons, OAuth callback, staging checklist | (this commit) | see next entry | — |

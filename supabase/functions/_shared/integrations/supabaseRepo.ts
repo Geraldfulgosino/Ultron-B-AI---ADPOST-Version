@@ -31,7 +31,20 @@ export function supabaseRepository(user, admin, keyPromise) {
         },
         async updateIntegration(id, patch) {
             const row = Object.fromEntries(Object.entries(patch).filter(([k]) => columns[k]).map(([k, v]) => [columns[k], v]));
-            must(await admin.from('integrations').update(row).eq('id', id), 'integration update');
+            const r = await admin.from('integrations').update(row).eq('id', id);
+            // integrations_google_property_unique (0012): the property belongs to another website.
+            if (r.error?.code === '23505') throw new IntegrationError('permission_denied', 'This Google property is already connected to another website.');
+            must(r, 'integration update');
+        },
+        async propertyAssignments(provider, propertyId, exceptIntegrationId) {
+            const rows = must(await admin.from('integrations').select('id, website_id, brand_id').eq('provider', provider).eq('external_property_id', propertyId).neq('id', exceptIntegrationId), 'property assignments');
+            return rows.map((r) => ({ websiteId: r.website_id, brandId: r.brand_id }));
+        },
+        async audit(website, userId, action, details) {
+            const brand = must(await admin.from('brands').select('agency_id').eq('id', website.brandId).single(), 'brand');
+            must(await admin.from('platform_audit_events').insert({
+                actor_id: userId, action, target_type: 'website', target_id: website.id, agency_id: brand.agency_id, brand_id: website.brandId, details,
+            }), 'audit');
         },
         async startRun(integration, website, kind, userId) {
             const since = new Date(Date.now() - 10 * 60_000).toISOString();

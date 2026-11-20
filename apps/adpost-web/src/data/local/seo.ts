@@ -1,7 +1,7 @@
 import type { ID, Integration, SeoInsight } from '@/domain/types';
 import type { AnalyticsApi, InsightsApi, IntegrationsApi, Kpi, ReportsApi } from '../contracts';
 import { addDays, buildReport, dailySeries, delta, generateInsightCandidates, latestDate, previousWindow, totals } from '@/domain/analytics';
-import { AccessDeniedError, assertValid, NotFoundError, ValidationError } from '../errors';
+import { AccessDeniedError, assertValid, NotAvailableError, NotFoundError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import { byClientId, type Scope } from './scope';
 import { emitAutomationEvent } from './automation';
@@ -129,6 +129,10 @@ export function localIntegrations(scope: Scope): IntegrationsApi {
     return {
         async list(brandId) {
             return scope.rows('integrations', brandId, { clientKey: byClientId }).map(withSite);
+        },
+
+        async completeGoogleAuthorization() {
+            throw new NotAvailableError('Google sign-in', 'in local mode: it needs Supabase and the integration-google Edge Function');
         },
 
         async connect(brandId, websiteId, provider) {

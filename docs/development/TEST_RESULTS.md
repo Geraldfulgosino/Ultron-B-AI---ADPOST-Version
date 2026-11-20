@@ -137,3 +137,15 @@
 - Mutation checks: letting every role into chat, or resolving any brand id to the first visible client, each fails the Supabase contract run; skipping migration 0011 fails the Super Admin directory test.
 - The Supabase advisor test caught a first draft of 0011 with two permissive SELECT policies; it now uses one.
 - **Level:** PGlite + stub supabase-js. No Supabase request. Not staging results.
+
+## 2026-11-20: Milestone 5, GA4/GSC readiness (laptop, Node 26.13.1)
+- `npm run typecheck`: 0 errors. `npm test`: **763 passed + 1 opt-in skipped** (72 files, 2 identical runs). `npm run build`: ok. `npm audit`: 0 vulnerabilities. Bundle security test 3/3.
+- New tests:
+  - `adpostPodPilot.db.test.ts` (9);
+  - `integrationProperty.db.test.ts` (3; 2 fail without 0012);
+  - `compare.test.ts` (5);
+  - `oauthCallback.test.tsx` (4);
+  - Google flow +2 (audit without secrets; property owned by another client refused before any Google request);
+  - WordPress audit assertions;
+  - live callback ownership in `supabaseApi.db.test.ts` (+1).
+- **Level:** fake Google APIs, PGlite, stub clients. No OAuth was started, no Google API was called, nothing was deployed.

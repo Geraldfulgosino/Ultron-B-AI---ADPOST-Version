@@ -302,6 +302,12 @@ export interface IntegrationsApi {
     disconnect(brandId: T.ID, id: T.ID): Promise<T.Integration>;
     /** Remove a disconnected/pending record. */
     remove(brandId: T.ID, id: T.ID): Promise<void>;
+    /**
+     * Finishes a Google sign-in started from a website's Integrations panel (live mode). The
+     * server checks the one-time state, the PKCE verifier and that the same user started it;
+     * the browser only forwards the query. Returns where to continue (choose a property).
+     */
+    completeGoogleAuthorization(query: { state: string | null; code: string | null; error: string | null }): Promise<{ websiteId: T.ID; provider: 'google_analytics' | 'google_search_console'; returnPath: string }>;
 }
 
 export interface InsightFilters {

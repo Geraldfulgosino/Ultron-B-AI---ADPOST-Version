@@ -60,6 +60,11 @@ export function edgeServerActions(config: SupabaseConfig, client: SupabaseClient
         disconnectIntegration: async (websiteId, provider) => {
             await integrations.disconnect(websiteId, provider);
         },
+        completeGoogle: async (query) => {
+            const r = await integrations.completeGoogle(query);
+            if (r.provider !== 'google_analytics' && r.provider !== 'google_search_console') throw new Error('Unexpected provider.');
+            return { websiteId: r.websiteId, provider: r.provider };
+        },
     };
 }
 

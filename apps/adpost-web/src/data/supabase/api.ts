@@ -32,6 +32,8 @@ export interface ServerActions {
     deliverInvitation?(input: { kind: 'client' | 'agency'; invitationId: string; token: string }): Promise<void>;
     /** integration-sync / integration-google, for the Integrations page. */
     disconnectIntegration?(websiteId: string, provider: IntegrationConnection['provider']): Promise<void>;
+    /** integration-google `callback`: state, PKCE and user checks happen server-side. */
+    completeGoogle?(query: { state: string | null; code: string | null; error: string | null }): Promise<{ websiteId: string; provider: 'google_analytics' | 'google_search_console' }>;
 }
 
 export interface ApiContext {
@@ -510,6 +512,14 @@ export function supabaseApi(ctx: ApiContext): BrandApi {
             const { count, error } = await db.delete('integrations', [eq('brand_id', brandId), eq('id', id)]);
             if (error) fail(error);
             if (count !== 1) throw new AccessDeniedError();
+        },
+        async completeGoogleAuthorization(query) {
+            if (!server.completeGoogle) throw new NotAvailableError('Google sign-in (integration-google Edge Function)');
+            const r = await server.completeGoogle(query);
+            // The website must be one this user can see; its client gives the return URL.
+            const site = await repos.websites.byId(r.websiteId);
+            const brand = await repos.clients.byId(site.brandId);
+            return { websiteId: site.id, provider: r.provider, returnPath: `${clientBase(brand)}/websites/${site.id}` };
         },
     };
 

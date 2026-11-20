@@ -32,6 +32,7 @@ const HomeRedirect = page(accountPages, 'HomeRedirect');
 const AccessPendingRoute = page(accountPages, 'AccessPendingRoute');
 const MyProfilePage = page(accountPages, 'MyProfilePage');
 const AcceptAgencyInvitationPage = page(accountPages, 'AcceptAgencyInvitationPage');
+const GoogleOAuthCallbackPage = page(() => import('@/pages/management/GoogleOAuthCallbackPage'), 'GoogleOAuthCallbackPage');
 const ClientProjectsPage = page(() => import('@/pages/work/ClientProjectsPage'), 'ClientProjectsPage');
 
 /** Client Users get the shared-projects view; staff get the full board. */
@@ -87,6 +88,9 @@ export const routes: RouteObject[] = [
             { path: '/access-pending', element: <AccessPendingRoute /> },
             { path: '/me', element: <MyProfilePage /> },
             { path: '/agency-invitations/:token', element: <AcceptAgencyInvitationPage /> },
+            // Google redirects here after consent (GOOGLE_OAUTH_REDIRECT_URI). Signed-in users only:
+            // the server also checks that the same user started the authorization.
+            { path: '/oauth/google/callback', element: <GoogleOAuthCallbackPage /> },
             {
                 path: '/platform',
                 element: <PlatformLayout />,

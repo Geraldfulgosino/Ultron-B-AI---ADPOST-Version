@@ -59,8 +59,8 @@ export class ServiceError extends Error {
  * stands in for real records.
  */
 export class NotAvailableError extends Error {
-    constructor(feature: string) {
-        super(`${feature} is not available in live mode yet.`);
+    constructor(feature: string, where = 'in live mode yet') {
+        super(`${feature} is not available ${where}.`);
         this.name = 'NotAvailableError';
     }
 }

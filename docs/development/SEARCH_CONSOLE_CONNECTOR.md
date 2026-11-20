@@ -45,3 +45,10 @@ No search volume or keyword difficulty is produced: the API has neither.
 - The same Google Cloud OAuth client as GA4, with the Search Console API enabled.
 - Approval to deploy `integration-google`.
 - Approval to authorize the account that owns the Lugenix property.
+
+## 2026-11-20 additions (ADPOST/POD pilot readiness, local only)
+- **One property per website:** `selectGoogleProperty` refuses a GA4 property or Search Console site already used by another integration (before any Google request). Migration **0012** enforces the same rule in the database. Disconnecting frees the property. This keeps the ADPOST and POD data apart.
+- **Audit trail:** authorization, property selection, WordPress connection and disconnection write `platform_audit_events` (website, client, agency, actor). Details carry the provider, the property id and the scopes, never tokens, codes or secrets.
+- **Period comparisons:** `_shared/integrations/compare.ts` compares current and previous ranges per website. Ratios are recomputed from totals (engagement rate, CTR, impression-weighted position), and missing periods stay null. It refuses rows from more than one website.
+- **Callback route:** `/oauth/google/callback` in the app forwards state, code and error once to `integration-google` and drops them from the URL. In mock mode it says Google sign-in needs live mode.
+- **Not done:** no real OAuth, no Google API call, no deployment. See STAGING_RELEASE_CHECKLIST.md §7–§11.

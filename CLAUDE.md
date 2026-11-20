@@ -44,7 +44,7 @@ npm run typecheck                          # TypeScript check
 - UI depends only on `src/data/contracts.ts`; the local adapter (`src/data/local`) enforces access via `Scope` (mirrors `supabase/migrations/*_rls.sql`; change both together).
 - Every brand-owned feature needs a tenant-isolation test; `src/test/contract` holds backend-agnostic contract tests.
 - AI runs only through `src/data/local/engine.ts` (stand-in for the `agent-execute` Edge Function). Never put model keys in `VITE_*`.
-- Supabase staging `ppwkxlwxzutigepaizob` has 0001–0005 applied (0006–0011 local only); every further remote change (migrations, seeds, secrets, Edge Function deploys, accounts) needs explicit owner approval. Netlify (Phase 18) is not authorized. Progress: `docs/development/`.
+- Supabase staging `ppwkxlwxzutigepaizob` has 0001–0005 applied (0006–0012 local only); every further remote change (migrations, seeds, secrets, Edge Function deploys, accounts) needs explicit owner approval. Netlify (Phase 18) is not authorized. Progress: `docs/development/`.
 
 ## Legacy sprints
 See `docs/superpowers/` for the Laravel sprint plans and specs.

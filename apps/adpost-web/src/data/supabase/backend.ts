@@ -16,6 +16,7 @@ import { supabaseApi, type ServerActions } from './api';
 const READS = new Set([
     'me', 'listBrands', 'brandBySlug', 'agencyUsage', 'canCreateBrands', 'isPlatformAdmin', 'list', 'bySlug', 'clients', 'overview', 'platformOverview',
     'agencyInvitations', 'audit', 'home', 'get', 'preview', 'messages', 'search', 'projects', 'tasks', 'comments', 'approvals', 'templates',
+    'agents', 'usage', 'instructionVersions',
 ]);
 
 function notifying(api: BrandApi, notify: (topic: string) => void): BrandApi {

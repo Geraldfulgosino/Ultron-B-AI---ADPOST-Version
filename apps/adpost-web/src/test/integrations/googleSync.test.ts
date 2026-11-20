@@ -16,6 +16,9 @@ function repo(perms: IntegrationPermissions = { can_view: true, can_sync: true, 
     const gsc = new Map<string, unknown>();
     const findings = new Map<string, unknown>();
     const runs: Array<{ id: string; status: string; kind: string; errorCategory?: string | null }> = [];
+    const audits: Array<{ action: string; websiteId: string; details: Record<string, string> }> = [];
+    /** Integrations of other websites (other clients), to test that a property feeds one website only. */
+    const elsewhere: Array<{ provider: string; propertyId: string; websiteId: string; brandId: string }> = [];
     let seq = 0;
     const r: GoogleRepository = {
         permissions: async () => perms,
@@ -44,8 +47,13 @@ function repo(perms: IntegrationPermissions = { can_view: true, can_sync: true, 
         upsertGa4Rows: async (_i, _w, p, rows) => { for (const x of rows) ga4.set(`${p}|${x.date}|${x.dimension}|${x.dimensionValue}`, x); return rows.length; },
         upsertGscRows: async (_i, _w, s, rows) => { for (const x of rows) gsc.set(`${s}|${x.date}|${x.dimension}|${x.dimensionValue}`, x); return rows.length; },
         integrationConfig: async (id) => { const i = integrations.find((x) => x.id === id)!; return { externalPropertyId: i.externalPropertyId, config: i.config }; },
+        propertyAssignments: async (provider, propertyId, except) => [
+            ...integrations.filter((i) => i.id !== except && i.provider === provider && i.externalPropertyId === propertyId).map((i) => ({ websiteId: i.websiteId, brandId: SITE.brandId })),
+            ...elsewhere.filter((e) => e.provider === provider && e.propertyId === propertyId).map(({ websiteId, brandId }) => ({ websiteId, brandId })),
+        ],
+        audit: async (w, _u, action, details) => { audits.push({ action, websiteId: w.id, details }); },
     };
-    return { r, integrations, states, secrets, ga4, gsc, findings, runs };
+    return { r, integrations, states, secrets, ga4, gsc, findings, runs, audits, elsewhere };
 }
 
 function google() {
@@ -95,6 +103,36 @@ describe('Google integration flow', () => {
         expect((await listGoogleProperties(ctx, 'web-1', 'google_analytics')).properties).toEqual([{ id: 'properties/111', name: 'Lugenix site', account: 'Lugenix', coversWebsite: null }]);
         await expect(selectGoogleProperty(ctx, 'web-1', 'google_analytics', 'properties/999')).rejects.toMatchObject({ category: 'permission_denied' });
         expect(await selectGoogleProperty(ctx, 'web-1', 'google_analytics', 'properties/111')).toMatchObject({ status: 'connected' });
+    });
+
+    it('audits authorization and property selection, without tokens or codes', async () => {
+        const m = repo();
+        const ctx = ctxFor(m);
+        const { authorizationUrl } = await startGoogleAuthorization(ctx, 'web-1', 'google_analytics');
+        await completeGoogleAuthorization(ctx, { state: new URL(authorizationUrl).searchParams.get('state')!, code: 'auth-code' });
+        await selectGoogleProperty(ctx, 'web-1', 'google_analytics', 'properties/111');
+        expect(m.audits.map((a) => [a.action, a.websiteId])).toEqual([['integration.authorized', 'web-1'], ['integration.property_selected', 'web-1']]);
+        expect(m.audits[1]!.details).toEqual({ provider: 'google_analytics', propertyId: 'properties/111' });
+        const logged = JSON.stringify(m.audits);
+        for (const secret of ['rt-secret', 'auth-code', '"at"', 'server-secret']) expect(logged).not.toContain(secret);
+    });
+
+    it('a property already feeding another client’s website is refused (ADPOST and POD never share data)', async () => {
+        const m = repo();
+        const g = google();
+        const ctx = ctxFor(m, g);
+        m.elsewhere.push({ provider: 'google_analytics', propertyId: 'properties/111', websiteId: 'web-pod', brandId: 'brand-pod' });
+        const { authorizationUrl } = await startGoogleAuthorization(ctx, 'web-1', 'google_analytics');
+        await completeGoogleAuthorization(ctx, { state: new URL(authorizationUrl).searchParams.get('state')!, code: 'auth-code' });
+        const before = g.calls.length;
+        await expect(selectGoogleProperty(ctx, 'web-1', 'google_analytics', 'properties/111')).rejects.toMatchObject({ category: 'permission_denied', message: expect.stringContaining('another client') });
+        expect(g.calls.length).toBe(before); // refused before any Google request
+        expect(m.integrations[0]).toMatchObject({ status: 'pending_authorization', externalPropertyId: null });
+        expect(m.audits.map((a) => a.action)).not.toContain('integration.property_selected');
+        // Search Console is a separate assignment: the same website may still connect its own GSC property.
+        const gsc = await startGoogleAuthorization(ctx, 'web-1', 'google_search_console');
+        await completeGoogleAuthorization(ctx, { state: new URL(gsc.authorizationUrl).searchParams.get('state')!, code: 'auth-code-2' });
+        expect(await selectGoogleProperty(ctx, 'web-1', 'google_search_console', 'sc-domain:lugenixdigitalservices.com')).toMatchObject({ status: 'connected' });
     });
 
     it('a different user cannot complete someone else’s authorization', async () => {

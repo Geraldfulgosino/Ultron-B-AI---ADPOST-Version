@@ -49,7 +49,14 @@ export interface SyncRepository {
     upsertFindings(website: WebsiteRef, source: 'crawler' | 'wordpress' | 'ga4' | 'gsc', findings: CrawlFinding[], ref: { crawlJobId?: string; syncRunId?: string; observedAt: string }): Promise<number>;
     /** After a complete crawl: open crawler findings not seen in this crawl become resolved. */
     resolveUnseenFindings(websiteId: string, source: 'crawler', seenFingerprints: string[], at: string): Promise<number>;
+    /**
+     * Integration audit trail (platform_audit_events): who connected, authorized, chose a
+     * property or disconnected, for which website. Details never contain credentials or tokens.
+     */
+    audit(website: WebsiteRef, userId: string, action: IntegrationAuditAction, details: Record<string, string>): Promise<void>;
 }
+
+export type IntegrationAuditAction = 'integration.connected' | 'integration.authorized' | 'integration.property_selected' | 'integration.disconnected';
 
 export interface SyncContext {
     userId: string;
@@ -108,17 +115,19 @@ export async function connectWordPressCredentials(ctx: SyncContext, websiteId: s
     await ctx.repo.writeSecret(integration.id, website, { username: creds.username.trim(), applicationPassword: creds.applicationPassword.replace(/\s+/g, '') });
     const now = (ctx.now?.() ?? new Date()).toISOString();
     await ctx.repo.updateIntegration(integration.id, { status: 'connected', verifiedAt: now, credentialConfigured: true, errorCategory: null, lastErrorMessage: null, config: { wpUser: { id: test.userId, name: test.name, roles: test.roles }, warnings: test.warnings } });
+    await ctx.repo.audit(website, ctx.userId, 'integration.connected', { provider: 'wordpress' });
     return { status: 'connected' as const, user: { name: test.name, roles: test.roles }, warnings: test.warnings };
 }
 
 export async function disconnectIntegration(ctx: SyncContext, websiteId: string, provider: IntegrationProvider, revoke?: (secret: unknown) => Promise<void>) {
-    await load(ctx, websiteId, 'can_manage');
+    const { website } = await load(ctx, websiteId, 'can_manage');
     const integration = await ctx.repo.integration(websiteId, provider);
     if (!integration) return { status: 'not_connected' as const };
     const secret = await ctx.repo.readSecret(integration.id);
     if (secret && revoke) await revoke(secret).catch(() => undefined); // provider revocation is best effort
     await ctx.repo.deleteSecret(integration.id);
     await ctx.repo.updateIntegration(integration.id, { status: 'not_connected', verifiedAt: null, credentialConfigured: false, externalPropertyId: null });
+    await ctx.repo.audit(website, ctx.userId, 'integration.disconnected', { provider });
     return { status: 'not_connected' as const };
 }
 

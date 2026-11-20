@@ -23,6 +23,8 @@ export interface GoogleRepository extends SyncRepository {
     decrypt<T>(scope: string, blob: string): Promise<T>;
     upsertGa4Rows(integration: IntegrationRow, website: WebsiteRef, propertyId: string, rows: Ga4Row[], fetchedAt: string): Promise<number>;
     upsertGscRows(integration: IntegrationRow, website: WebsiteRef, siteUrl: string, rows: GscRow[], fetchedAt: string): Promise<number>;
+    /** Other integrations (any website, any client) already connected to this Google property. */
+    propertyAssignments(provider: GoogleProvider, propertyId: string, exceptIntegrationId: string): Promise<Array<{ websiteId: string; brandId: string }>>;
     integrationConfig(integrationId: string): Promise<{ externalPropertyId: string | null; config: Record<string, unknown> }>;
 }
 
@@ -75,6 +77,7 @@ export async function completeGoogleAuthorization(ctx: GoogleContext, query: { s
     await ctx.repo.writeSecret(integration.id, w, { refreshToken: tokens.refreshToken, scopes: tokens.scopes, grantedAt: now(ctx).toISOString() } satisfies GoogleSecret);
     // Authorized, but not 'connected' until a property is chosen and verified.
     await ctx.repo.updateIntegration(integration.id, { status: 'pending_authorization', credentialConfigured: true, errorCategory: null, lastErrorMessage: null });
+    await ctx.repo.audit(w, ctx.userId, 'integration.authorized', { provider: stored!.provider, scopes: tokens.scopes.join(' ') });
     return { websiteId: w.id, provider: stored!.provider, next: 'select_property' as const };
 }
 
@@ -92,9 +95,18 @@ export async function selectGoogleProperty(ctx: GoogleContext, websiteId: string
     const w = await website(ctx, websiteId, 'can_manage');
     const integration = await ctx.repo.integration(websiteId, provider);
     if (!integration?.credentialConfigured) throw new IntegrationError('credentials_expired', 'Connect Google first.');
+    // One Google property feeds one website: otherwise two clients' dashboards (e.g. ADPOST and
+    // POD) would show the same data. Migration 0012 enforces the same rule in the database.
+    const taken = await ctx.repo.propertyAssignments(provider, propertyId, integration.id);
+    if (taken.length) {
+        throw new IntegrationError('permission_denied', taken.some((t) => t.brandId !== w.brandId)
+            ? 'This Google property is already connected to another client’s website. One property can belong to one website only.'
+            : 'This Google property is already connected to another website of this client. Disconnect it there first.');
+    }
     const token = await accessToken(ctx, integration);
     const label = provider === 'google_analytics' ? (await verifyGa4Property(ctx.http.fetch, token, propertyId)).displayName : (await verifyGscProperty(ctx.http.fetch, token, propertyId, w.websiteUrl)).siteUrl;
     await ctx.repo.updateIntegration(integration.id, { status: 'connected', verifiedAt: now(ctx).toISOString(), externalPropertyId: propertyId, label, errorCategory: null, lastErrorMessage: null });
+    await ctx.repo.audit(w, ctx.userId, 'integration.property_selected', { provider, propertyId });
     return { status: 'connected' as const, propertyId, label };
 }
 

@@ -91,12 +91,12 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Claude: GA4/GSC readiness for the ADPOST and POD pilots; staging release checklist. Owner: approvals listed in STAGING_RELEASE_CHECKLIST.md.",
+  "nextTask": "Owner: approvals in STAGING_RELEASE_CHECKLIST.md §14 (start with \"Approve staging preflight\" after installing the Supabase CLI and running supabase login); supply the ADPOST and POD production URLs, the Google OAuth client and SMTP. Claude (no approval): connect the guarded live areas (analytics dashboard from stored GA4/GSC rows) to the Supabase adapter.",
   "tests": {
-    "adpostWeb": "739 passed + 1 opt-in skipped (68 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
+    "adpostWeb": "763 passed + 1 opt-in skipped (72 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
-    "sql": "11 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0011 local only",
+    "sql": "12 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0012 local only",
     "browserQa": "headless Edge 2026-11-02: role nav, brand switch, chat/team chat, forms, mobile drawer, axe WCAG 2.1 AA 0 violations (both themes)"
   },
   "supabase": {
@@ -168,10 +168,11 @@
     "ga4 / gsc connectors": "implemented + fake-tested; no Google request made",
     "edge functions": "integration-sync, integration-google implemented; NOT deployed",
     "integrations ui": "honest mock UI; live actions need 17F",
-    "pilot seed": "prepared + tested; NOT applied; agency decision pending",
+    "pilot seed": "ADPOST/POD pilot seed prepared + tested (owner-supplied URLs); NOT applied. Lugenix seed kept for later, not in this release",
     "dashboard/ai/reports on real data": "not started (needs 17F + staging data)",
     "tests": "593 passed + 1 opt-in skipped (57 files); tsc clean; build ok",
-    "commits": "ccbc803, c894bab, d5ff731, 783ce3c, f2d4130, 89f4e03"
+    "commits": "ccbc803, c894bab, d5ff731, 783ce3c, f2d4130, 89f4e03",
+    "google readiness": "one property per website (app + 0012), audit trail, period comparisons, /oauth/google/callback; fake-tested only"
   },
   "environment": {
     "host": "laptop (Windows 11)",
@@ -213,6 +214,12 @@
     "wiring": "SupabaseBackend over repositories; guarded NotAvailable areas",
     "migration": "0011 platform_admins directory (local)",
     "tests": "739 passed + 1 skipped",
+    "commit": "see GITHUB_SYNC_LOG.md"
+  },
+  "milestone5": {
+    "checklist": "docs/development/STAGING_RELEASE_CHECKLIST.md",
+    "migration": "0012 integration property guard (local)",
+    "tests": "763 passed + 1 skipped",
     "commit": "see GITHUB_SYNC_LOG.md"
   }
 }
