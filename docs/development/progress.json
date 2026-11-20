@@ -91,12 +91,12 @@
       "text": "Netlify deployment not authorized"
     }
   ],
-  "nextTask": "Claude: 17F F6 compose SupabaseBackend from the repositories, F8 contract suite on PGlite, F9 boot path (SUPABASE_ADAPTER_READY stays false). Owner: approve staging migrations 0006-0010 + pilot seed; Auth settings (site URL, redirect URLs, SMTP); test users; Super Admin bootstrap; Supabase CLI on the laptop.",
+  "nextTask": "Claude: GA4/GSC readiness for the ADPOST and POD pilots; staging release checklist. Owner: approvals listed in STAGING_RELEASE_CHECKLIST.md.",
   "tests": {
-    "adpostWeb": "713 passed + 1 opt-in skipped (65 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
+    "adpostWeb": "739 passed + 1 opt-in skipped (68 files); tsc 0 errors; build ok; 0 vulns (laptop, Node 26.13.1, 2026-11-20)",
     "legacyBuild": "pass",
     "laravelPhpunit": "not run (B-001)",
-    "sql": "10 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0010 local only",
+    "sql": "11 migrations apply on PGlite; 0001-0005 applied to staging; 0006-0011 local only",
     "browserQa": "headless Edge 2026-11-02: role nav, brand switch, chat/team chat, forms, mobile drawer, axe WCAG 2.1 AA 0 violations (both themes)"
   },
   "supabase": {
@@ -126,7 +126,7 @@
     "17J SEO execution tools": "SSRF-safe fetcher implemented + unit-tested; Edge Function not deployed",
     "17G live AI chat": "architecture + provider plan documented; NOT implemented; awaiting model API authorization",
     "17E auth adapter": "E1-E10 done locally: adapter, auth UI (forgot/reset password, confirmation, session ended, access pending), role-aware landing, Decision A, invitation pages; E11 (staging) blocked on approval",
-    "17F data adapter": "F1-F5 done: DbPort + supabaseDbPort, PGlite port, 10 repositories, resolveHome, invitation RPCs; 20 PGlite + 6 unit tests; insert-then-read fix for id-based read policies. Not connected."
+    "17F data adapter": "F1-F9 done locally: repositories, SupabaseBackend (full contract; server-side areas guarded), contract suite on PGlite, boot path (gated). Migration 0011 local. F10 staging blocked on approval."
   },
   "aiProviders": {
     "M2 schema 0007": "implemented + validated locally (19 DB tests); NOT applied to staging (awaiting approval)",
@@ -207,6 +207,12 @@
     "repositories": "agencies, clients, websites, memberships, profiles, integrations (read-only), conversations, messages, projects, tasks",
     "finding": "insert ... returning refused on brands/conversations (id-based read policies); client-generated ids + insert-then-read",
     "tests": "713 passed + 1 skipped; mutation-checked",
+    "commit": "see GITHUB_SYNC_LOG.md"
+  },
+  "milestone4": {
+    "wiring": "SupabaseBackend over repositories; guarded NotAvailable areas",
+    "migration": "0011 platform_admins directory (local)",
+    "tests": "739 passed + 1 skipped",
     "commit": "see GITHUB_SYNC_LOG.md"
   }
 }

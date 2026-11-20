@@ -186,3 +186,15 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | Tests | 20 PGlite repository tests + 6 port unit tests; mutation-checked. Full suite 713 passed + 1 opt-in skipped |
 | Still gated | `SUPABASE_ADAPTER_READY = false`; F6–F9 next; F10 needs staging approval |
 | Commit | see GITHUB_SYNC_LOG.md |
+
+## Milestone 4: Phase 17F application wiring and boot path (2026-11-20)
+| Item | Result |
+|---|---|
+| `SupabaseBackend` | Full `Backend` contract over the repositories; roles from the shared access rules |
+| Live areas | Workspace, agencies, users/roles, inner clients, websites, members, invitations, integrations (list, disconnect), agents (read), chat, projects, tasks, comments |
+| Guarded areas | Analytics, insights, reports, automation, intelligence, studio, knowledge, AI settings, approvals: access check, then `NotAvailableError` |
+| Contract suite | Runs against both adapters; Supabase on PGlite passes 8/8 (mutation-checked) |
+| Isolation tests | 11 on the sample hierarchy: Super Admin, Admin cross-agency, Client User cross-client and agency admin, conversations, agents of other clients, credentials, notifications |
+| Migration 0011 | `platform_admins` readable by Super Admins (finding); local only |
+| Boot | `supabaseBoot.tsx`: config → client → session → roles → router; still gated |
+| Verification | 739 passed + 1 opt-in skipped; tsc 0; build ok; 0 vulnerabilities |

@@ -25,6 +25,7 @@ import type {
     IntegrationStatus as ConnectionStatus,
 } from '../../../../../supabase/functions/_shared/integrations/types.ts';
 import { contains, eq, inList, lt, type DbError, type DbPort, type Filter } from './dbPort';
+import { agentRepo, auditRepo, commentRepo, innerClientRepo, invitationRepo } from './moreRepositories';
 
 // ── Paging and errors ──────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export function toAppError(error: DbError, field = 'form'): Error {
     }
 }
 
-const fail = (error: DbError, field?: string): never => {
+export const fail = (error: DbError, field?: string): never => {
     throw toAppError(error, field);
 };
 
@@ -208,13 +209,13 @@ const toTask = (r: TaskRow): T.Task => ({
 });
 
 /** PostgREST returns ISO strings; the Postgres test port may return Date objects. */
-function iso(v: string | Date): string {
+export function iso(v: string | Date): string {
     return v instanceof Date ? v.toISOString() : new Date(v).toISOString();
 }
-const isoOrNull = (v: string | Date | null) => (v === null || v === undefined ? null : iso(v));
+export const isoOrNull = (v: string | Date | null) => (v === null || v === undefined ? null : iso(v));
 
 /** Drops undefined keys so an update only touches the fields the caller passed. */
-const defined = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+export const defined = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
 const trimOrNull = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
 
 // ── Repositories ───────────────────────────────────────────────────────────
@@ -230,6 +231,11 @@ export interface Repositories {
     messages: ReturnType<typeof messageRepo>;
     projects: ReturnType<typeof projectRepo>;
     tasks: ReturnType<typeof taskRepo>;
+    innerClients: ReturnType<typeof innerClientRepo>;
+    agents: ReturnType<typeof agentRepo>;
+    invitations: ReturnType<typeof invitationRepo>;
+    comments: ReturnType<typeof commentRepo>;
+    audit: ReturnType<typeof auditRepo>;
 }
 
 /** Repositories bound to one signed-in user (`userId` from the auth adapter, never from the browser URL). */
@@ -247,16 +253,21 @@ export function createRepositories(db: DbPort, userId: string): Repositories {
         messages: messageRepo(db, userId),
         projects: projectRepo(db, clients),
         tasks: taskRepo(db, userId, clients),
+        innerClients: innerClientRepo(db),
+        agents: agentRepo(db),
+        invitations: invitationRepo(db),
+        comments: commentRepo(db, userId),
+        audit: auditRepo(db),
     };
 }
 
-async function selectAll<R>(db: DbPort, table: string, columns: readonly string[], filters: Filter[], order?: Array<{ column: string; ascending?: boolean }>) {
+export async function selectAll<R>(db: DbPort, table: string, columns: readonly string[], filters: Filter[], order?: Array<{ column: string; ascending?: boolean }>) {
     const { rows, error } = await db.select<R>({ table, columns, filters, order });
     if (error) fail(error);
     return rows;
 }
 
-async function selectPage<R>(db: DbPort, table: string, columns: readonly string[], filters: Filter[], order: Array<{ column: string; ascending?: boolean }>, req: PageRequest) {
+export async function selectPage<R>(db: DbPort, table: string, columns: readonly string[], filters: Filter[], order: Array<{ column: string; ascending?: boolean }>, req: PageRequest) {
     const r = pageRange(req);
     const { rows, count, error } = await db.select<R>({ table, columns, filters, order, range: { from: r.from, to: r.to }, count: true });
     if (error) fail(error);
@@ -264,7 +275,7 @@ async function selectPage<R>(db: DbPort, table: string, columns: readonly string
 }
 
 /** One row RLS lets the caller see, or AccessDeniedError (hidden and missing look the same). */
-async function selectOne<R>(db: DbPort, table: string, columns: readonly string[], filters: Filter[]): Promise<R> {
+export async function selectOne<R>(db: DbPort, table: string, columns: readonly string[], filters: Filter[]): Promise<R> {
     const rows = await selectAll<R>(db, table, columns, filters);
     if (rows.length !== 1) throw new AccessDeniedError();
     return rows[0]!;
@@ -276,7 +287,7 @@ async function selectOne<R>(db: DbPort, table: string, columns: readonly string[
  * row up by id through a helper function, which does not see a row inserted by the same
  * statement, so Postgres (and PostgREST) refuse the RETURNING part with 42501.
  */
-async function insertOne<R>(db: DbPort, table: string, row: Record<string, unknown>, columns: readonly string[], field?: string): Promise<R> {
+export async function insertOne<R>(db: DbPort, table: string, row: Record<string, unknown>, columns: readonly string[], field?: string): Promise<R> {
     const id = newUuid();
     const { error } = await db.insert(table, { id, ...row }, []);
     if (error) fail(error, field);
@@ -286,7 +297,7 @@ async function insertOne<R>(db: DbPort, table: string, row: Record<string, unkno
 const newUuid = () => globalThis.crypto.randomUUID();
 
 /** An update RLS does not allow touches 0 rows: reported as AccessDeniedError, never as success. */
-async function updateOne<R>(db: DbPort, table: string, id: string, patch: Record<string, unknown>, columns: readonly string[], field?: string): Promise<R> {
+export async function updateOne<R>(db: DbPort, table: string, id: string, patch: Record<string, unknown>, columns: readonly string[], field?: string): Promise<R> {
     const { rows, error } = await db.update<R>(table, patch, [eq('id', id)], columns);
     if (error) fail(error, field);
     if (rows.length !== 1) throw new AccessDeniedError();
@@ -362,8 +373,9 @@ function clientRepo(db: DbPort, agencies: ReturnType<typeof agencyRepo>) {
             });
             return (await withSlugs([await insertOne<BrandRow>(db, 'brands', row, BRAND_COLS, 'slug')]))[0]!;
         },
-        async update(id: string, patch: Partial<Omit<AgencyClientInput, 'slug'>>): Promise<T.Brand> {
+        async update(id: string, patch: Partial<Omit<AgencyClientInput, 'slug'>> & { color?: string; timezone?: string; currency?: string }): Promise<T.Brand> {
             const row = defined({
+                color: patch.color, timezone: patch.timezone, currency: patch.currency,
                 name: patch.name?.trim(), description: patch.description, display_name: trimOrNull(patch.displayName), industry: trimOrNull(patch.industry),
                 logo_url: trimOrNull(patch.logoUrl), primary_contact_name: trimOrNull(patch.primaryContactName), primary_contact_email: trimOrNull(patch.primaryContactEmail),
                 status: patch.status,
@@ -403,6 +415,16 @@ function websiteRepo(db: DbPort, clients: ReturnType<typeof clientRepo>) {
             // is_demo is never set from the app: demo records come from the dev seed only.
             return toWebsite(await insertOne<WebsiteRow>(db, 'websites', { brand_id: brandId, ...websiteFields(input) }, WEBSITE_COLS, 'websiteUrl'));
         },
+        /** Websites of several clients at once (counts on agency pages); hidden clients contribute nothing. */
+        async listByClients(brandIds: string[]): Promise<T.Website[]> {
+            if (!brandIds.length) return [];
+            return (await selectAll<WebsiteRow>(db, 'websites', WEBSITE_COLS, [inList('brand_id', brandIds)])).map(toWebsite);
+        },
+        async remove(id: string): Promise<void> {
+            const { count, error } = await db.delete('websites', [eq('id', id)]);
+            if (error) fail(error);
+            if (count !== 1) throw new AccessDeniedError();
+        },
         async update(id: string, patch: Partial<WebsiteInput>): Promise<T.Website> {
             return toWebsite(await updateOne<WebsiteRow>(db, 'websites', id, websiteFields(patch), WEBSITE_COLS, 'websiteUrl'));
         },
@@ -435,6 +457,10 @@ function membershipRepo(db: DbPort, userId: string) {
         /** Client admins only (RLS + 0009 triggers); permissions apply to Client Users only. */
         async setClientPermissions(membershipId: string, permissions: T.ClientPermission[]): Promise<T.BrandMembership> {
             return toBrandMembership(await updateOne<BrandMembershipRow>(db, 'brand_memberships', membershipId, { permissions: [...new Set(permissions)] }, BRAND_MEMBERSHIP_COLS, 'permissions'));
+        },
+        /** Client admins (RLS + 0009 triggers: owners and Admins cannot be created by lower roles). */
+        async updateClientMembership(membershipId: string, patch: { role?: T.BrandRole; clientId?: string | null }): Promise<T.BrandMembership> {
+            return toBrandMembership(await updateOne<BrandMembershipRow>(db, 'brand_memberships', membershipId, defined({ role: patch.role, client_id: patch.clientId }), BRAND_MEMBERSHIP_COLS, 'role'));
         },
         async removeClientMembership(membershipId: string): Promise<void> {
             const { count, error } = await db.delete('brand_memberships', [eq('id', membershipId)]);
@@ -550,6 +576,28 @@ function messageRepo(db: DbPort, userId: string) {
             if (error) fail(error);
             return { items: rows.slice(0, limit).map(toMessage).reverse(), hasMore: rows.length > limit };
         },
+        /** Newest message and the total count, for conversation lists. */
+        async latest(conversationId: string): Promise<{ last: T.Message | null; count: number }> {
+            const { rows, count, error } = await db.select<MessageRow>({
+                table: 'messages', columns: MESSAGE_COLS, filters: [eq('conversation_id', conversationId)],
+                order: [{ column: 'created_at', ascending: false }, { column: 'id', ascending: false }], range: { from: 0, to: 0 }, count: true,
+            });
+            if (error) fail(error);
+            return { last: rows[0] ? toMessage(rows[0]) : null, count: count ?? rows.length };
+        },
+        /** Agent replies and notices written by agent-execute for one user message. */
+        async replies(messageId: string): Promise<T.Message[]> {
+            return (await selectAll<MessageRow>(db, 'messages', MESSAGE_COLS, [eq('reply_to_id', messageId)], [{ column: 'created_at' }, { column: 'id' }])).map(toMessage);
+        },
+        /** Case-insensitive search over the messages the caller may read in one client. */
+        async search(brandId: string, term: string): Promise<T.Message[]> {
+            const { rows, error } = await db.select<MessageRow>({
+                table: 'messages', columns: MESSAGE_COLS, filters: [eq('brand_id', brandId), contains('body', term)],
+                order: [{ column: 'created_at', ascending: false }], range: { from: 0, to: 49 },
+            });
+            if (error) fail(error);
+            return rows.map(toMessage);
+        },
         /** A message authored by the caller. Agent and system messages come from Edge Functions only (RLS). */
         async send(input: { brandId: string; conversationId: string; body: string; mentions?: string[]; replyToId?: string | null }): Promise<T.Message> {
             const body = input.body.trim();
@@ -580,6 +628,11 @@ function projectRepo(db: DbPort, clients: ReturnType<typeof clientRepo>) {
             assertValid({ name: (!name || name.length > 200) && 'A project name of 1–200 characters is required.' });
             const row = defined({ brand_id: brandId, name, description: input.description ?? '', website_id: input.websiteId ?? undefined, client_visible: input.clientVisible ?? false });
             return toProject(await insertOne<ProjectRow>(db, 'projects', row, PROJECT_COLS));
+        },
+        async remove(id: string): Promise<void> {
+            const { count, error } = await db.delete('projects', [eq('id', id)]);
+            if (error) fail(error);
+            if (count !== 1) throw new AccessDeniedError();
         },
         async update(id: string, patch: { name?: string; description?: string; status?: T.Project['status']; clientVisible?: boolean; websiteId?: string | null }): Promise<T.Project> {
             const row = defined({ name: patch.name?.trim(), description: patch.description, status: patch.status, client_visible: patch.clientVisible, website_id: patch.websiteId });
@@ -623,8 +676,14 @@ function taskRepo(db: DbPort, userId: string, clients: ReturnType<typeof clientR
             });
             return toTask(await insertOne<TaskRow>(db, 'tasks', row, TASK_COLS));
         },
-        async update(id: string, patch: Partial<Omit<TaskInput, 'projectId'>>): Promise<T.Task> {
+        async remove(id: string): Promise<void> {
+            const { count, error } = await db.delete('tasks', [eq('id', id)]);
+            if (error) fail(error);
+            if (count !== 1) throw new AccessDeniedError();
+        },
+        async update(id: string, patch: Partial<TaskInput>): Promise<T.Task> {
             const row = defined({
+                project_id: patch.projectId,
                 title: patch.title?.trim(), description: patch.description, priority: patch.priority, status: patch.status, due_date: patch.dueDate, ...assigneeColumns(patch.assignee),
             });
             return toTask(await updateOne<TaskRow>(db, 'tasks', id, row, TASK_COLS));

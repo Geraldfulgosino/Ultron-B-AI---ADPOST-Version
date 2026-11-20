@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { routes } from '@/app/routes';
 import { BackendProvider } from '@/app/backend';
 import { SupabaseStatusScreen } from '@/app/SupabaseStatusScreen';
+import { bootSupabase, SupabaseRoot } from '@/app/supabaseBoot';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 import { createLocalBackend, LOCAL_PERSIST_KEY } from '@/data/local/backend';
 import { ConfigError, readSupabaseConfig, selectProvider, type SupabaseConfig } from '@/data/supabase/config';
@@ -12,9 +13,13 @@ import './index.css';
 /**
  * VITE_DATA_PROVIDER selects the backend: "mock" (default, in-browser simulation) or "supabase".
  * Supabase mode does not mount the app until its adapter has passed the security test gate
- * (docs/development/PHASE17_STAGING_RUNBOOK.md); until then it shows a status screen.
+ * (docs/development/PHASE17_STAGING_RUNBOOK.md and STAGING_RELEASE_CHECKLIST.md, including the
+ * staging RLS matrix with real JWTs); until then it shows a status screen. Local tests on PGlite
+ * do not prove staging readiness.
  */
 const SUPABASE_ADAPTER_READY = false;
+
+const bootLive = () => bootSupabase({ env: import.meta.env, origin: window.location.origin });
 
 function renderApp() {
     const backend = createLocalBackend({ persistKey: LOCAL_PERSIST_KEY, persistSession: true });
@@ -34,6 +39,7 @@ function renderSupabase() {
     } catch (e) {
         error = e instanceof ConfigError ? e.message : 'Supabase configuration could not be read.';
     }
+    if (SUPABASE_ADAPTER_READY && config) return <SupabaseRoot boot={bootLive} />;
     return <SupabaseStatusScreen config={config} error={error} adapterReady={SUPABASE_ADAPTER_READY} />;
 }
 

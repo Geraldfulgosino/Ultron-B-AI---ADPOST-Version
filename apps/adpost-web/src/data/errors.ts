@@ -53,6 +53,18 @@ export class ServiceError extends Error {
     }
 }
 
+/**
+ * The feature runs server-side (an Edge Function or a sync job) that is not connected in this
+ * mode yet. Raised after the access check, so it never reveals another tenant's data and never
+ * stands in for real records.
+ */
+export class NotAvailableError extends Error {
+    constructor(feature: string) {
+        super(`${feature} is not available in live mode yet.`);
+        this.name = 'NotAvailableError';
+    }
+}
+
 /** Throws ValidationError if any rule produced a message. */
 export function assertValid(rules: Record<string, string | false | null | undefined>): void {
     const fields: Record<string, string> = {};

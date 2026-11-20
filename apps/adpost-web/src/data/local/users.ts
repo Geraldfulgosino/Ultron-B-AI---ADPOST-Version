@@ -19,7 +19,7 @@ import type { Scope } from './scope';
 import { isPlatformAdmin } from './agencies';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const AGENCY_ROLE_LABEL: Record<AgencyRole, string> = { agency_owner: 'Admin (owner)', agency_admin: 'Admin', agency_manager: 'Agency staff' };
+export const AGENCY_ROLE_LABEL: Record<AgencyRole, string> = { agency_owner: 'Admin (owner)', agency_admin: 'Admin', agency_manager: 'Agency staff' };
 const INVITE_TTL_DAYS = 7;
 
 export function platformAudit(db: LocalDatabase, actorId: ID | null, action: string, targetType: string, targetId: ID | null, agencyId: ID | null = null, details: Record<string, string> = {}) {

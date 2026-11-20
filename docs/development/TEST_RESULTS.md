@@ -130,3 +130,10 @@
 - Mutation checks: removing the cross-agency guard, reporting a 0-row update as success, or swallowing read errors each fails tests.
 - `npm run build`: ok. `npm audit`: 0 vulnerabilities.
 - **Level:** PGlite emulation of Postgres + RLS, and a stub supabase-js client. No Supabase request was made. Not staging results.
+
+## 2026-11-20: Milestone 4, Phase 17F wiring (laptop, Node 26.13.1)
+- `npm run typecheck`: 0 errors. `npm test`: **739 passed + 1 opt-in skipped** (68 files). `npm run build`: ok. `npm audit`: 0 vulnerabilities.
+- New: `src/test/contract/supabase.contract.test.ts` (8, the shared contract on `SupabaseBackend` over PGlite), `src/test/db/supabaseApi.db.test.ts` (11), `src/app/supabaseBoot.test.tsx` (7).
+- Mutation checks: letting every role into chat, or resolving any brand id to the first visible client, each fails the Supabase contract run; skipping migration 0011 fails the Super Admin directory test.
+- The Supabase advisor test caught a first draft of 0011 with two permissive SELECT policies; it now uses one.
+- **Level:** PGlite + stub supabase-js. No Supabase request. Not staging results.

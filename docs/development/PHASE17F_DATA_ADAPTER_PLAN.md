@@ -27,13 +27,19 @@ Real data behind `VITE_DATA_PROVIDER=supabase`, with the same `BrandApi` contrac
 | F3 | Repositories: agencies, clients, websites, memberships, profiles, integrations, conversations, messages, projects, tasks | No | **Done** |
 | F4 | Repository authorization tests on PGlite (Super Admin, Admin, Client User, no membership, revocation, suspension, invitations, pagination, failures) | No | **Done**: 20 tests in `src/test/db/repositories.db.test.ts`; mutation-checked |
 | F5 | `resolveHome` (E7 in Supabase mode) and invitation RPCs (E8: `preview_invitation`, `accept_invitation`, `accept_agency_invitation`) | No | **Done** (tested on PGlite) |
-| F6 | `SupabaseBackend`: compose `BrandApi` from the repositories area by area (workspace, agencies, users, clients, websites, members, invitations, chat, work, integrations) | No | Next |
-| F7 | Areas with server-side logic (agents, AI, SEO insights, reports, studio, knowledge, automation): Edge Function clients, or an explicit "not available yet" error. Never mock data | No (code) | Planned |
-| F8 | Run `src/test/contract/backendContract.ts` against `SupabaseBackend` on PGlite | No | Planned (needs F6) |
-| F9 | Boot path in `main.tsx`: create the client, restore the session (`createSupabaseAuth`), then mount; loading and error screens | No (code) | Planned; stays behind `SUPABASE_ADAPTER_READY = false` |
+| F6 | `SupabaseBackend`: compose `BrandApi` from the repositories area by area (workspace, agencies, users, clients, websites, members, invitations, chat, work, integrations) | No | **Done** (2026-11-20): `src/data/supabase/api.ts`, `backend.ts`, `moreRepositories.ts` |
+| F7 | Areas with server-side logic (agents, AI, SEO insights, reports, studio, knowledge, automation): Edge Function clients, or an explicit "not available yet" error. Never mock data | No (code) | **Done as guards**: access check first, then `NotAvailableError`. Chat agent runs, invitation emails and integration disconnects call their Edge Functions |
+| F8 | Run `src/test/contract/backendContract.ts` against `SupabaseBackend` on PGlite | No | **Done**: `src/test/contract/supabase.contract.test.ts` (8/8, mutation-checked) plus 11 isolation tests in `src/test/db/supabaseApi.db.test.ts` |
+| F9 | Boot path in `main.tsx`: create the client, restore the session (`createSupabaseAuth`), then mount; loading and error screens | No (code) | **Done**: `src/app/supabaseBoot.tsx` (7 tests); still behind `SUPABASE_ADAPTER_READY = false` |
 | F10 | Staging verification with real JWTs (after 0006–0010 are applied) | **Yes** | Blocked |
 
 ## Acceptance before enabling Supabase mode
 - F6–F8 done; the backend contract suite passes against `SupabaseBackend` on PGlite.
 - The staging RLS matrix passes with real JWTs (F10, after owner approval).
 - The full suite, `tsc` and the build pass; mock mode unchanged.
+
+## Milestone 4 notes (2026-11-20)
+- **Live areas:** workspace, agencies (incl. platform overview), users and roles (0009 RPCs), inner clients, websites, members, client and agency invitations (creation via RPC; email via `user-invite`), integrations (list; disconnect via `integration-sync`), agents (read; Client Users see client-facing ones only), chat (conversations, messages, search, agent runs via `agent-execute`), work (projects, tasks, comments).
+- **Guarded, not connected yet:** analytics, insights, reports, automation, intelligence, studio, knowledge, AI settings, agent administration, approvals, chat attachments, proposals and summaries. Each checks access, then raises `NotAvailableError`.
+- **Finding → migration 0011 (local only):** `platform_admins_select_self` hid other Super Admins from Super Admins. 0011 replaces it with one policy: own row, or every row for Super Admins. A test fails without it.
+- **Boot:** config → client → session restore (suspended dropped) → `users.home()` preflight → router. Nothing protected renders before; errors show a generic message with Retry.
