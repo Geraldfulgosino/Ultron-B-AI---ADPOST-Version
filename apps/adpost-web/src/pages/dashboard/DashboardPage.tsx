@@ -9,6 +9,7 @@ import { useBrand, useQuery } from '@/app/backend';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { INSIGHT_STATUS, INTEGRATION_STATUS, PROVIDER_LABELS, SEVERITY } from '@/pages/seo/labels';
 import { clientBase } from '@/app/paths';
+import { DemoReset } from './DemoReset';
 
 export const DASHBOARD_RANGES = [7, 28, 30, 90] as const;
 
@@ -53,6 +54,7 @@ export function DashboardPage() {
                     return (
                         <>
                             {d.simulated && <SimulatedNotice what="analytics, search and integration data on this dashboard" />}
+                            {d.simulated && <DemoReset />}
                             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
                                 <StatCard label="Websites" value={d.counts.websites} />
                                 <StatCard label="Integrations connected" value={d.counts.integrationsConnected} hint={d.counts.integrationsSimulated ? `${d.counts.integrationsSimulated} simulated (demo)` : undefined} />

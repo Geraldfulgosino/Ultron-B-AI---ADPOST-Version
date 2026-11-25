@@ -939,10 +939,10 @@ export function resetVcaDemo(db: LocalDatabase, brandId: string): { removed: num
 }
 
 /** Summary of demo-owned rows for a client (used by the UI and tests). */
-export function demoRowCounts(rows: Partial<Record<TableName, ReadonlyArray<{ id: string; brandId?: string }>>>, brandId: string): Record<string, number> {
+export function demoRowCounts(rows: Partial<Record<TableName, ReadonlyArray<{ id?: string; brandId?: string | null }>>>, brandId: string): Record<string, number> {
     const out: Record<string, number> = {};
     for (const [t, list] of Object.entries(rows)) {
-        const n = (list ?? []).filter((r) => r.brandId === brandId && isDemoRowId(r.id)).length;
+        const n = (list ?? []).filter((r) => r.brandId === brandId && !!r.id && isDemoRowId(r.id)).length;
         if (n) out[t] = n;
     }
     return out;

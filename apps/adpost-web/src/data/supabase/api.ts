@@ -745,6 +745,8 @@ export function supabaseApi(ctx: ApiContext): BrandApi {
         studio: notConnected('Web Studio', 'staff'),
         knowledge: notConnected('Knowledge base', 'staff'),
         ai: notConnected('AI provider settings', 'staff'),
+        // The VCA demo dataset exists only in the local mock adapter; staging never receives it.
+        demo: Object.assign(notConnected<BrandApi['demo']>('Demo dataset', 'read'), { status: async () => ({ available: false, rows: 0, endDate: null }) }),
     };
 }
 

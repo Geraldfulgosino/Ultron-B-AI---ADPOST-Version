@@ -811,6 +811,13 @@ export interface UsersApi {
 }
 
 /** The full API bound to one signed-in user. Extended phase by phase. */
+export interface DemoApi {
+    /** Whether this client has the local VCA demo dataset, and how many demo-owned rows exist. */
+    status(brandId: T.ID): Promise<{ available: boolean; rows: number; endDate: string | null }>;
+    /** Admin only: delete and re-create the demo-owned rows of this client. User records are kept. */
+    reset(brandId: T.ID): Promise<{ removed: number; created: number }>;
+}
+
 export interface BrandApi {
     workspace: WorkspaceApi;
     agencies: AgenciesApi;
@@ -831,6 +838,7 @@ export interface BrandApi {
     studio: StudioApi;
     knowledge: KnowledgeApi;
     ai: AiProvidersApi;
+    demo: DemoApi;
 }
 
 export interface Backend {

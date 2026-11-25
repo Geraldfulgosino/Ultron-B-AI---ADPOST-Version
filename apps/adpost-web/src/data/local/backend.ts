@@ -18,6 +18,7 @@ import { localKnowledge } from './knowledge';
 import { localAgencies } from './agencies';
 import { localUsers } from './users';
 import { localAi } from './ai';
+import { localDemo } from './demo';
 import { buildFixtures } from './fixtures';
 import { applySampleSeed, buildSampleSeed } from './sampleSeed';
 
@@ -44,6 +45,7 @@ export function apiFor(db: LocalDatabase, userId: ID): BrandApi {
         studio: localStudio(scope),
         knowledge: localKnowledge(scope),
         ai: localAi(scope),
+        demo: localDemo(scope),
     };
 }
 

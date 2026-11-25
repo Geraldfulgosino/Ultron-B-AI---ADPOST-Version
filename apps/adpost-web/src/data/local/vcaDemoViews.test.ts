@@ -161,3 +161,23 @@ describe('VCA demo: insights, chat and work', () => {
         expect((await api.knowledge.list(CMS)).every((x) => x.brandId === CMS)).toBe(true);
     });
 });
+
+describe('VCA demo: reset control', () => {
+    it('only an admin of the client can reset; it restores demo rows and keeps user rows', async () => {
+        const d = db();
+        const admin = apiFor(d, 'usr_vca_admin');
+        expect(await admin.demo.status(CMS)).toMatchObject({ available: true, endDate: VCA_DEMO_END });
+        expect((await admin.demo.status(CMS)).rows).toBeGreaterThan(300);
+        expect((await apiFor(d, 'usr_adpost_admin').demo.status(sampleClientId('adpost', 'pod'))).available).toBe(false);
+        await expect(apiFor(d, 'usr_lipsky_client').demo.reset(LIPSKY)).rejects.toThrow();
+        await expect(apiFor(d, 'usr_adpost_admin').demo.reset(CMS)).rejects.toThrow();
+        await expect(apiFor(d, 'usr_adpost_admin').demo.reset(sampleClientId('adpost', 'pod'))).rejects.toThrow();
+        const mine = await admin.work.createProject(CMS, { name: 'Kept' });
+        d.delete('seoInsights', (i) => i.id === 'vd_cms_ins_3');
+        const r = await admin.demo.reset(CMS);
+        expect(r.created).toBeGreaterThan(300);
+        expect(d.find('seoInsights', 'vd_cms_ins_3')).toBeDefined();
+        expect(d.find('projects', mine.id)).toBeDefined();
+        expect(d.all('auditLogs').some((a) => a.action === 'demo.reset' && a.brandId === CMS)).toBe(true);
+    });
+});
