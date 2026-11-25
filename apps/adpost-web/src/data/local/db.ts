@@ -16,6 +16,8 @@ export interface Tables {
     searchQueries: T.SearchQuery;
     landingPages: T.LandingPage;
     seoInsights: T.SeoInsight;
+    /** Weekly site-audit snapshots (local: VCA demo dataset only; Supabase: seo_crawl_jobs/seo_findings). */
+    siteAudits: T.SiteAudit;
     n8nConnections: T.N8nConnection;
     n8nDeliveries: T.N8nDelivery;
     auditLogs: T.AuditLog;
@@ -60,7 +62,7 @@ export type Credentials = Record<string, string>;
 export const EMPTY_SNAPSHOT = (): DbSnapshot => ({
     agencies: [], brands: [], users: [], agencyMemberships: [], brandMemberships: [], invitations: [],
     clients: [], websites: [], integrations: [], dailyMetrics: [], searchQueries: [], landingPages: [],
-    seoInsights: [], n8nConnections: [], n8nDeliveries: [], auditLogs: [], agentInstances: [],
+    seoInsights: [], siteAudits: [], n8nConnections: [], n8nDeliveries: [], auditLogs: [], agentInstances: [],
     instructionVersions: [], conversations: [], messages: [], executions: [], projects: [], tasks: [],
     approvals: [], knowledgeDocuments: [], knowledgeChunks: [], webChanges: [],
     aiConnections: [], aiModels: [], aiPolicies: [], aiAssignments: [], aiUsage: [], aiHealthChecks: [], aiAudit: [], platformAdmins: [], taskComments: [], platformAudit: [], agencyInvitations: [], seedSteps: [],

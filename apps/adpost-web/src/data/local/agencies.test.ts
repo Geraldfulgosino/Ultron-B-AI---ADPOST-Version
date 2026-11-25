@@ -1,4 +1,5 @@
 /** Agencies, clients, websites and roles on the dev sample seed (mirrors hierarchy.db.test.ts and roles.db.test.ts). */
+import { isDemoRowId } from './vcaDemo';
 import { AccessDeniedError, ValidationError } from '../errors';
 import { apiFor } from './backend';
 import { LocalDatabase } from './db';
@@ -29,7 +30,12 @@ describe('dev sample seed (reconciled 2026-11-13)', () => {
         // DSP and HAMPTONS kept their ids and slugs (same clients, new names).
         expect(db.find('brands', DSP)).toMatchObject({ slug: 'dsp', name: 'DYNAMIC SCREEN PRINTING' });
         expect(db.find('brands', sampleClientId('vca', 'hamptons'))).toMatchObject({ slug: 'hamptons', name: 'HLDC' });
-        for (const t of ['dailyMetrics', 'searchQueries', 'seoInsights', 'integrations', 'knowledgeDocuments', 'invitations'] as const) expect(db.all(t), t).toHaveLength(0);
+        // Only the four VCA clients carry the synthetic VCA demo dataset; every other client has no analytics.
+        const vcaIds = new Set(db.all('brands').filter((b) => b.agencyId === 'agy_vca').map((b) => b.id));
+        for (const t of ['dailyMetrics', 'searchQueries', 'seoInsights', 'integrations', 'knowledgeDocuments'] as const) {
+            expect(db.all(t).every((r) => vcaIds.has(r.brandId) && isDemoRowId(r.id)), t).toBe(true);
+        }
+        expect(db.all('invitations')).toHaveLength(0);
     });
 
     it('30 demo websites: production (primary) + staging per client on reserved .example domains, nothing connected', () => {
@@ -238,7 +244,9 @@ describe('Client User portal', () => {
         expect(mine.visibility).toBe('client_shared');
         const res = await c.chat.send(LIPSKY, mine.id, { body: 'What should we fix first?' });
         expect(res.replies[0]!.mode).toBe('simulated');
-        expect((await c.chat.list(LIPSKY)).map((x) => x.id)).toEqual([mine.id]);
+        const visible = await c.chat.list(LIPSKY);
+        expect(visible.filter((x) => !isDemoRowId(x.id)).map((x) => x.id)).toEqual([mine.id]);
+        expect(visible.every((x) => x.visibility === 'client_shared')).toBe(true);
         await expect(c.chat.get(LIPSKY, internal.id)).rejects.toThrow();
         await expect(c.chat.messages(LIPSKY, internal.id)).rejects.toThrow();
         await expect(c.chat.send(LIPSKY, internal.id, { body: 'peek' })).rejects.toThrow();
@@ -268,8 +276,8 @@ describe('Client User portal', () => {
         const t2 = await staff.work.createTask(LIPSKY, { projectId: internal.id, title: 'Margin review' });
         void t2;
         const c = api(db, 'usr_lipsky_client');
-        expect((await c.work.projects(LIPSKY)).map((p) => p.name)).toEqual(['Shared roadmap']);
-        expect((await c.work.tasks(LIPSKY)).map((t) => t.title)).toEqual(['Publish blog']);
+        expect((await c.work.projects(LIPSKY)).filter((p) => !isDemoRowId(p.id)).map((p) => p.name)).toEqual(['Shared roadmap']);
+        expect((await c.work.tasks(LIPSKY)).filter((t) => !isDemoRowId(t.id)).map((t) => t.title)).toEqual(['Publish blog']);
         await c.work.addComment(LIPSKY, t1.id, 'Looks good');
         expect((await staff.work.comments(LIPSKY, t1.id)).map((x) => [x.authorName, x.body])).toEqual([['LIPSKY Client (sample)', 'Looks good']]);
         await expect(c.work.updateTask(LIPSKY, t1.id, { priority: 'urgent' })).rejects.toBeInstanceOf(AccessDeniedError);

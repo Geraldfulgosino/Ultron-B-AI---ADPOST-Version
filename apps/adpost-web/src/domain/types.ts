@@ -169,6 +169,32 @@ export interface Integration {
     lastSyncedAt: ISODate | null;
     lastErrorMessage: string | null;
     createdAt: ISODate;
+    /** Demo dataset only: a simulated connection. No provider request is ever sent; always labelled "Simulated". */
+    simulated?: boolean;
+    /** Most recent sync attempts, newest first (simulated rows only locally). */
+    syncHistory?: IntegrationSyncEvent[];
+}
+
+export interface IntegrationSyncEvent {
+    at: ISODate;
+    ok: boolean;
+    message: string;
+}
+
+export type DeviceKey = 'desktop' | 'mobile' | 'tablet';
+
+/** Per-day splits. Each map sums exactly to its parent total (sessions or GSC clicks). */
+export interface MetricBreakdown {
+    /** GA4 sessions by device category. */
+    device: Record<DeviceKey, number>;
+    /** GA4 sessions by default channel group. */
+    source: Record<string, number>;
+    /** GA4 sessions by country. */
+    country: Record<string, number>;
+    /** GSC clicks by device. */
+    searchDevice: Record<DeviceKey, number>;
+    /** GSC clicks by country. */
+    searchCountry: Record<string, number>;
 }
 
 export interface DailyMetric {
@@ -184,6 +210,9 @@ export interface DailyMetric {
     impressions: number;
     /** Average position, lower is better. */
     position: number;
+    /** GA4 engaged sessions (engagement rate = engagedSessions / sessions). Absent on older rows. */
+    engagedSessions?: number;
+    breakdown?: MetricBreakdown;
 }
 
 export interface SearchQuery {
@@ -212,6 +241,37 @@ export interface LandingPage {
     bounceRate: number;
 }
 
+export type AuditCategory = 'indexability' | 'on_page' | 'links' | 'performance' | 'structured_data';
+
+export interface AuditIssue {
+    code: string;
+    label: string;
+    category: AuditCategory;
+    severity: Severity;
+    /** Affected pages. */
+    count: number;
+    examples: string[];
+}
+
+/**
+ * A weekly site-audit snapshot. Locally only the VCA demo dataset writes these (simulated: true,
+ * no crawl ran). The health score is computed on read by domain/audit.ts, never stored.
+ */
+export interface SiteAudit {
+    id: ID;
+    brandId: ID;
+    clientId: ID | null;
+    websiteId: ID;
+    date: string;
+    simulated: boolean;
+    pagesCrawled: number;
+    issues: AuditIssue[];
+    /** Simulated lab measurements (milliseconds / unitless CLS). */
+    lab: { mobileLcpMs: number; desktopLcpMs: number; cls: number; inpMs: number };
+    /** Simulated visibility index (0-100) for this site and fictitious competitors on .example domains. */
+    competitors: Array<{ name: string; domain: string; visibility: number; sharedKeywords: number; isSelf: boolean }>;
+}
+
 export type SeoInsightStatus = 'pending' | 'reviewed' | 'approved' | 'dismissed';
 export type SeoInsightType = 'traffic_drop' | 'ctr_opportunity' | 'ranking_opportunity' | 'conversion_gap' | 'technical_issue' | 'content_gap';
 export type Severity = 'low' | 'medium' | 'high';
@@ -235,6 +295,13 @@ export interface SeoInsight {
     reviewedAt: ISODate | null;
     reviewNotes: string | null;
     createdAt: ISODate;
+    /** Finer label shown with the type (e.g. "Internal linking", "Mobile performance"). */
+    category?: string;
+    priority?: TaskPriority;
+    assignedAgentId?: ID | null;
+    taskId?: ID | null;
+    /** Demo dataset only: evidence comes from synthetic data. */
+    simulated?: boolean;
 }
 
 export type N8nEvent = 'report.generated' | 'insight.approved' | 'approval.decided' | 'task.completed';
@@ -450,6 +517,8 @@ export interface Task {
     createdBy: Actor;
     sourceMessageId: ID | null;
     dueDate: string | null;
+    /** SEO insight this task addresses. */
+    insightId?: ID | null;
     createdAt: ISODate;
     updatedAt: ISODate;
 }
@@ -481,6 +550,8 @@ export interface ApprovalRequest {
     taskId: ID | null;
     executionId: ID | null;
     createdAt: ISODate;
+    /** Demo dataset only: deciding it never runs an external operation. */
+    simulated?: boolean;
 }
 
 // ── Web Studio ───────────────────────────────────────────────────────────

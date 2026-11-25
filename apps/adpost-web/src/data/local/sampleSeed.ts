@@ -1,8 +1,9 @@
 /**
  * Development sample hierarchy for the local app (mirrors supabase/seeds/dev/sample_hierarchy.sql):
- * exactly 3 agencies and 10 clients, each with its six agents and two DEMO websites (production +
- * staging) on reserved RFC 2606 .example domains. NO analytics, insights, knowledge, integrations or
- * credentials: these are sample records, not verified client data. Demo websites are never crawled,
+ * the sample agencies and clients, each with its six agents and two DEMO websites (production +
+ * staging) on reserved RFC 2606 .example domains. Only the four VCA clients get the synthetic VCA
+ * demo dataset (vcaDemo.ts: metrics, insights, chats, tasks; all labelled simulated); other clients
+ * have no analytics. No credentials: these are sample records, not verified client data. Demo websites are never crawled,
  * verified, monitored or connected (isDemo; the SSRF guard also refuses .example hosts).
  *
  * Sign-in accounts are synthetic local-only identities (example.test addresses) so the app can be
@@ -13,6 +14,7 @@ import { EMPTY_SNAPSHOT, type Credentials, type DbSnapshot } from './db';
 import { agencyRow, brandRow, DEV_PASSWORD } from './fixtures';
 import { seedAgents } from './agents';
 import { seedAiProviders } from './ai';
+import { applyVcaDemo } from './vcaDemo';
 
 const AT = '2026-11-05T09:00:00.000Z';
 
@@ -116,6 +118,8 @@ export function applySampleSeed(s: DbSnapshot): DbSnapshot {
     addClientUser('bm_lipsky_client', sampleClientId('vca', 'lipsky'), 'usr_lipsky_client', ['ai_chat', 'comment_tasks']);
     addClientUser('bm_pod_client', sampleClientId('adpost', 'pod'), 'usr_pod_client', []);
     reconcile(s);
+    // VCA demonstration dataset: synthetic, labelled, applied once per client (see vcaDemo.ts).
+    applyVcaDemo(s);
     return s;
 }
 

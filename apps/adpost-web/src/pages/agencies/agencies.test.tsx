@@ -138,7 +138,7 @@ describe('Client User portal (sample dataset)', () => {
         await router.navigate('/a/vca/c/lipsky/chat');
         await userEvent.click(await screen.findByRole('button', { name: /Start chat/ }));
         await waitFor(() => expect(router.state.location.pathname).toMatch(/\/chat\/cnv_/));
-        expect(db.all('conversations')).toEqual([expect.objectContaining({ visibility: 'client_shared', createdBy: 'usr_lipsky_client' })]);
+        expect(db.all('conversations').filter((c) => c.createdBy === 'usr_lipsky_client')).toEqual([expect.objectContaining({ visibility: 'client_shared' })]);
         await expectDenied(router, '/a/vca/c/cms/dashboard');
     });
 
