@@ -209,3 +209,18 @@ See MULTI_AGENCY_ARCHITECTURE.md.
 | OAuth callback | `/oauth/google/callback` route; code and state forwarded once, then removed from the URL |
 | Staging checklist | STAGING_RELEASE_CHECKLIST.md: preflight, compatibility, RLS, backup, auth, Super Admin, OAuth URLs, secrets, pilot, property selection, smoke tests, rollback, approval phrases |
 | Verification | 763 passed + 1 opt-in skipped; tsc 0; build ok; 0 vulnerabilities |
+
+## VCA demonstration data (2026-11-25, local mock adapter only)
+| Phase | Status |
+|---|---|
+| 1 Recover state | Done. Rebased on the laptop's 17E/17F and ADPOST/POD work (79941c0), no force-push |
+| 2–3 Dataset and synthetic analytics | Done: 4 clients on their existing demo websites, 90 days, splits that sum to totals, weekly queries and pages |
+| 4 Dashboard | Done: 7/28/30/90 ranges, website filter, GA4 and GSC KPIs with deltas, breakdowns, simulated notice |
+| 5 Integrations | Done: simulated GA4/GSC with history, freshness, simulated failure. WordPress not simulated (platform unknown) |
+| 6–8 SEO Overview, Insights, Intelligence | Done: devices and countries, query movers, 12 insights per client, explainable health score, competitors (simulated) |
+| 9 Reports | Done: report sections plus CSV/PDF demo notice and watermark |
+| 10–12 Agents, chat, team chat | Done: 9 simulated conversations and 24 executions per client |
+| 13–14 Work, knowledge | Done: sprint, 8 tasks, 3 approvals, 5 documents per client |
+| 15–16 Isolation, safety | Done: deterministic, idempotent, owned ids, confirm-gated reset |
+| 17 Browser QA | **Not run** (Chrome connection timed out) |
+| 18 Tests | 792 passed + 1 opt-in skipped; tsc 0; build ok; 0 vulnerabilities |

@@ -185,7 +185,7 @@ describe('VCA demo dataset', () => {
         const a = s.siteAudits.find((x) => x.brandId === BRANDS.hldc)!;
         const h = healthScore(a.issues, a.pagesCrawled);
         expect(h.score).toBe(Math.max(0, Math.round(100 - h.lines.reduce((x, l) => x + l.deduction, 0))));
-        expect(h.lines.every((l) => l.deduction <= 15)).toBe(true);
+        expect(h.lines.every((l) => l.deduction <= 12)).toBe(true);
     });
 });
 

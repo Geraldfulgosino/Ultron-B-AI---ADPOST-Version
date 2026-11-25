@@ -1,12 +1,29 @@
 # Session Handoff
 
-**Updated:** 2026-11-20 (Milestone 5: ADPOST/POD GA4 + GSC readiness and the staging release checklist, local)
+**Updated:** 2026-11-25 (VCA demonstration dataset, local mock adapter only; made on the desktop checkout)
 **Project root (current, laptop):** `C:\Users\GeraldFulgosino\Documents\Ultron-B-AI---ADPOST-Version`. Until 2026-11-13 the project lived on a desktop at `C:\LUGENIX\AI AGENTS\ULTRON B AI - ADPOST\ultron-b-ai-sprint-16-client-dashboard-reporting-production`.
 **Branch:** `feature/adpost-react-supabase-ai`, pushed. The remote SHA is in GITHUB_SYNC_LOG.md. `main` is untouched.
 **Supabase:** `adpost-staging`, ref `ppwkxlwxzutigepaizob`. It was linked from the desktop. On the laptop the Supabase CLI is **not installed and not linked** (see below).
 **Applied to staging:** 0001–0005 only. Staging is empty except 6 agent templates (read-only precheck).
 **Local only, awaiting approval:** 0006–0010, **0011_platform_admin_directory** and **0012_integration_property_guard** (2026-11-20), plus the ADPOST/POD pilot seed `supabase/seeds/pilot/adpost_pod_pilot.sql`. The Lugenix pilot seed is kept for later and is not part of the next staging step.
 **Deployed Edge Functions:** none. Implemented: `agent-execute`, `ai-connection-test`, `user-invite`, **`integration-sync`**, **`integration-google`**.
+
+## 2026-11-25: VCA demonstration data (read first for the VCA demo)
+- **What:** synthetic, labelled demo data for CMS, LIPSKY, HLDC and LOOP19 in the **local mock adapter only**. Plan: VCA_DEMO_DATA_PLAN.md. Checklist: VCA_DEMO_QA_CHECKLIST.md. Walkthrough: VCA_TEAM_PRESENTATION_GUIDE.md.
+- **Code:**
+  - `src/data/local/vcaDemo.ts` (generator, reset)
+  - `src/domain/audit.ts` (health score)
+  - `src/data/local/demo.ts` (DemoApi)
+  - dashboard, SEO overview, intelligence, report and export extensions
+- **New optional fields:** metrics, integrations, insights, tasks and approvals. **New local table:** `siteAudits`. Brand pages remount on a client switch.
+- **No remote work:** no Supabase writes, migrations, deploys, provider calls or website changes. The Supabase adapter reports "no demo dataset".
+- **Verification:**
+  - tsc 0 errors;
+  - **792 passed + 1 opt-in skipped** (75 files);
+  - build ok;
+  - 0 vulnerabilities.
+- **Browser QA did not run:** neither connected Chrome extension accepted the connection. See the checklist's Browser section.
+- **Next:** run the browser checklist before the presentation. The ADPOST/POD staging steps below are unchanged and still need owner approval.
 
 ## 2026-11-20: Milestone 5, ADPOST/POD GA4 + GSC readiness (read first)
 - **Next remote step:** see STAGING_RELEASE_CHECKLIST.md §14 (approval phrases). Nothing remote has been done.

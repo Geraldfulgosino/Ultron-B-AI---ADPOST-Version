@@ -1,7 +1,7 @@
 {
   "project": "ULTRON-B AI — ADPOST Edition",
   "branch": "feature/adpost-react-supabase-ai",
-  "updated": "2026-11-20",
+  "updated": "2026-11-25",
   "currentPhase": "17",
   "phases": [
     {
@@ -221,5 +221,26 @@
     "migration": "0012 integration property guard (local)",
     "tests": "763 passed + 1 skipped",
     "commit": "see GITHUB_SYNC_LOG.md"
+  },
+  "vcaDemo": {
+    "scope": "local mock adapter only; no remote changes",
+    "clients": [
+      "CMS",
+      "LIPSKY",
+      "HLDC",
+      "LOOP19"
+    ],
+    "docs": [
+      "VCA_DEMO_DATA_PLAN.md",
+      "VCA_DEMO_QA_CHECKLIST.md",
+      "VCA_TEAM_PRESENTATION_GUIDE.md"
+    ],
+    "tests": "792 passed + 1 opt-in skipped (75 files); tsc 0; build ok; npm audit 0",
+    "browserQa": "not run (Chrome extension connection timed out)",
+    "commits": [
+      "9d35379",
+      "cf5ef8e",
+      "5e5edff"
+    ]
   }
 }

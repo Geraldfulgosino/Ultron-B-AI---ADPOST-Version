@@ -5,9 +5,9 @@
 import type { AuditCategory, AuditIssue, Severity, SiteAudit } from './types';
 
 /** Points deducted per 1% of crawled pages affected, by severity. */
-export const SEVERITY_WEIGHT: Record<Severity, number> = { high: 1.2, medium: 0.6, low: 0.2 };
+export const SEVERITY_WEIGHT: Record<Severity, number> = { high: 0.6, medium: 0.3, low: 0.1 };
 /** No single issue can cost more than this many points. */
-export const MAX_DEDUCTION_PER_ISSUE = 15;
+export const MAX_DEDUCTION_PER_ISSUE = 12;
 
 export const AUDIT_CATEGORY_LABELS: Record<AuditCategory, string> = {
     indexability: 'Indexability',

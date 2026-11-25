@@ -54,4 +54,8 @@ Each row's commit is the milestone commit *before* this log line was added; the 
 | 2026-11-20 | Milestone 2: 17E auth UI, role-aware routing, Decision A, 403 a11y | a606155 | ok | a606155 (ls-remote verified) |
 | 2026-11-20 | Milestone 3: 17F DbPort, repositories, PGlite repository tests | b0f97c8 | ok | b0f97c8 (ls-remote verified) |
 | 2026-11-20 | Milestone 4: 17F SupabaseBackend, contract on PGlite, boot path, migration 0011 | 0442d68 | ok | 0442d68 (ls-remote verified) |
-| 2026-11-20 | Milestone 5: ADPOST/POD pilot seed, Google property guard (0012), audit, comparisons, OAuth callback, staging checklist | (this commit) | see next entry | — |
+| 2026-11-20 | Milestone 5: ADPOST/POD pilot seed, Google property guard (0012), audit, comparisons, OAuth callback, staging checklist | 79941c0 | ok | 79941c0 |
+| 2026-11-25 | VCA demo dataset (generator, seed hook, isolation tests); rebased on 79941c0, no force-push | 9d35379 | ok | 9d35379 |
+| 2026-11-25 | VCA demo in dashboard, SEO overview, intelligence, reports/exports, insights, integrations | cf5ef8e | ok | cf5ef8e |
+| 2026-11-25 | VCA demo reset (admin-only, confirm-gated) | 5e5edff | ok | 5e5edff |
+| 2026-11-25 | VCA demo docs, score tuning, plain-text chat label | (this commit) | see next entry | — |

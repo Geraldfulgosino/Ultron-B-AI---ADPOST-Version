@@ -695,7 +695,7 @@ function buildConversations(ctx: DemoContext, P: string, a: DemoAnalysis, tasks:
                 const parent = turn.parent !== undefined ? execByTurn[turn.parent] || null : null;
                 const e = exec(ag(turn.who), id, lastUser, new Date(t - 3000).toISOString(), parent, parent ? 1 : 0);
                 execByTurn.push(e.id);
-                messages.push({ id: mid, brandId, conversationId: id, author: { type: 'agent', agentInstanceId: ag(turn.who).id }, body: `${turn.body}\n\n_${label}_`, mentions: [], attachments: [], status: 'sent', executionId: e.id, mode: 'simulated', proposals: turn.proposals ?? [], replyToId: lastUser, createdAt });
+                messages.push({ id: mid, brandId, conversationId: id, author: { type: 'agent', agentInstanceId: ag(turn.who).id }, body: `${turn.body}\n\n(${label})`, mentions: [], attachments: [], status: 'sent', executionId: e.id, mode: 'simulated', proposals: turn.proposals ?? [], replyToId: lastUser, createdAt });
             }
         });
         conversations.push({ id, brandId, kind, title, agentInstanceIds: members.map((k) => ag(k).id), teamKey: team, websiteId: website.id, visibility, createdBy: ADMIN, archived: false, summary: `Simulated demo conversation (${spec.name}).`, createdAt: start, updatedAt: new Date(t).toISOString() });
