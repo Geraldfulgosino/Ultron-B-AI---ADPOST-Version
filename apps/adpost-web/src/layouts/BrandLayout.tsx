@@ -72,7 +72,8 @@ export function BrandLayout() {
                 onSwitchBrand={(slug) => navigate(`${clientBase({ agencySlug: access.brand.agencySlug, slug })}/dashboard`)}
                 selector={<WorkspaceSelector />}
             >
-                <Suspense fallback={<LoadingState />}>
+                {/* Keyed by client: switching clients remounts the page, so no filter or metric state carries over. */}
+                <Suspense key={access.brand.id} fallback={<LoadingState />}>
                     <Outlet />
                 </Suspense>
             </AppShell>

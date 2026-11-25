@@ -1,11 +1,11 @@
 import type { ID, Integration, SeoInsight } from '@/domain/types';
 import type { AnalyticsApi, InsightsApi, IntegrationsApi, Kpi, ReportsApi } from '../contracts';
-import { addDays, buildReport, dailySeries, delta, generateInsightCandidates, latestDate, previousWindow, totals } from '@/domain/analytics';
+import { addDays, breakdownTotals, buildReport, dailySeries, delta, generateInsightCandidates, latestDate, previousWindow, queryMovers, totals } from '@/domain/analytics';
 import { AccessDeniedError, assertValid, NotAvailableError, NotFoundError, ValidationError } from '../errors';
 import { newId } from '@/lib/utils';
 import { byClientId, type Scope } from './scope';
 import { emitAutomationEvent } from './automation';
-import { effectiveRole, hasClientPermission } from '../access';
+import { can, effectiveRole, hasClientPermission } from '../access';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -26,6 +26,9 @@ function visible(scope: Scope, brandId: ID) {
         pages: () => scope.rows('landingPages', brandId, opts),
         integrations: () => scope.rows('integrations', brandId, opts),
         insights: () => scope.rows('seoInsights', brandId, opts),
+        audits: () => scope.rows('siteAudits', brandId, opts),
+        /** Staff see tasks; Client Users get none here (tasks are not client-readable rows). */
+        tasks: () => scope.rows('tasks', brandId, { capability: 'read' }),
         clients: () => scope.rows('clients', brandId, { clientKey: (c) => c.id }),
     };
 }
@@ -48,37 +51,51 @@ export function localAnalytics(scope: Scope): AnalyticsApi {
             return { from, to: latestDate(metrics)! };
         },
 
-        async dashboard(brandId) {
+        async dashboard(brandId, options = {}) {
+            const days = options.days ?? 28;
+            assertValid({ days: (!Number.isInteger(days) || days < 1 || days > 366) && 'Choose between 1 and 366 days.' });
+            assertWebsite(scope, brandId, options.websiteId);
             const v = visible(scope, brandId);
-            const metrics = v.metrics();
+            const site = <R extends { websiteId: string }>(r: R) => !options.websiteId || r.websiteId === options.websiteId;
             const websites = v.websites();
-            const integrations = v.integrations();
-            const insights = v.insights();
+            const metrics = v.metrics().filter(site);
+            const integrations = v.integrations().filter(site);
+            const insights = v.insights().filter(site);
             const end = latestDate(metrics);
-            const window = end ? { from: addDays(end, -27), to: end } : null;
-            const cur = window ? totals(metrics.filter((m) => m.date >= window.from && m.date <= window.to)) : totals([]);
-            const prevW = window ? previousWindow(window.from, window.to) : null;
-            const prev = prevW ? totals(metrics.filter((m) => m.date >= prevW.from && m.date <= prevW.to)) : totals([]);
+            const window = end ? { from: addDays(end, -(days - 1)), to: end, days } : null;
             const inWindow = window ? metrics.filter((m) => m.date >= window.from && m.date <= window.to) : [];
+            const cur = totals(inWindow);
+            const prevW = window ? previousWindow(window.from, window.to) : null;
+            const prev = totals(prevW ? metrics.filter((m) => m.date >= prevW.from && m.date <= prevW.to) : []);
             const siteName = new Map(websites.map((w) => [w.id, w.name]));
+            const demo = new Set(websites.filter((w) => w.isDemo).map((w) => w.id));
 
             return {
                 counts: {
                     clients: v.clients().length,
-                    websites: websites.length,
+                    websites: options.websiteId ? 1 : websites.length,
                     integrationsConnected: integrations.filter((i) => i.status === 'connected').length,
                     integrationsError: integrations.filter((i) => i.status === 'error').length,
+                    integrationsSimulated: integrations.filter((i) => i.simulated).length,
                     insightsPending: insights.filter((i) => i.status === 'pending').length,
                 },
                 window,
+                simulated: inWindow.some((m) => demo.has(m.websiteId)),
                 kpis: {
                     sessions: kpi(cur.sessions, prev.sessions),
                     conversions: kpi(cur.conversions, prev.conversions),
                     clicks: kpi(cur.clicks, prev.clicks),
                     impressions: kpi(cur.impressions, prev.impressions),
+                    activeUsers: kpi(cur.users, prev.users),
+                    engagementRate: cur.engagementRate === null ? null : kpi(cur.engagementRate, prev.engagementRate ?? 0),
+                    ctr: kpi(cur.ctr, prev.ctr),
+                    avgPosition: kpi(cur.avgPosition, prev.avgPosition),
                 },
                 sessionsTrend: dailySeries(inWindow, 'sessions'),
                 clicksTrend: dailySeries(inWindow, 'clicks'),
+                impressionsTrend: dailySeries(inWindow, 'impressions'),
+                channels: breakdownTotals(inWindow, 'source'),
+                devices: breakdownTotals(inWindow, 'device'),
                 recentInsights: insights.filter((i) => i.status !== 'dismissed').sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
                 integrations: integrations.map((i) => ({ ...i, websiteName: siteName.get(i.websiteId) ?? '' })),
             };
@@ -106,7 +123,12 @@ export function localAnalytics(scope: Scope): AnalyticsApi {
                 a.n++;
                 queryPos.set(q.query, a);
             }
+            const demo = new Set(v.websites().filter((w) => w.isDemo).map((w) => w.id));
             return {
+                simulated: inRange.some((m) => demo.has(m.websiteId)),
+                searchDevices: breakdownTotals(inRange, 'searchDevice'),
+                searchCountries: breakdownTotals(inRange, 'searchCountry'),
+                movers: queryMovers(v.queries().filter(site), filters.from, filters.to),
                 filters: { from: filters.from, to: filters.to, websiteId: filters.websiteId ?? null },
                 totals: { sessions: t.sessions, conversions: t.conversions, clicks: t.clicks, impressions: t.impressions, ctr: t.ctr, avgPosition: t.avgPosition },
                 previous: { sessions: prev.sessions, clicks: prev.clicks, impressions: prev.impressions, conversions: prev.conversions },
@@ -158,6 +180,15 @@ export function localIntegrations(scope: Scope): IntegrationsApi {
             const row = scope.owned('integrations', brandId, id, 'Integration');
             if (row.status === 'pending' || row.status === 'disconnected') throw new ValidationError({ status: 'Connect this integration before syncing.' });
             // Simulated: no external API call. Marks the sync as fresh.
+            if (row.simulated) {
+                // Demo connection: records a simulated attempt; the synthetic dataset is unchanged and no provider is contacted.
+                // A simulated failing connection keeps failing, so the demo can show error handling.
+                const failing = row.status === 'error';
+                const event = { at: db.nowIso(), ok: !failing, message: failing ? row.lastErrorMessage ?? 'Simulated failure.' : 'Simulated sync: synthetic rows refreshed locally. No provider request was sent.' };
+                const updated = db.patch('integrations', id, failing ? { syncHistory: [event, ...(row.syncHistory ?? [])].slice(0, 10) } : { status: 'connected', lastSyncedAt: event.at, lastErrorMessage: null, syncHistory: [event, ...(row.syncHistory ?? [])].slice(0, 10) });
+                scope.audit(brandId, 'integration.synced_simulated', 'integration', id);
+                return structuredClone(updated);
+            }
             const updated = db.patch('integrations', id, { status: 'connected', lastSyncedAt: db.nowIso(), lastErrorMessage: null });
             scope.audit(brandId, 'integration.synced', 'integration', id);
             return structuredClone(updated);
@@ -201,7 +232,14 @@ export function localInsights(scope: Scope): InsightsApi {
         async get(brandId, id) {
             const row = scope.row('seoInsights', brandId, id, { ...opts, label: 'Insight' });
             const site = db.find('websites', row.websiteId);
-            return { ...row, websiteName: site?.name ?? '', domain: site?.domain ?? '' };
+            const agent = row.assignedAgentId ? db.find('agentInstances', row.assignedAgentId) : undefined;
+            // The related task is shown only to users who can read tasks (staff); Client Users see no task link.
+            const task = row.taskId && can(scope.facts(brandId), 'staff') ? db.find('tasks', row.taskId) : undefined;
+            return {
+                ...row, websiteName: site?.name ?? '', domain: site?.domain ?? '',
+                assignedAgentName: agent && agent.brandId === brandId ? agent.displayName : null,
+                task: task && task.brandId === brandId ? { id: task.id, title: task.title, status: task.status } : null,
+            };
         },
 
         async generate(brandId) {
@@ -270,6 +308,7 @@ export function localReports(scope: Scope): ReportsApi {
                 {
                     metrics: v.metrics(), queries: v.queries(), pages: v.pages(), websites: v.websites(),
                     clientNames: new Map(v.clients().map((c) => [c.id, c.name])), insights: v.insights(),
+                    audits: v.audits(), tasks: v.tasks(),
                 },
                 filters,
             );

@@ -265,13 +265,32 @@ export interface Kpi {
     delta: number | null;
 }
 
+export interface BreakdownRow {
+    label: string;
+    value: number;
+    share: number;
+}
+
 export interface DashboardSummary {
-    counts: { clients: number; websites: number; integrationsConnected: number; integrationsError: number; insightsPending: number };
-    /** Window used for KPIs: the 28 days ending on the latest synced date. */
-    window: { from: string; to: string } | null;
-    kpis: { sessions: Kpi; conversions: Kpi; clicks: Kpi; impressions: Kpi };
+    counts: { clients: number; websites: number; integrationsConnected: number; integrationsError: number; insightsPending: number; integrationsSimulated: number };
+    /** Window used for KPIs: the N days (default 28) ending on the latest synced date. */
+    window: { from: string; to: string; days: number } | null;
+    /** True when the KPIs come from demo websites (synthetic data); the UI must label them. */
+    simulated: boolean;
+    kpis: {
+        sessions: Kpi; conversions: Kpi; clicks: Kpi; impressions: Kpi;
+        activeUsers: Kpi;
+        /** null when the rows carry no engagement data. */
+        engagementRate: Kpi | null;
+        ctr: Kpi;
+        avgPosition: Kpi;
+    };
     sessionsTrend: SeriesPoint[];
     clicksTrend: SeriesPoint[];
+    impressionsTrend: SeriesPoint[];
+    /** GA4 sessions by channel / device in the window (empty when not available). */
+    channels: BreakdownRow[];
+    devices: BreakdownRow[];
     recentInsights: T.SeoInsight[];
     integrations: Array<T.Integration & { websiteName: string }>;
 }
@@ -284,10 +303,24 @@ export interface SeoOverview {
     sessionsTrend: SeriesPoint[];
     topQueries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
     topPages: Array<{ path: string; sessions: number; conversions: number; conversionRate: number }>;
+    simulated: boolean;
+    /** GSC clicks by device / country in the range. */
+    searchDevices: BreakdownRow[];
+    searchCountries: BreakdownRow[];
+    /** Queries with the largest click change vs the previous window. */
+    movers: { gainers: QueryMover[]; decliners: QueryMover[] };
+}
+
+export interface QueryMover {
+    query: string;
+    clicks: number;
+    prevClicks: number;
+    impressions: number;
+    change: number;
 }
 
 export interface AnalyticsApi {
-    dashboard(brandId: T.ID): Promise<DashboardSummary>;
+    dashboard(brandId: T.ID, options?: { days?: number; websiteId?: T.ID | null }): Promise<DashboardSummary>;
     /** Earliest/latest metric date visible to the user, or null if there is no data. */
     dataRange(brandId: T.ID): Promise<{ from: string; to: string } | null>;
     seoOverview(brandId: T.ID, filters: { from: string; to: string; websiteId?: string | null }): Promise<SeoOverview>;
@@ -319,7 +352,7 @@ export interface InsightFilters {
 
 export interface InsightsApi {
     list(brandId: T.ID, filters?: InsightFilters): Promise<T.SeoInsight[]>;
-    get(brandId: T.ID, id: T.ID): Promise<T.SeoInsight & { websiteName: string; domain: string | null }>;
+    get(brandId: T.ID, id: T.ID): Promise<T.SeoInsight & { websiteName: string; domain: string | null; assignedAgentName: string | null; task: { id: T.ID; title: string; status: T.TaskStatus } | null }>;
     /** Runs the rule set over brand data; returns how many new insights were created. */
     generate(brandId: T.ID): Promise<{ created: number }>;
     setStatus(brandId: T.ID, id: T.ID, status: T.SeoInsightStatus, notes?: string | null): Promise<T.SeoInsight>;
@@ -501,10 +534,31 @@ export interface WorkApi {
 
 // ── SEO intelligence ─────────────────────────────────────────────────────
 
+export interface AuditOverview {
+    websiteId: T.ID;
+    date: string;
+    simulated: boolean;
+    pagesCrawled: number;
+    score: number;
+    formula: string;
+    lines: Array<{ code: string; label: string; severity: T.Severity; count: number; share: number; deduction: number }>;
+    distribution: Array<{ category: T.AuditCategory; label: string; issues: number; pages: number }>;
+    trend: SeriesPoint[];
+    lab: T.SiteAudit['lab'];
+    competitors: T.SiteAudit['competitors'];
+}
+
 export interface IntelligenceOverview {
     anomalies: Anomaly[];
     opportunities: Opportunity[];
     comparison: WebsiteComparisonRow[];
+    /** Latest audit per website in scope (local: simulated demo audits only). */
+    audits: AuditOverview[];
+    /** Open content-gap insights. */
+    contentGaps: T.SeoInsight[];
+    /** Open insights ordered by priority, then severity. */
+    recommendations: T.SeoInsight[];
+    simulated: boolean;
 }
 
 export interface IntelligenceApi {

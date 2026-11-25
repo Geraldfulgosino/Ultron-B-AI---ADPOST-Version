@@ -3,7 +3,8 @@
  * GetReportPreviewAction, BuildReportCsvAction, AnalyticsSummaryAgent.
  * No I/O: adapters pass in rows that the user is already allowed to see.
  */
-import type { DailyMetric, Integration, LandingPage, SearchQuery, SeoInsight, SeoInsightType, Severity, Website } from './types';
+import type { DailyMetric, Integration, LandingPage, MetricBreakdown, SearchQuery, SeoInsight, SeoInsightType, Severity, SiteAudit, Task, Website } from './types';
+import { healthScore } from './audit';
 
 export type ReportSource = 'all' | 'ga4' | 'gsc';
 
@@ -28,6 +29,16 @@ export interface ReportData {
     topQueries: Array<{ query: string; clicks: number; impressions: number }>;
     topPages: Array<{ path: string; sessions: number; conversions: number }>;
     insights: Array<Pick<SeoInsight, 'id' | 'title' | 'severity' | 'status' | 'type'>>;
+    /** True when any row in scope belongs to a demo website (synthetic data): exports carry a notice. */
+    simulated: boolean;
+    /** Same-length window immediately before the range. */
+    previous: { from: string; to: string; gscClicks: number; gscImpressions: number; ga4Sessions: number; ga4Conversions: number };
+    ga4: { activeUsers: number; engagementRate: number | null };
+    search: { ctr: number; avgPosition: number };
+    /** Latest audit on or before the end date (null when none exists). */
+    technical: { date: string; simulated: boolean; score: number; pagesCrawled: number; lines: Array<{ label: string; severity: Severity; count: number; deduction: number }> } | null;
+    recommendations: Array<{ title: string; recommendation: string; priority: string }>;
+    tasks: Array<{ title: string; status: string; priority: string; dueDate: string | null }>;
 }
 
 export function addDays(date: string, days: number): string {
@@ -57,8 +68,12 @@ export function latestDate(metrics: readonly DailyMetric[]): string | null {
 }
 
 export function totals(metrics: readonly DailyMetric[]) {
-    let sessions = 0, users = 0, conversions = 0, clicks = 0, impressions = 0, positionSum = 0;
+    let sessions = 0, users = 0, conversions = 0, clicks = 0, impressions = 0, positionSum = 0, engaged = 0, engagedKnown = 0;
     for (const m of metrics) {
+        if (m.engagedSessions !== undefined) {
+            engaged += m.engagedSessions;
+            engagedKnown += m.sessions;
+        }
         sessions += m.sessions;
         users += m.users;
         conversions += m.conversions;
@@ -68,6 +83,9 @@ export function totals(metrics: readonly DailyMetric[]) {
     }
     return {
         sessions, users, conversions, clicks, impressions,
+        engagedSessions: engaged,
+        /** null when no row carries engagement data (never guessed). */
+        engagementRate: engagedKnown ? engaged / engagedKnown : null,
         ctr: impressions ? clicks / impressions : 0,
         conversionRate: sessions ? conversions / sessions : 0,
         avgPosition: metrics.length ? positionSum / metrics.length : 0,
@@ -92,6 +110,36 @@ export interface ReportInput {
     websites: readonly Website[];
     clientNames: ReadonlyMap<string, string>;
     insights: readonly SeoInsight[];
+    audits?: readonly SiteAudit[];
+    tasks?: readonly Task[];
+}
+
+/** Sum one breakdown dimension over the rows that carry it, largest first. */
+export function breakdownTotals(metrics: readonly DailyMetric[], key: keyof MetricBreakdown): Array<{ label: string; value: number; share: number }> {
+    const acc = new Map<string, number>();
+    for (const m of metrics) for (const [k, v] of Object.entries(m.breakdown?.[key] ?? {})) acc.set(k, (acc.get(k) ?? 0) + v);
+    const total = [...acc.values()].reduce((a, b) => a + b, 0);
+    return [...acc.entries()].map(([label, value]) => ({ label, value, share: total ? value / total : 0 })).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+}
+
+/** Query clicks in the range vs the previous same-length window (weekly buckets overlapping each window). */
+export function queryMovers(queries: readonly SearchQuery[], from: string, to: string, limit = 5) {
+    const pw = previousWindow(from, to);
+    const agg = new Map<string, { clicks: number; prevClicks: number; impressions: number }>();
+    for (const q of queries) {
+        const cur = weekInRange(q.date, from, to) && q.date >= from;
+        const prev = weekInRange(q.date, pw.from, pw.to) && q.date >= pw.from && q.date < from;
+        if (!cur && !prev) continue;
+        const a = agg.get(q.query) ?? { clicks: 0, prevClicks: 0, impressions: 0 };
+        if (cur) { a.clicks += q.clicks; a.impressions += q.impressions; }
+        if (prev) a.prevClicks += q.clicks;
+        agg.set(q.query, a);
+    }
+    const rows = [...agg.entries()].map(([query, a]) => ({ query, ...a, change: a.clicks - a.prevClicks })).filter((r) => r.prevClicks > 0 || r.clicks > 0);
+    return {
+        gainers: rows.filter((r) => r.change > 0).sort((a, b) => b.change - a.change || a.query.localeCompare(b.query)).slice(0, limit),
+        decliners: rows.filter((r) => r.change < 0).sort((a, b) => a.change - b.change || a.query.localeCompare(b.query)).slice(0, limit),
+    };
 }
 
 export function buildReport(input: ReportInput, filters: ReportFilters): ReportData {
@@ -123,6 +171,15 @@ export function buildReport(input: ReportInput, filters: ReportFilters): ReportD
     }
 
     const nonZero = (s: SeriesPoint[]) => s.filter((p) => p.value > 0);
+    const pw = previousWindow(filters.from, filters.to);
+    const pt = totals(input.metrics.filter((m) => site(m) && inRange(m.date, pw.from, pw.to)));
+    const demoSites = new Set(input.websites.filter((w) => w.isDemo).map((w) => w.id));
+    const audit = (input.audits ?? []).filter((a) => site(a) && a.date <= filters.to).sort((a, b) => b.date.localeCompare(a.date))[0];
+    const h = audit ? healthScore(audit.issues, audit.pagesCrawled) : null;
+    const openInsights = input.insights.filter((i) => site(i) && (i.status === 'pending' || i.status === 'reviewed' || i.status === 'approved'));
+    const prio = (p?: string) => ({ urgent: 0, high: 1, medium: 2, low: 3 })[p ?? 'medium'] ?? 2;
+    const insightSites = new Map(input.insights.map((i) => [i.id, i.websiteId]));
+    const tasksInScope = (input.tasks ?? []).filter((t) => !t.insightId || filters.websiteId === null || insightSites.get(t.insightId) === filters.websiteId);
 
     return {
         filters,
@@ -154,6 +211,24 @@ export function buildReport(input: ReportInput, filters: ReportFilters): ReportD
             .sort((a, b) => severityRank(b.severity) - severityRank(a.severity) || b.createdAt.localeCompare(a.createdAt))
             .slice(0, 5)
             .map(({ id, title, severity, status, type }) => ({ id, title, severity, status, type })),
+        simulated: metrics.some((m) => demoSites.has(m.websiteId)) || !!audit?.simulated,
+        previous: {
+            from: pw.from, to: pw.to,
+            gscClicks: showGsc ? pt.clicks : 0, gscImpressions: showGsc ? pt.impressions : 0,
+            ga4Sessions: showGa4 ? pt.sessions : 0, ga4Conversions: showGa4 ? pt.conversions : 0,
+        },
+        ga4: { activeUsers: showGa4 ? t.users : 0, engagementRate: showGa4 ? t.engagementRate : null },
+        search: { ctr: showGsc ? t.ctr : 0, avgPosition: showGsc ? t.avgPosition : 0 },
+        technical: audit && h ? { date: audit.date, simulated: audit.simulated, score: h.score, pagesCrawled: audit.pagesCrawled, lines: h.lines.slice(0, 5).map(({ label, severity, count, deduction }) => ({ label, severity, count, deduction })) } : null,
+        recommendations: [...openInsights]
+            .sort((a, b) => prio(a.priority) - prio(b.priority) || severityRank(b.severity) - severityRank(a.severity) || a.title.localeCompare(b.title))
+            .slice(0, 5)
+            .map((i) => ({ title: i.title, recommendation: i.recommendation, priority: i.priority ?? 'medium' })),
+        tasks: tasksInScope
+            .filter((x) => x.status !== 'done')
+            .sort((a, b) => prio(a.priority) - prio(b.priority) || (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
+            .slice(0, 8)
+            .map((x) => ({ title: x.title, status: x.status, priority: x.priority, dueDate: x.dueDate })),
     };
 }
 
@@ -167,6 +242,8 @@ function csvCell(value: string | number): string {
     if (typeof value === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
+
+export const DEMO_DATA_NOTICE = 'DEMO / SYNTHETIC DATA - simulated records for demonstration, not measured client performance.';
 
 export function sourceLabel(source: ReportSource): string {
     return source === 'ga4' ? 'GA4 only' : source === 'gsc' ? 'GSC only' : 'All';
@@ -184,6 +261,7 @@ export function reportToCsv(report: ReportData, brandName: string, generatedAt: 
     const showGa4 = filters.source !== 'gsc';
 
     w('ULTRON-B AI Report Export');
+    if (report.simulated) w(DEMO_DATA_NOTICE);
     w('Brand', brandName);
     w('Date Range', `${filters.from} to ${filters.to}`);
     w('Source', sourceLabel(filters.source));
@@ -202,6 +280,22 @@ export function reportToCsv(report: ReportData, brandName: string, generatedAt: 
         if (showGa4) {
             w('GA4 Sessions', summary.ga4Sessions);
             w('GA4 Conversions', summary.ga4Conversions);
+            w('GA4 Active Users', report.ga4.activeUsers);
+            if (report.ga4.engagementRate !== null) w('GA4 Engagement Rate', `${(report.ga4.engagementRate * 100).toFixed(1)}%`);
+        }
+        if (showGsc) {
+            w('GSC CTR', `${(report.search.ctr * 100).toFixed(2)}%`);
+            w('GSC Average Position (average, not a live ranking)', report.search.avgPosition.toFixed(1));
+        }
+        w();
+        w('PREVIOUS PERIOD', `${report.previous.from} to ${report.previous.to}`);
+        if (showGsc) {
+            w('GSC Clicks', report.previous.gscClicks);
+            w('GSC Impressions', report.previous.gscImpressions);
+        }
+        if (showGa4) {
+            w('GA4 Sessions', report.previous.ga4Sessions);
+            w('GA4 Conversions', report.previous.ga4Conversions);
         }
         w();
         const trend = (title: string, col: string, series: SeriesPoint[]) => {
@@ -233,6 +327,29 @@ export function reportToCsv(report: ReportData, brandName: string, generatedAt: 
     w('Title', 'Severity', 'Status');
     if (!report.insights.length) w('No insights');
     report.insights.forEach((i) => w(i.title, i.severity, i.status));
+    if (report.technical) {
+        w();
+        w(`TECHNICAL FINDINGS${report.technical.simulated ? ' (simulated audit, no crawl ran)' : ''}`, report.technical.date);
+        w('Health Score', report.technical.score);
+        w('Issue', 'Severity', 'Pages', 'Points deducted');
+        report.technical.lines.forEach((l) => w(l.label, l.severity, l.count, l.deduction));
+    }
+    if (report.recommendations.length) {
+        w();
+        w('RECOMMENDATIONS');
+        w('Insight', 'Recommendation', 'Priority');
+        report.recommendations.forEach((r) => w(r.title, r.recommendation, r.priority));
+    }
+    if (report.tasks.length) {
+        w();
+        w('OPEN TASKS');
+        w('Task', 'Status', 'Priority', 'Due');
+        report.tasks.forEach((t) => w(t.title, t.status, t.priority, t.dueDate ?? ''));
+    }
+    if (report.simulated) {
+        w();
+        w(DEMO_DATA_NOTICE);
+    }
 
     return rows.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }

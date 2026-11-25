@@ -2,7 +2,7 @@ import { addDays } from '@/domain/analytics';
 import type { ReportSource } from '@/domain/analytics';
 import { Input, Label, Select } from '@/components/ui';
 
-export const PRESETS = [7, 28, 90] as const;
+export const PRESETS = [7, 28, 30, 90] as const;
 
 export interface FilterValue {
     from: string;

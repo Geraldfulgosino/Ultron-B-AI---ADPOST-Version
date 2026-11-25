@@ -3,7 +3,7 @@
  * Enough for the report export; avoids pulling a PDF library into the bundle.
  * The server-side report-export Edge Function can replace it in Phase 17.
  */
-import { type ReportData, sourceLabel, websiteLabel } from './analytics';
+import { DEMO_DATA_NOTICE, type ReportData, sourceLabel, websiteLabel } from './analytics';
 
 type Line = { text: string; size: number; bold?: boolean; gap?: number; rule?: boolean; indent?: number };
 
@@ -32,7 +32,8 @@ function wrap(text: string, size: number, indent = 0): string[] {
     return out;
 }
 
-export function buildPdf(lines: Line[]): Uint8Array {
+/** `watermark`: drawn diagonally behind every page and repeated in each footer (demo exports). */
+export function buildPdf(lines: Line[], opts: { watermark?: string; footerNote?: string } = {}): Uint8Array {
     const pages: string[][] = [[]];
     let y = PAGE_H - MARGIN;
     for (const l of lines) {
@@ -58,8 +59,9 @@ export function buildPdf(lines: Line[]): Uint8Array {
     add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
     const kids: number[] = [];
     pages.forEach((ops, i) => {
-        const footer = `BT /F1 8 Tf ${MARGIN} 30 Td (${pdfText(`Page ${i + 1} of ${pages.length}`)}) Tj ET`;
-        const stream = [...ops, footer].join('\n');
+        const footer = `BT /F1 8 Tf ${MARGIN} 30 Td (${pdfText(`Page ${i + 1} of ${pages.length}${opts.footerNote ? `  |  ${opts.footerNote}` : ''}`)}) Tj ET`;
+        const mark = opts.watermark ? [`q 0.9 g BT /F2 56 Tf 0.7071 0.7071 -0.7071 0.7071 120 230 Tm (${pdfText(opts.watermark)}) Tj ET Q`] : [];
+        const stream = [...mark, ...ops, footer].join('\n');
         add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
         const contentNo = objects.length;
         add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentNo} 0 R >>`);
@@ -95,6 +97,7 @@ export function reportToPdf(report: ReportData, brandName: string, generatedAt: 
         { text: brandName, size: 12, gap: 2 },
         { text: `${filters.from} to ${filters.to}  |  Source: ${sourceLabel(filters.source)}  |  Website: ${websiteLabel(report)}`, size: 9, gap: 4 },
         { text: `Generated ${generatedAt}`, size: 8 },
+        ...(report.simulated ? [{ text: DEMO_DATA_NOTICE, size: 9, bold: true, gap: 4 }] : []),
         { text: '', size: 8, rule: true, gap: 6 },
     ];
     if (!report.hasData) {
@@ -110,7 +113,17 @@ export function reportToPdf(report: ReportData, brandName: string, generatedAt: 
         if (showGa4) {
             L.push({ text: `GA4 sessions: ${n(summary.ga4Sessions)}`, size: 10, indent: 10 });
             L.push({ text: `GA4 conversions: ${n(summary.ga4Conversions)}`, size: 10, indent: 10 });
+            L.push({ text: `GA4 active users: ${n(report.ga4.activeUsers)}`, size: 10, indent: 10 });
+            if (report.ga4.engagementRate !== null) L.push({ text: `GA4 engagement rate: ${(report.ga4.engagementRate * 100).toFixed(1)}%`, size: 10, indent: 10 });
         }
+        if (showGsc) {
+            L.push({ text: `GSC CTR: ${(report.search.ctr * 100).toFixed(2)}%  |  Average position: ${report.search.avgPosition.toFixed(1)} (an average, not a live ranking)`, size: 10, indent: 10 });
+        }
+        const pv = report.previous;
+        const ch = (c: number, p: number) => (p ? `${c >= p ? '+' : ''}${(((c - p) / p) * 100).toFixed(1)}%` : 'n/a');
+        L.push({ text: `Previous period (${pv.from} to ${pv.to})`, size: 13, bold: true, gap: 10 });
+        if (showGsc) L.push({ text: `GSC clicks ${n(pv.gscClicks)} (${ch(summary.gscClicks, pv.gscClicks)} now)  |  impressions ${n(pv.gscImpressions)} (${ch(summary.gscImpressions, pv.gscImpressions)})`, size: 10, indent: 10 });
+        if (showGa4) L.push({ text: `GA4 sessions ${n(pv.ga4Sessions)} (${ch(summary.ga4Sessions, pv.ga4Sessions)} now)  |  conversions ${n(pv.ga4Conversions)} (${ch(summary.ga4Conversions, pv.ga4Conversions)})`, size: 10, indent: 10 });
         if (showGsc) {
             L.push({ text: 'Top queries (clicks)', size: 13, bold: true, gap: 10 });
             if (!report.topQueries.length) L.push({ text: 'No data', size: 10, indent: 10 });
@@ -125,7 +138,22 @@ export function reportToPdf(report: ReportData, brandName: string, generatedAt: 
     L.push({ text: 'SEO insights', size: 13, bold: true, gap: 10 });
     if (!report.insights.length) L.push({ text: 'No open insights.', size: 10, indent: 10 });
     report.insights.forEach((i) => L.push({ text: `[${i.severity.toUpperCase()}] ${i.title} (${i.status})`, size: 10, indent: 10 }));
-    return buildPdf(L);
+    if (report.technical) {
+        const t = report.technical;
+        L.push({ text: `Technical findings${t.simulated ? ' (simulated audit, no crawl ran)' : ''}`, size: 13, bold: true, gap: 10 });
+        L.push({ text: `Health score ${t.score}/100 from ${t.pagesCrawled} pages on ${t.date}.`, size: 10, indent: 10 });
+        t.lines.forEach((l) => L.push({ text: `${l.label}: ${l.count} pages (-${l.deduction} points, ${l.severity})`, size: 10, indent: 10 }));
+    }
+    if (report.recommendations.length) {
+        L.push({ text: 'Recommendations', size: 13, bold: true, gap: 10 });
+        report.recommendations.forEach((r, i) => L.push({ text: `${i + 1}. [${r.priority}] ${r.title}: ${r.recommendation}`, size: 10, indent: 10 }));
+    }
+    if (report.tasks.length) {
+        L.push({ text: 'Tasks and action items', size: 13, bold: true, gap: 10 });
+        report.tasks.forEach((t) => L.push({ text: `- ${t.title} (${t.status.replace('_', ' ')}, ${t.priority}${t.dueDate ? `, due ${t.dueDate}` : ''})`, size: 10, indent: 10 }));
+    }
+    if (report.simulated) L.push({ text: DEMO_DATA_NOTICE, size: 9, bold: true, gap: 12 });
+    return buildPdf(L, report.simulated ? { watermark: 'DEMO - SYNTHETIC DATA', footerNote: 'DEMO / SYNTHETIC DATA' } : {});
 }
 
 /** Deterministic plain-language summary (no AI involved). */

@@ -5,3 +5,4 @@ export { Input, Label, Textarea, Select, Field } from './Form';
 export { Alert, EmptyState, LoadingState, ErrorState } from './Feedback';
 export { Dialog } from './Dialog';
 export { Table, THead, TBody, Th, Td } from './Table';
+export { SimulatedNotice, SimulatedBadge } from './SimulatedNotice';

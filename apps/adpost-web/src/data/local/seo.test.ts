@@ -9,7 +9,7 @@ const range = { from: '2026-09-27', to: FIXTURE_END_DATE };
 describe('analytics', () => {
     it('dashboard KPIs use the 28 days ending on the latest data date', async () => {
         const d = await as('priya').api.analytics.dashboard(pod);
-        expect(d.window).toEqual({ from: '2026-09-27', to: FIXTURE_END_DATE });
+        expect(d.window).toEqual({ from: '2026-09-27', to: FIXTURE_END_DATE, days: 28 });
         expect(d.sessionsTrend).toHaveLength(28);
         expect(d.counts).toMatchObject({ clients: 2, websites: 2 });
         expect(d.kpis.sessions.current).toBeGreaterThan(0);

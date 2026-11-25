@@ -1,6 +1,8 @@
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { Page } from '@/layouts/AppShell';
-import { Alert, Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, Table, TBody, Td, Th, THead } from '@/components/ui';
+import { Alert, Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, SimulatedNotice, Table, TBody, Td, Th, THead } from '@/components/ui';
+import { clientBase } from '@/app/paths';
+import { AuditSection, InsightList } from './AuditSections';
 import { ReportFiltersBar } from '@/components/filters/ReportFilters';
 import { useBrand, useQuery } from '@/app/backend';
 import { formatDate, formatNumber, formatPercent } from '@/lib/utils';
@@ -33,6 +35,13 @@ export function IntelligencePage() {
                 <ErrorState error={q.error} onRetry={q.reload} />
             ) : !q.data ? null : (
                 <>
+                    {q.data.simulated && <SimulatedNotice what="audit results, competitor comparison and search data on this page" />}
+                    {q.data.audits.map((a) => <AuditSection key={a.websiteId} audit={a} siteName={siteName(a.websiteId)} />)}
+                    {!q.data.audits.length && <EmptyState title="No site audit yet" description="Audits appear here after the server-side crawler runs (not available in local mode for live websites)." />}
+                    <div className="grid gap-4 xl:grid-cols-2">
+                        <InsightList title="Priority recommendations" description="Open insights ordered by priority, then severity." insights={q.data.recommendations} base={clientBase(brand)} />
+                        <InsightList title="Content gaps" description="Open content and internal-linking insights." insights={q.data.contentGaps} base={clientBase(brand)} />
+                    </div>
                     <Card>
                         <CardHeader><CardTitle>Website comparison</CardTitle></CardHeader>
                         <Table className="border-0 shadow-none rounded-none">
@@ -82,7 +91,7 @@ export function IntelligencePage() {
                         </Card>
                         <Card>
                             <CardHeader>
-                                <CardTitle>Click opportunities</CardTitle>
+                                <CardTitle>Keyword opportunity analysis</CardTitle>
                                 <p className="text-xs text-fg-muted">Estimated extra clicks if each query reached a typical CTR for its position, or moved to position 3.</p>
                             </CardHeader>
                             <CardContent>

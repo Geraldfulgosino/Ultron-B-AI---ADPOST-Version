@@ -37,7 +37,10 @@ describe('parity pages', () => {
         expect(await screen.findByText('Insights pending review')).toBeInTheDocument();
         expect(screen.getByText('Sessions (GA4)')).toBeInTheDocument();
         expect(screen.getByText('Latest SEO insights')).toBeInTheDocument();
-        expect(screen.getAllByText(/vs previous 28 days/).length).toBe(4);
+        // 7 KPI tiles with a delta (engagement rate is not in these older fixtures, so it shows a plain dash).
+        expect(screen.getAllByText(/vs previous 28 days/).length).toBe(7);
+        expect(screen.getByText('Not available for this data')).toBeInTheDocument();
+        expect(screen.queryByText('Simulated')).toBeNull();
     });
 
     it('creates a client and shows validation errors', async () => {

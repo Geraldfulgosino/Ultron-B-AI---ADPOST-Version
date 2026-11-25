@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Sparkles } from 'lucide-react';
 import { Page } from '@/layouts/AppShell';
-import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, Label, LoadingState, Select, Textarea } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, Label, LoadingState, Select, SimulatedBadge, Textarea } from '@/components/ui';
+import { PriorityBadge } from './AuditSections';
 import { useAction, useBrand, useQuery } from '@/app/backend';
 import type { InsightFilters } from '@/data/contracts';
 import type { SeoInsightStatus, SeoInsightType, Severity } from '@/domain/types';
@@ -101,7 +102,9 @@ export function InsightsListPage() {
                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
                                     <Badge variant={SEVERITY[i.severity].variant}>{SEVERITY[i.severity].label}</Badge>
                                     <Badge variant={INSIGHT_STATUS[i.status].variant}>{INSIGHT_STATUS[i.status].label}</Badge>
-                                    <span>{INSIGHT_TYPE_LABELS[i.type]}</span>
+                                    <PriorityBadge priority={i.priority} />
+                                    {i.simulated && <SimulatedBadge />}
+                                    <span>{INSIGHT_TYPE_LABELS[i.type]}{i.category ? ` · ${i.category}` : ''}</span>
                                     <span>· {siteName(i.websiteId)}</span>
                                 </div>
                             </div>
@@ -141,6 +144,9 @@ export function InsightDetailPage() {
                             <Badge variant={SEVERITY[i.severity].variant}>{SEVERITY[i.severity].label} severity</Badge>
                             <Badge variant={INSIGHT_STATUS[i.status].variant}>{INSIGHT_STATUS[i.status].label}</Badge>
                             <Badge variant="indigo">{INSIGHT_TYPE_LABELS[i.type]}</Badge>
+                            {i.category && <Badge variant="gray">{i.category}</Badge>}
+                            <PriorityBadge priority={i.priority} />
+                            {i.simulated && <SimulatedBadge />}
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
@@ -157,7 +163,13 @@ export function InsightDetailPage() {
                                 ))}
                             </dl>
                         </div>
-                        <p className="text-xs text-fg-muted">Raised {formatDateTime(i.createdAt)} by {i.source === 'rules' ? 'rule engine' : 'AI agent'}</p>
+                        {(i.assignedAgentName || i.task) && (
+                            <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                {i.assignedAgentName && <><dt className="text-fg-muted">Assigned agent</dt><dd className="text-fg">{i.assignedAgentName}</dd></>}
+                                {i.task && <><dt className="text-fg-muted">Related task</dt><dd><Link className="text-accent hover:text-accent-strong" to={`${clientBase(brand)}/projects`}>{i.task.title}</Link> <span className="text-xs text-fg-muted">({i.task.status.replace('_', ' ')})</span></dd></>}
+                            </dl>
+                        )}
+                        <p className="text-xs text-fg-muted">Raised {formatDateTime(i.createdAt)} by {i.source === 'rules' ? 'rule engine' : 'AI agent'}{i.simulated ? ' from the simulated demo dataset' : ''}</p>
                     </CardContent>
                 </Card>
                 <Card>
